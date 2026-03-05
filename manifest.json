@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Bookmark Manager",
+  "version": "1.0.0",
+  "description": "功能强大的 Chrome 收藏夹管理插件，支持侧边栏快速访问、全页面管理和 WebDAV 备份",
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "activeTab",
+    "alarms",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "*://*/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "打开收藏夹侧边栏"
+  },
+  "side_panel": {
+    "default_path": "sidebar/sidebar.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "shared/styles.css",
+        "shared/utils.js",
+        "icons/*.svg"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
