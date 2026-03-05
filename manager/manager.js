@@ -332,6 +332,12 @@ function createBookmarkCard(bookmark, index) {
 
   const favicon = FaviconService.createManagerIconElement(bookmark.url);
   favicon.className = 'bookmark-favicon';
+  // 清除内联样式，让 CSS 控制
+  favicon.style.width = '';
+  favicon.style.height = '';
+  favicon.style.display = 'flex';
+  favicon.style.alignItems = 'center';
+  favicon.style.justifyContent = 'center';
 
   const title = document.createElement('div');
   title.className = 'bookmark-title';
@@ -843,8 +849,9 @@ async function createNewFolder() {
         parentId: state.currentFolderId,
         title: title.trim()
       });
-      // 重新加载文件夹树
+      // 重新加载文件夹树和书签列表
       await loadFolderTree();
+      await loadBookmarks(state.currentFolderId);
     } catch (error) {
       console.error('创建文件夹失败:', error);
       alert('创建文件夹失败');
