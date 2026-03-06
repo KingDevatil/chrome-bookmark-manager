@@ -164,6 +164,23 @@ function showContextMenu(e, node, isFolder) {
   menu.style.top = `${e.clientY}px`;
   menu.style.zIndex = '10000';
 
+  // 修改选项（书签才有）
+  if (!isFolder) {
+    const editItem = document.createElement('div');
+    editItem.className = 'context-menu-item';
+    editItem.textContent = '✏️ 修改';
+    editItem.addEventListener('click', () => {
+      showEditModal(node);
+      removeContextMenu();
+    });
+    menu.appendChild(editItem);
+    
+    // 添加分隔线
+    const separator = document.createElement('div');
+    separator.className = 'context-menu-separator';
+    menu.appendChild(separator);
+  }
+
   // 删除选项
   const deleteItem = document.createElement('div');
   deleteItem.className = 'context-menu-item';
@@ -186,6 +203,94 @@ function showContextMenu(e, node, isFolder) {
   setTimeout(() => {
     document.addEventListener('click', closeMenu);
   }, 100);
+}
+
+// 显示修改对话框
+function showEditModal(node) {
+  // 移除已存在的对话框
+  removeEditModal();
+
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal';
+  modal.innerHTML = `
+    <div class="edit-modal-content">
+      <h3 class="edit-modal-title">修改书签</h3>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">名称</label>
+        <input type="text" class="edit-modal-input" id="edit-title-input" value="${node.title || ''}">
+      </div>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">URL</label>
+        <input type="text" class="edit-modal-input" id="edit-url-input" value="${node.url || ''}">
+      </div>
+      <div class="edit-modal-buttons">
+        <button class="edit-modal-btn edit-modal-cancel">取消</button>
+        <button class="edit-modal-btn edit-modal-save">保存</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // 聚焦到名称输入框
+  const titleInput = document.getElementById('edit-title-input');
+  titleInput.focus();
+  titleInput.select();
+
+  // 取消按钮
+  modal.querySelector('.edit-modal-cancel').addEventListener('click', () => {
+    removeEditModal();
+  });
+
+  // 保存按钮
+  modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
+    const newTitle = document.getElementById('edit-title-input').value.trim();
+    const newUrl = document.getElementById('edit-url-input').value.trim();
+
+    if (!newTitle) {
+      alert('请输入书签名称');
+      return;
+    }
+
+    if (!newUrl) {
+      alert('请输入书签 URL');
+      return;
+    }
+
+    try {
+      await BookmarkUtils.update(node.id, {
+        title: newTitle,
+        url: newUrl
+      });
+      await loadBookmarkTree();
+      removeEditModal();
+    } catch (error) {
+      console.error('修改书签失败:', error);
+      alert('修改失败，请重试');
+    }
+  });
+
+  // 按 Enter 保存
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      modal.querySelector('.edit-modal-save').click();
+    }
+  });
+
+  // 按 Esc 取消
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      removeEditModal();
+    }
+  });
+}
+
+// 移除修改对话框
+function removeEditModal() {
+  const existingModal = document.querySelector('.edit-modal');
+  if (existingModal) {
+    existingModal.remove();
+  }
 }
 
 // 移除右键菜单
@@ -218,6 +323,7 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
 // 拖拽相关变量
 let draggedNode = null;
 let draggedElement = null;
+let dropZone = null; // 'top', 'bottom', 'inside'
 
 // 拖拽开始
 function handleDragStart(e) {
@@ -229,6 +335,14 @@ function handleDragStart(e) {
     id: this.__node.id,
     type: this.__node.url ? 'bookmark' : 'folder'
   }));
+  
+  // 设置拖拽图片，避免默认透明效果
+  const dragImage = this.cloneNode(true);
+  dragImage.style.position = 'absolute';
+  dragImage.style.top = '-1000px';
+  document.body.appendChild(dragImage);
+  e.dataTransfer.setDragImage(dragImage, 50, 25);
+  setTimeout(() => dragImage.remove(), 0);
 }
 
 // 拖拽结束
@@ -236,8 +350,9 @@ function handleDragEnd(e) {
   this.classList.remove('dragging');
   draggedNode = null;
   draggedElement = null;
+  dropZone = null;
   document.querySelectorAll('.tree-node-content').forEach(el => {
-    el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+    el.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom', 'drag-over-inside');
   });
 }
 
@@ -245,17 +360,35 @@ function handleDragEnd(e) {
 function handleDragOver(e) {
   e.preventDefault();
   e.stopPropagation();
-  e.dataTransfer.dropEffect = 'move';
-
+  
   const rect = this.getBoundingClientRect();
-  const midpoint = rect.top + rect.height / 2;
-
-  this.classList.remove('drag-over-top', 'drag-over-bottom');
-
-  if (e.clientY < midpoint) {
+  const isTargetFolder = this.__node && !this.__node.url;
+  
+  // 计算拖拽位置：顶部 25%、中间 50%、底部 25%
+  const topThreshold = rect.top + rect.height * 0.25;
+  const bottomThreshold = rect.top + rect.height * 0.75;
+  
+  this.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
+  
+  // 如果是文件夹，且鼠标在中间 50% 区域，显示"移入文件夹"效果
+  if (isTargetFolder && e.clientY >= topThreshold && e.clientY <= bottomThreshold) {
+    this.classList.add('drag-over-inside');
+    dropZone = 'inside';
+    e.dataTransfer.dropEffect = 'move';
+  } else if (e.clientY < topThreshold) {
+    // 顶部区域
     this.classList.add('drag-over-top');
-  } else {
+    dropZone = 'top';
+    e.dataTransfer.dropEffect = 'move';
+  } else if (e.clientY > bottomThreshold) {
+    // 底部区域
     this.classList.add('drag-over-bottom');
+    dropZone = 'bottom';
+    e.dataTransfer.dropEffect = 'move';
+  } else if (isTargetFolder) {
+    // 文件夹但不在中间区域，也允许放置
+    dropZone = 'inside';
+    e.dataTransfer.dropEffect = 'move';
   }
 
   return false;
@@ -265,7 +398,7 @@ function handleDragOver(e) {
 function handleDragLeave(e) {
   e.preventDefault();
   e.stopPropagation();
-  this.classList.remove('drag-over-top', 'drag-over-bottom');
+  this.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
 }
 
 // 拖拽放下
@@ -273,63 +406,161 @@ async function handleDrop(e) {
   e.preventDefault();
   e.stopPropagation();
 
-  if (!draggedNode || !this.__node) {
+  // 立即保存节点引用，避免被 handleDragEnd 清空
+  const nodeToDrag = draggedNode;
+  const targetElement = this;
+  const targetNode = this.__node;
+  const currentDropZone = dropZone;
+
+  console.log('=== 拖拽开始 ===');
+  console.log('nodeToDrag:', nodeToDrag);
+  console.log('targetElement:', targetElement);
+  console.log('targetNode:', targetNode);
+  console.log('currentDropZone:', currentDropZone);
+
+  if (!nodeToDrag || !targetNode) {
+    console.error('拖拽节点或目标节点不存在');
+    console.error('nodeToDrag:', nodeToDrag, 'targetNode:', targetNode);
     return;
   }
 
-  const targetNode = this.__node;
   const isTargetFolder = !targetNode.url;
 
+  // 如果 dropZone 未设置，根据鼠标位置判断
+  let finalDropZone = currentDropZone;
+  if (!finalDropZone) {
+    const rect = targetElement.getBoundingClientRect();
+    const topThreshold = rect.top + rect.height * 0.25;
+    const bottomThreshold = rect.top + rect.height * 0.75;
+    
+    if (isTargetFolder && e.clientY >= topThreshold && e.clientY <= bottomThreshold) {
+      finalDropZone = 'inside';
+    } else if (e.clientY < topThreshold) {
+      finalDropZone = 'top';
+    } else {
+      finalDropZone = 'bottom';
+    }
+  }
+
+  console.log('最终 dropZone:', finalDropZone);
+  console.log('拖拽:', nodeToDrag.title, '(ID:', nodeToDrag.id + ')');
+  console.log('目标:', targetNode.title, '(ID:', targetNode.id + ')');
+
   // 不能拖拽到自己身上
-  if (draggedNode.id === targetNode.id) {
+  if (nodeToDrag.id === targetNode.id) {
+    console.log('不能拖拽到自己身上');
     return;
   }
 
   // 文件夹不能拖拽到自己的子目录中
-  if (!draggedNode.url && isDescendant(targetNode, draggedNode)) {
+  if (!nodeToDrag.url && isDescendant(targetNode, nodeToDrag)) {
+    console.log('不能拖拽到子目录中');
     return;
   }
 
   try {
-    const rect = this.getBoundingClientRect();
-    const midpoint = rect.top + rect.height / 2;
-    const dropPosition = e.clientY < midpoint ? 'before' : 'after';
-
-    // 如果目标是文件夹且拖拽到中间，则移动到文件夹内
-    if (isTargetFolder && Math.abs(e.clientY - midpoint) < 10) {
-      // 展开文件夹
+    // 根据 dropZone 决定操作
+    if (finalDropZone === 'inside' && isTargetFolder) {
+      // 移入文件夹内部
+      console.log('>> 操作：移入文件夹', targetNode.id);
       expandedFolders.add(targetNode.id);
-      await BookmarkUtils.move(draggedNode.id, {
+      await BookmarkUtils.move(nodeToDrag.id, {
         parentId: targetNode.id,
         index: 0
       });
+      console.log('>> 移动成功');
     } else {
       // 移动到目标之前或之后
-      const parent = await findParent(targetNode.id);
+      const dropPosition = finalDropZone === 'top' ? 'before' : 'after';
+      console.log('>> 操作：移动到目标', dropPosition);
+      
+      // 查找目标节点的父节点
+      let parent = await findParent(targetNode.id);
+      
+      console.log('findParent 结果:', parent);
+      
+      // 如果找不到父节点，说明目标是根节点，需要从根节点查找
+      if (!parent) {
+        console.log('findParent 返回 null，尝试从根节点查找');
+        const tree = await BookmarkUtils.getTree();
+        console.log('书签树:', tree);
+        
+        for (const root of tree) {
+          console.log('检查根节点:', root.id, root.title);
+          if (root.id === targetNode.id) {
+            console.log('目标是根节点');
+            parent = { id: root.id, children: root.children };
+            break;
+          }
+          if (root.children) {
+            const found = root.children.find(c => c.id === targetNode.id);
+            if (found) {
+              console.log('目标是根节点的直接子节点');
+              parent = root;
+              break;
+            }
+          }
+        }
+      }
+      
+      console.log('最终父节点:', parent);
+      
       if (parent) {
+        console.log('父节点 ID:', parent.id);
+        console.log('父节点 children:', parent.children);
+        
         const siblings = parent.children || [];
-        const targetIndex = siblings.findIndex(s => s.id === targetNode.id);
+        console.log('兄弟节点数量:', siblings.length);
+        
+        const targetIndex = siblings.findIndex(s => {
+          console.log('检查节点:', s ? s.id : 'null', s ? s.title : 'null');
+          return s && s.id === targetNode.id;
+        });
+        
+        console.log('目标索引:', targetIndex);
+        
+        if (targetIndex === -1) {
+          console.error('找不到目标节点');
+          alert('找不到目标节点');
+          return;
+        }
+        
         let newIndex = dropPosition === 'before' ? targetIndex : targetIndex + 1;
+        console.log('新索引 (调整前):', newIndex);
 
         // 如果拖拽项在目标之前，需要调整索引
-        const draggedIndex = siblings.findIndex(s => s.id === draggedNode.id);
+        const draggedIndex = siblings.findIndex(s => s && s.id === nodeToDrag.id);
+        console.log('拖拽项索引:', draggedIndex);
+        
         if (draggedIndex !== -1 && draggedIndex < newIndex) {
           newIndex--;
+          console.log('新索引 (调整后):', newIndex);
         }
 
-        await BookmarkUtils.move(draggedNode.id, {
+        console.log('>> 执行移动：parentId =', parent.id, ', index =', newIndex);
+        
+        await BookmarkUtils.move(nodeToDrag.id, {
           parentId: parent.id,
           index: newIndex
         });
+        
+        console.log('>> 移动完成');
+      } else {
+        console.error('找不到父节点，无法移动');
+        alert('无法找到目标位置，请重试');
       }
     }
 
+    console.log('>> 重新加载书签树');
     await loadBookmarkTree();
+    console.log('=== 拖拽完成 ===');
   } catch (error) {
     console.error('拖拽失败:', error);
+    console.error('错误堆栈:', error.stack);
+    alert('拖拽失败：' + error.message);
   }
 
-  this.classList.remove('drag-over-top', 'drag-over-bottom');
+  targetElement.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
 }
 
 // 检查是否是后代节点

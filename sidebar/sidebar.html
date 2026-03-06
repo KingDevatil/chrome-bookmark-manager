@@ -30,9 +30,9 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      width: 100%;
+      width: 100% !important;
       max-width: 400px;
-      min-width: 360px;
+      min-width: 280px !important;
     }
 
     .sidebar-header {
@@ -435,12 +435,169 @@
       background-color: var(--bg-hover, #f1f5f9);
     }
 
+    /* 拖拽到顶部/底部 - 调整排序 */
     .tree-node-content.drag-over-top {
-      border-top: 2px solid var(--primary-color, #4f46e5);
+      border-top: 3px solid var(--primary-color, #4f46e5);
+      background-color: rgba(79, 70, 229, 0.05);
     }
 
     .tree-node-content.drag-over-bottom {
-      border-bottom: 2px solid var(--primary-color, #4f46e5);
+      border-bottom: 3px solid var(--primary-color, #4f46e5);
+      background-color: rgba(79, 70, 229, 0.05);
+    }
+
+    /* 拖拽到文件夹内部 - 移动目录 */
+    .tree-node-content.drag-over-inside {
+      background-color: rgba(79, 70, 229, 0.15);
+      border: 2px dashed var(--primary-color, #4f46e5);
+      position: relative;
+    }
+
+    .tree-node-content.drag-over-inside::after {
+      content: '📁 移入文件夹';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary-color, #4f46e5);
+      background-color: var(--bg-primary, #ffffff);
+      padding: 4px 8px;
+      border-radius: 4px;
+      z-index: 10;
+    }
+
+    /* 深色模式下的拖拽样式 */
+    [data-theme="dark"] .tree-node-content.drag-over-inside::after {
+      background-color: var(--bg-secondary, #1e293b);
+    }
+
+    /* 右键菜单样式 */
+    .context-menu-separator {
+      height: 1px;
+      background-color: var(--border-color, #e2e8f0);
+      margin: 4px 0;
+    }
+
+    /* 修改对话框样式 */
+    .edit-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+    }
+
+    .edit-modal-content {
+      background-color: var(--bg-primary, #ffffff);
+      border-radius: 12px;
+      padding: 24px;
+      width: 300px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .edit-modal-title {
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary, #1e293b);
+    }
+
+    .edit-modal-field {
+      margin-bottom: 16px;
+    }
+
+    .edit-modal-label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary, #64748b);
+    }
+
+    .edit-modal-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 14px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 6px;
+      background-color: var(--bg-primary, #ffffff);
+      color: var(--text-primary, #1e293b);
+      transition: border-color 0.15s ease;
+    }
+
+    .edit-modal-input:focus {
+      outline: none;
+      border-color: var(--primary-color, #4f46e5);
+    }
+
+    .edit-modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .edit-modal-btn {
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .edit-modal-btn.edit-modal-cancel {
+      background-color: var(--bg-secondary, #f8fafc);
+      color: var(--text-secondary, #64748b);
+    }
+
+    .edit-modal-btn.edit-modal-cancel:hover {
+      background-color: var(--bg-hover, #f1f5f9);
+    }
+
+    .edit-modal-btn.edit-modal-save {
+      background-color: var(--primary-color, #4f46e5);
+      color: white;
+    }
+
+    .edit-modal-btn.edit-modal-save:hover {
+      background-color: #4338ca;
+    }
+
+    /* 深色模式 */
+    [data-theme="dark"] .edit-modal-content {
+      background-color: var(--bg-secondary, #1e293b);
+    }
+
+    [data-theme="dark"] .edit-modal-title {
+      color: var(--text-primary, #f1f5f9);
+    }
+
+    [data-theme="dark"] .edit-modal-label {
+      color: var(--text-secondary, #94a3b8);
+    }
+
+    [data-theme="dark"] .edit-modal-input {
+      background-color: var(--bg-primary, #0f172a);
+      color: var(--text-primary, #f1f5f9);
+      border-color: var(--border-color, #334155);
+    }
+
+    [data-theme="dark"] .edit-modal-btn.edit-modal-cancel {
+      background-color: var(--bg-primary, #0f172a);
+      color: var(--text-secondary, #94a3b8);
+    }
+
+    [data-theme="dark"] .edit-modal-btn.edit-modal-cancel:hover {
+      background-color: var(--bg-secondary, #1e293b);
     }
 
     /* 关于信息 */
