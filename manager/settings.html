@@ -442,6 +442,10 @@
           <span class="settings-menu-icon">📐</span>
           <span>布局</span>
         </li>
+        <li class="settings-menu-item" data-section="frequently-used">
+          <span class="settings-menu-icon">⭐</span>
+          <span>常用目录</span>
+        </li>
         <li class="settings-menu-item" data-section="help">
           <span class="settings-menu-icon">📖</span>
           <span>操作说明</span>
@@ -584,8 +588,8 @@
             <label class="settings-label">书签按钮高度</label>
             <p class="settings-description">调整侧边栏中书签和文件夹按钮的高度</p>
             <div class="slider-container">
-              <input type="range" class="slider-input" id="bookmark-height-slider" min="24" max="48" value="32">
-              <span class="slider-value" id="bookmark-height-value">32px</span>
+              <input type="range" class="slider-input" id="bookmark-height-slider" min="24" max="48" value="30">
+              <span class="slider-value" id="bookmark-height-value">30px</span>
             </div>
           </div>
 
@@ -593,8 +597,17 @@
             <label class="settings-label">目录缩进宽度</label>
             <p class="settings-description">调整树形目录中子文件夹的缩进宽度</p>
             <div class="slider-container">
-              <input type="range" class="slider-input" id="tree-indent-slider" min="5" max="32" value="20">
-              <span class="slider-value" id="tree-indent-value">20px</span>
+              <input type="range" class="slider-input" id="tree-indent-slider" min="5" max="20" value="5">
+              <span class="slider-value" id="tree-indent-value">5px</span>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label">书签缩进宽度</label>
+            <p class="settings-description">调整书签相对于目录的缩进宽度</p>
+            <div class="slider-container">
+              <input type="range" class="slider-input" id="bookmark-indent-slider" min="5" max="20" value="5">
+              <span class="slider-value" id="bookmark-indent-value">5px</span>
             </div>
           </div>
 
@@ -623,6 +636,81 @@
         </div>
       </section>
 
+      <section class="settings-section" id="frequently-used-section" style="display: none;">
+        <h2 class="settings-section-title">常用目录设置</h2>
+
+        <div class="settings-card">
+          <div class="settings-field">
+            <label class="toggle-switch">
+              <input type="checkbox" class="toggle-input" id="frequently-used-enabled">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">启用常用目录</span>
+            </label>
+            <p class="settings-description">在侧边栏顶部显示常用文件夹，展示最近访问最频繁的链接</p>
+          </div>
+
+          <div id="frequently-used-config" class="conditional-field">
+            <div class="settings-field">
+              <label class="settings-label">统计时间范围</label>
+              <p class="settings-description">统计最近多少天内的浏览记录</p>
+              <div class="radio-group">
+                <label class="radio-item">
+                  <input type="radio" name="days-range" value="3">
+                  <span>最近 3 天</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="days-range" value="7" checked>
+                  <span>最近 7 天</span>
+                </label>
+                <label class="radio-item">
+                  <input type="radio" name="days-range" value="10">
+                  <span>最近 10 天</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-field">
+              <label class="settings-label">显示数量</label>
+              <p class="settings-description">在常用文件夹中显示多少个链接（5-15 个）</p>
+              <div class="slider-container">
+                <input type="range" class="slider-input" id="display-count-slider" min="5" max="15" value="10">
+                <span class="slider-value" id="display-count-value">10 个</span>
+              </div>
+            </div>
+
+            <div class="button-group">
+              <button class="btn" id="reset-frequently-used-btn">恢复默认</button>
+              <button class="btn btn-primary" id="save-frequently-used-btn">保存设置</button>
+            </div>
+
+            <div class="status-message" id="frequently-used-status"></div>
+          </div>
+        </div>
+
+        <div class="settings-card">
+          <h3 style="margin-bottom: 16px;">📋 黑名单管理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;">
+            被屏蔽的域名永远不会出现在常用列表中。在侧边栏常用文件夹中右键点击链接可选择屏蔽。
+          </p>
+
+          <div class="settings-field">
+            <label class="settings-label">已屏蔽的域名列表</label>
+            <div id="blacklist-container" style="margin-top: 8px;">
+              <p class="settings-description" id="blacklist-empty">暂无屏蔽的域名</p>
+            </div>
+          </div>
+
+          <div class="settings-field" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <label class="settings-label">手动添加屏蔽域名</label>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <input type="text" class="settings-input" id="blacklist-domain-input" placeholder="例如：google.com" style="flex: 1;">
+              <button class="btn btn-primary" id="add-blacklist-btn">添加</button>
+            </div>
+            <p class="settings-description">输入域名（不需要协议和前缀），点击添加按钮</p>
+          </div>
+        </div>
+      </section>
+
       <section class="settings-section" id="help-section" style="display: none;">
         <h2 class="settings-section-title">操作说明</h2>
 
@@ -636,6 +724,18 @@
               <li><strong>展开/折叠文件夹</strong>：点击文件夹或左侧的展开箭头</li>
               <li><strong>搜索书签</strong>：在搜索框中输入关键词进行搜索</li>
               <li><strong>切换主题</strong>：点击菜单按钮 → 深色模式开关</li>
+              <li><strong>右键菜单</strong>：书签和文件夹支持右键删除、编辑操作</li>
+              <li><strong>拖拽排序</strong>：可拖拽书签调整顺序</li>
+              <li><strong>拖拽移动</strong>：可拖拽书签到文件夹中移动位置</li>
+            </ul>
+
+            <h4>常用目录</h4>
+            <ul>
+              <li><strong>启用常用目录</strong>：点击菜单按钮 → 启用常用开关</li>
+              <li><strong>动态统计</strong>：自动统计最近访问最频繁的链接</li>
+              <li><strong>快速添加书签</strong>：右键点击常用链接可快速添加到书签</li>
+              <li><strong>黑名单功能</strong>：右键屏蔽特定域名，不再出现在常用列表中</li>
+              <li><strong>自动刷新</strong>：打开侧边栏时自动更新，每 5 分钟自动刷新</li>
             </ul>
           </div>
         </div>
@@ -653,12 +753,13 @@
             <h4>书签操作</h4>
             <ul>
               <li><strong>添加书签</strong>：点击「+ 添加书签」按钮</li>
-              <li><strong>新建文件夹</strong>：点击「+ 新建文件夹」按钮</li>
+              <li><strong>新建文件夹</strong>：点击「+ 新建文件夹」按钮，可选择存放位置</li>
               <li><strong>选择书签</strong>：点击书签项（不需要点击复选框）</li>
               <li><strong>批量选择</strong>：按住 Shift 键点击可选择范围内的所有书签</li>
               <li><strong>全选</strong>：按 Ctrl+A (Mac: Cmd+A)</li>
               <li><strong>取消选择</strong>：按 Esc 键</li>
               <li><strong>删除书签</strong>：点击书签右侧的删除按钮，或选中后按 Delete 键</li>
+              <li><strong>编辑书签</strong>：点击书签右侧的编辑按钮，可修改名称、URL 和移动文件夹</li>
             </ul>
 
             <h4>拖拽操作</h4>
@@ -691,10 +792,19 @@
               <li><strong>覆盖模式</strong>：删除所有现有书签，用备份替换（谨慎使用）</li>
             </ul>
 
+            <h4>常用目录设置</h4>
+            <ul>
+              <li><strong>启用/禁用</strong>：开启或关闭常用目录功能</li>
+              <li><strong>时间范围</strong>：选择统计周期（3/7/10 天）</li>
+              <li><strong>显示数量</strong>：设置显示的常用链接数量（5-15 个）</li>
+              <li><strong>黑名单管理</strong>：查看和管理已屏蔽的域名列表</li>
+            </ul>
+
             <h4>布局设置</h4>
             <ul>
               <li><strong>书签按钮高度</strong>：调整侧边栏中书签项的高度 (24-48px)</li>
-              <li><strong>目录缩进宽度</strong>：调整树形目录中子文件夹的缩进 (5-32px)</li>
+              <li><strong>目录缩进宽度</strong>：调整树形目录中子文件夹的缩进 (5-20px)</li>
+              <li><strong>书签缩进宽度</strong>：调整书签相对于目录的缩进 (5-20px)</li>
             </ul>
           </div>
         </div>
@@ -729,6 +839,7 @@
   <button class="theme-toggle" id="theme-toggle">🌓</button>
 
   <script src="../shared/utils.js"></script>
+  <script src="../shared/frequentlyUsed.js"></script>
   <script src="settings.js"></script>
 </body>
 </html>

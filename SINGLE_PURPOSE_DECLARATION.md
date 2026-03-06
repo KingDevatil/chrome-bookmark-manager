@@ -18,14 +18,24 @@ This extension is a comprehensive Chrome bookmark management tool that provides 
 - 在浏览器侧边栏中展示书签树形结构
 - 快速访问和管理书签，无需打开新标签页
 - 支持搜索、展开/折叠文件夹
+- 支持右键菜单（删除、编辑）
+- 支持拖拽排序和移动书签
 
-### 2. 全页面书签管理器 / Full-Page Bookmark Manager
+### 2. 常用目录 / Frequently Used Directory
+- 自动统计最近访问最频繁的链接
+- 可配置统计时间范围（3/7/10 天）
+- 可配置显示数量（5-15 个）
+- 支持快速添加到书签
+- 支持黑名单功能（屏蔽特定域名）
+
+### 3. 全页面书签管理器 / Full-Page Bookmark Manager
 - 提供现代化的书签管理界面
 - 支持列表视图和网格视图切换
 - 支持拖拽排序、批量操作
 - 支持创建、编辑、删除书签和文件夹
+- 支持书签编辑时移动到其他文件夹
 
-### 3. WebDAV 备份与恢复 / WebDAV Backup & Restore
+### 4. WebDAV 备份与恢复 / WebDAV Backup & Restore
 - 支持将书签数据备份到 WebDAV 服务器
 - 支持定时自动备份
 - 支持从备份恢复书签数据
@@ -67,9 +77,15 @@ This extension is a comprehensive Chrome bookmark management tool that provides 
    - **Usage**: Display bookmark interface in browser side panel
    - **Necessity**: Provides convenient sidebar access
 
+6. **history**
+   - **用途**: 读取浏览器历史记录，用于统计常用链接
+   - **说明**: 仅用于"常用目录"功能，统计最近访问最频繁的链接
+   - **Usage**: Read browser history for frequently used links statistics
+   - **Necessity**: Required for the "Frequently Used" directory feature
+
 ### 主机权限 / Host Permissions:
 
-6. **\*://\*/\*** 
+7. **\*://\*/\*** 
    - **用途**: 获取任意网站的 favicon 图标
    - **说明**: 用于在书签列表中显示网站图标，提升用户体验
    - **Usage**: Fetch favicon icons from any website
@@ -111,11 +127,13 @@ This extension is a comprehensive Chrome bookmark management tool that provides 
 
 ### 所有功能都围绕这一核心用途：
 1. ✅ 侧边栏书签快速访问
-2. ✅ 全页面书签管理器
-3. ✅ 书签备份与恢复
-4. ✅ 书签搜索和筛选
-5. ✅ 书签拖拽排序
-6. ✅ 批量书签操作
+2. ✅ 常用目录自动统计
+3. ✅ 全页面书签管理器
+4. ✅ 书签备份与恢复
+5. ✅ 书签搜索和筛选
+6. ✅ 书签拖拽排序
+7. ✅ 批量书签操作
+8. ✅ 书签编辑和移动
 
 ### 本扩展 **不包含** 任何与书签管理无关的功能：
 - ❌ 不包含广告

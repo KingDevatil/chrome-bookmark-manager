@@ -519,6 +519,121 @@ const Utils = {
 };
 
 // ============================================
+// 常用文件夹配置管理
+// ============================================
+
+const FrequentlyUsedConfig = {
+  STORAGE_KEY: 'bookmark_manager_frequently_used_config',
+  
+  // 默认配置
+  DEFAULT_CONFIG: {
+    enabled: false,           // 是否启用
+    daysRange: 7,            // 统计时间范围（天）
+    displayCount: 10,        // 展示数量
+    blacklist: []            // 黑名单域名列表
+  },
+  
+  /**
+   * 获取配置
+   * @returns {Promise<Object>} 配置对象
+   */
+  async getConfig() {
+    try {
+      const result = await Storage.get(this.STORAGE_KEY);
+      const config = result[this.STORAGE_KEY] || { ...this.DEFAULT_CONFIG };
+      
+      // 确保所有字段都存在
+      return {
+        ...this.DEFAULT_CONFIG,
+        ...config
+      };
+    } catch (error) {
+      console.error('获取配置失败:', error);
+      return { ...this.DEFAULT_CONFIG };
+    }
+  },
+  
+  /**
+   * 保存配置
+   * @param {Object} config - 配置对象
+   */
+  async saveConfig(config) {
+    try {
+      const currentConfig = await this.getConfig();
+      const newConfig = {
+        ...currentConfig,
+        ...config
+      };
+      
+      await Storage.set({
+        [this.STORAGE_KEY]: newConfig
+      });
+      
+      return newConfig;
+    } catch (error) {
+      console.error('保存配置失败:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * 更新单个配置项
+   * @param {string} key - 配置项名称
+   * @param {any} value - 配置值
+   */
+  async updateConfig(key, value) {
+    return await this.saveConfig({ [key]: value });
+  },
+  
+  /**
+   * 添加到黑名单
+   * @param {string} domain - 域名
+   */
+  async addToBlacklist(domain) {
+    const config = await this.getConfig();
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
+    
+    if (!config.blacklist.includes(normalizedDomain)) {
+      config.blacklist.push(normalizedDomain);
+      await this.saveConfig(config);
+    }
+  },
+  
+  /**
+   * 从黑名单移除
+   * @param {string} domain - 域名
+   */
+  async removeFromBlacklist(domain) {
+    const config = await this.getConfig();
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
+    
+    config.blacklist = config.blacklist.filter(d => d !== normalizedDomain);
+    await this.saveConfig(config);
+  },
+  
+  /**
+   * 检查域名是否在黑名单中
+   * @param {string} domain - 域名
+   * @returns {Promise<boolean>}
+   */
+  async isInBlacklist(domain) {
+    const config = await this.getConfig();
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
+    return config.blacklist.includes(normalizedDomain);
+  },
+  
+  /**
+   * 重置为默认配置
+   */
+  async resetConfig() {
+    await Storage.set({
+      [this.STORAGE_KEY]: this.DEFAULT_CONFIG
+    });
+    return this.DEFAULT_CONFIG;
+  }
+};
+
+// ============================================
 // 导出模块（如果在模块环境中）
 // ============================================
 
@@ -528,6 +643,7 @@ if (typeof module !== 'undefined' && module.exports) {
     Storage,
     DOM,
     BookmarkUtils,
-    Utils
+    Utils,
+    FrequentlyUsedConfig
   };
 }
