@@ -85,6 +85,10 @@ function setupEventListeners() {
   });
   document.getElementById('import-tags-file').addEventListener('change', handleImportTagsFile);
 
+  // 标签清理按钮
+  document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
+  document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
+
   // 布局设置滑块
   const heightSlider = document.getElementById('bookmark-height-slider');
   const heightValue = document.getElementById('bookmark-height-value');
@@ -379,6 +383,68 @@ function handleImportTagsFile(event) {
   };
   
   reader.readAsText(file);
+}
+
+// ============================================
+// 标签清理功能
+// ============================================
+
+async function detectOrphanedTags() {
+  try {
+    const detectBtn = document.getElementById('detect-tags-btn');
+    detectBtn.disabled = true;
+    detectBtn.textContent = '检测中...';
+    
+    showStatus('detect-tags-status', '正在检测孤立标签...', 'info');
+    
+    const orphaned = await BookmarkTags.detectOrphanedTags();
+    const count = Object.keys(orphaned).length;
+    
+    if (count === 0) {
+      showStatus('detect-tags-status', '检测完成，未发现孤立标签', 'success');
+    } else {
+      showStatus('detect-tags-status', `检测到 ${count} 个孤立标签，请点击"清理无效标签"按钮进行清理`, 'info');
+    }
+    
+    detectBtn.disabled = false;
+    detectBtn.textContent = '开始检测';
+  } catch (error) {
+    showStatus('detect-tags-status', `检测失败：${error.message}`, 'error');
+  }
+}
+
+async function cleanOrphanedTags() {
+  try {
+    const cleanBtn = document.getElementById('clean-tags-btn');
+    
+    // 先检测是否有孤立标签
+    const orphaned = await BookmarkTags.detectOrphanedTags();
+    const count = Object.keys(orphaned).length;
+    
+    if (count === 0) {
+      showStatus('clean-tags-status', '没有需要清理的孤立标签', 'info');
+      return;
+    }
+    
+    // 显示确认对话框
+    if (!confirm(`检测到 ${count} 个孤立标签，确定要清理吗？\n\n清理后将删除这些书签的标签数据，此操作不可撤销。`)) {
+      return;
+    }
+    
+    cleanBtn.disabled = true;
+    cleanBtn.textContent = '清理中...';
+    showStatus('clean-tags-status', '正在清理孤立标签...', 'info');
+    
+    // 执行清理
+    const result = await BookmarkTags.cleanOrphanedTags();
+    
+    showStatus('clean-tags-status', `清理完成！共删除 ${result.cleaned} 个孤立标签`, 'success');
+    
+    cleanBtn.disabled = false;
+    cleanBtn.textContent = '清理无效标签';
+  } catch (error) {
+    showStatus('clean-tags-status', `清理失败：${error.message}`, 'error');
+  }
 }
 
 // ============================================

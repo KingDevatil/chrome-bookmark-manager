@@ -700,6 +700,49 @@ const BookmarkTags = {
       }
     });
     return bookmarkIds;
+  },
+
+  async detectOrphanedTags() {
+    const allTags = await this.getAll();
+    const orphaned = {};
+    
+    for (const [bookmarkId, tags] of Object.entries(allTags)) {
+      try {
+        const bookmarks = await new Promise((resolve) => {
+          chrome.bookmarks.get(bookmarkId, (results) => {
+            resolve(results);
+          });
+        });
+        
+        if (!bookmarks || bookmarks.length === 0) {
+          orphaned[bookmarkId] = tags;
+        }
+      } catch (error) {
+        if (error.message && error.message.includes('No bookmark with id')) {
+          orphaned[bookmarkId] = tags;
+        }
+      }
+    }
+    
+    return orphaned;
+  },
+
+  async cleanOrphanedTags() {
+    const orphaned = await this.detectOrphanedTags();
+    const orphanedIds = Object.keys(orphaned);
+    
+    if (orphanedIds.length > 0) {
+      const allTags = await this.getAll();
+      orphanedIds.forEach(id => {
+        delete allTags[id];
+      });
+      await Storage.set({ [this.STORAGE_KEY]: allTags });
+    }
+    
+    return {
+      cleaned: orphanedIds.length,
+      orphanedDetails: orphaned
+    };
   }
 };
 

@@ -517,6 +517,25 @@
             <div class="status-message" id="import-tags-status"></div>
           </div>
         </div>
+
+        <div class="settings-card" style="margin-top: 24px;">
+          <h3 style="margin-bottom: 16px;">标签数据清理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;">检测并清理已删除书签的孤立标签数据</p>
+
+          <div class="settings-field">
+            <label class="settings-label">检测孤立标签</label>
+            <p class="settings-description">检查标签数据中是否存在对应书签已被删除的孤立标签</p>
+            <button class="btn" id="detect-tags-btn">开始检测</button>
+            <div class="status-message" id="detect-tags-status"></div>
+          </div>
+
+          <div class="settings-field" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <label class="settings-label">清理无效标签</label>
+            <p class="settings-description">删除所有孤立标签数据，释放存储空间</p>
+            <button class="btn btn-primary" id="clean-tags-btn">清理无效标签</button>
+            <div class="status-message" id="clean-tags-status"></div>
+          </div>
+        </div>
       </section>
 
       <section class="settings-section" id="backup-section" style="display: none;">
