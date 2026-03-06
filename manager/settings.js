@@ -181,6 +181,7 @@ function switchSection(section) {
 
   document.getElementById('webdav-section').style.display = section === 'webdav' ? 'block' : 'none';
   document.getElementById('backup-section').style.display = section === 'backup' ? 'block' : 'none';
+  document.getElementById('tags-section').style.display = section === 'tags' ? 'block' : 'none';
   document.getElementById('layout-section').style.display = section === 'layout' ? 'block' : 'none';
   document.getElementById('frequently-used-section').style.display = section === 'frequently-used' ? 'block' : 'none';
   document.getElementById('help-section').style.display = section === 'help' ? 'block' : 'none';
