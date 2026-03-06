@@ -1332,18 +1332,3 @@ async function addTagsToSelected() {
   // 重新加载书签以显示标签
   await loadBookmarks(state.currentFolderId);
 }
-
-async function removeTagFromBookmark(bookmarkId, tagToRemove) {
-  const tags = await BookmarkTags.getTags(bookmarkId);
-  const filteredTags = tags.filter(t => t !== tagToRemove);
-  await BookmarkTags.setTags(bookmarkId, filteredTags);
-  
-  // 更新当前书签对象的标签
-  const bookmark = state.bookmarks.find(b => b.id === bookmarkId);
-  if (bookmark) {
-    bookmark.tags = filteredTags;
-  }
-  
-  // 重新渲染书签列表
-  renderBookmarks();
-}

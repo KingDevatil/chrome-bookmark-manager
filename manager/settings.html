@@ -528,6 +528,28 @@
       color: var(--text-secondary, #64748b);
       font-size: 14px;
     }
+
+    /* 标签总览深色模式 */
+    [data-theme="dark"] .tag-item {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    }
+
+    [data-theme="dark"] .tag-item:hover {
+      border-color: #818cf8;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="dark"] .tag-count {
+      background: rgba(0,0,0,0.3);
+    }
+
+    [data-theme="dark"] .tag-bookmark-item {
+      background: var(--bg-tertiary, #334155);
+    }
+
+    [data-theme="dark"] .tag-bookmark-item:hover {
+      background: var(--bg-hover, #475569);
+    }
   </style>
 </head>
 <body>

@@ -64,20 +64,19 @@ class WebDAVClient {
     }
   }
 
-  async uploadBookmarks(bookmarks) {
+  async uploadBookmarks(data) {
     await this.ensureBookmarksFolder();
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `bookmarks_backup_${timestamp}.json`;
+    const backupFilename = `bookmarks_backup_${timestamp}.json`;
     
-    const data = {
-      bookmarks,
-      timestamp: new Date().toISOString(),
-      version: '1.0'
-    };
+    // 保存带时间戳的备份文件
+    await this.request('PUT', `bookmarks/${backupFilename}`, data);
     
-    await this.request('PUT', `bookmarks/${filename}`, data);
-    return filename;
+    // 同时保存一个固定的文件名用于恢复
+    await this.request('PUT', 'bookmarks/bookmarks.json', data);
+    
+    return backupFilename;
   }
 
   async downloadBookmarks(filename = 'bookmarks.json') {
@@ -130,61 +129,60 @@ class BookmarkManager {
       await this.clearAllBookmarks();
     }
 
-    return new Promise((resolve) => {
-      const importNode = async (parentId, node) => {
-        if (node.url) {
-          const children = await new Promise((res) => {
-            chrome.bookmarks.getChildren(parentId, res);
-          });
-          const existingBookmark = children.find(child => child.url === node.url);
-          
-          if (!existingBookmark) {
+    const importNode = async (parentId, node) => {
+      if (node.url) {
+        const children = await new Promise((res) => {
+          chrome.bookmarks.getChildren(parentId, res);
+        });
+        const existingBookmark = children.find(child => child.url === node.url);
+        
+        if (!existingBookmark) {
+          await new Promise((res) => {
             chrome.bookmarks.create({
               parentId,
               title: node.title,
               url: node.url
-            });
-          }
-        } else if (node.children) {
-          const children = await new Promise((res) => {
-            chrome.bookmarks.getChildren(parentId, res);
+            }, res);
           });
-          const existingFolder = children.find(child => !child.url && child.title === node.title);
-          
-          if (existingFolder) {
-            for (const child of node.children) {
-              await importNode(existingFolder.id, child);
-            }
-          } else {
+        }
+      } else if (node.children) {
+        const children = await new Promise((res) => {
+          chrome.bookmarks.getChildren(parentId, res);
+        });
+        const existingFolder = children.find(child => !child.url && child.title === node.title);
+        
+        if (existingFolder) {
+          for (const child of node.children) {
+            await importNode(existingFolder.id, child);
+          }
+        } else {
+          const folder = await new Promise((res) => {
             chrome.bookmarks.create({
               parentId,
               title: node.title
-            }, (folder) => {
-              node.children.forEach(child => {
-                importNode(folder.id, child);
-              });
-            });
+            }, res);
+          });
+          for (const child of node.children) {
+            await importNode(folder.id, child);
           }
         }
-      };
-
-      const root = bookmarks[0];
-      if (root.children) {
-        root.children.forEach(child => {
-          if (child.id === '1') {
-            child.children?.forEach(subChild => {
-              importNode('1', subChild);
-            });
-          } else if (child.id === '2') {
-            child.children?.forEach(subChild => {
-              importNode('2', subChild);
-            });
-          }
-        });
       }
+    };
 
-      setTimeout(resolve, 1000);
-    });
+    const root = bookmarks[0];
+    if (root.children) {
+      for (const child of root.children) {
+        if (child.id === '1') {
+          for (const subChild of (child.children || [])) {
+            await importNode('1', subChild);
+          }
+        } else if (child.id === '2') {
+          for (const subChild of (child.children || [])) {
+            await importNode('2', subChild);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -228,14 +226,39 @@ class SyncManager {
 
     try {
       const bookmarks = await BookmarkManager.getAllBookmarks();
-      const tags = await this.getBookmarkTags();
+      const tagsById = await this.getBookmarkTags();
+      
+      // 将 ID-based 标签转换为 URL-based 标签（用于跨设备恢复）
+      const tagsByUrl = {};
+      if (tagsById) {
+        const flattenBookmarks = (nodes) => {
+          const result = [];
+          nodes.forEach(node => {
+            if (node.url) {
+              result.push(node);
+            }
+            if (node.children) {
+              result.push(...flattenBookmarks(node.children));
+            }
+          });
+          return result;
+        };
+        
+        const allBookmarks = flattenBookmarks(bookmarks);
+        allBookmarks.forEach(bookmark => {
+          if (tagsById[bookmark.id] && tagsById[bookmark.id].length > 0) {
+            tagsByUrl[bookmark.url] = tagsById[bookmark.id];
+          }
+        });
+      }
+      
       const data = {
-        version: '1.1',
+        version: '1.2',
         timestamp: new Date().toISOString(),
         bookmarks,
-        tags: tags || {}
+        tagsByUrl: tagsByUrl || {}
       };
-      const filename = await this.client.uploadBookmarks(JSON.stringify(data, null, 2));
+      const filename = await this.client.uploadBookmarks(data);
       console.log('Bookmarks backed up successfully:', filename);
       return { success: true, filename };
     } catch (error) {
@@ -258,9 +281,13 @@ class SyncManager {
       await BookmarkManager.importBookmarks(backupData.bookmarks, merge);
       
       // 恢复标签数据（如果存在）
-      if (backupData.tags && backupData.tags.bookmark_tags) {
-        console.log('Restoring tags from backup');
-        await this.restoreBookmarkTags(backupData.tags.bookmark_tags, merge);
+      if (backupData.tagsByUrl) {
+        console.log('Restoring tags from backup (URL-based)');
+        await this.restoreTagsByUrl(backupData.tagsByUrl, merge);
+      } else if (backupData.tags) {
+        // 兼容旧版本备份格式（ID-based，可能无法正确恢复）
+        console.log('Restoring tags from backup (legacy ID-based format)');
+        await this.restoreBookmarkTags(backupData.tags, merge);
       } else {
         console.log('No tags found in backup, skipping tag restore');
       }
@@ -294,6 +321,48 @@ class SyncManager {
       };
       await chrome.storage.local.set({ bookmark_tags: merged });
     }
+  }
+
+  async restoreTagsByUrl(tagsByUrl, merge = false) {
+    // 获取当前所有书签，建立 URL -> ID 的映射
+    const bookmarks = await BookmarkManager.getAllBookmarks();
+    const urlToId = {};
+    
+    const flattenBookmarks = (nodes) => {
+      nodes.forEach(node => {
+        if (node.url) {
+          urlToId[node.url] = node.id;
+        }
+        if (node.children) {
+          flattenBookmarks(node.children);
+        }
+      });
+    };
+    
+    flattenBookmarks(bookmarks);
+    
+    // 将 URL-based 标签转换为 ID-based 标签
+    const tagsById = {};
+    for (const [url, tags] of Object.entries(tagsByUrl)) {
+      if (urlToId[url]) {
+        tagsById[urlToId[url]] = tags;
+      }
+    }
+    
+    if (!merge) {
+      // 覆盖模式：直接设置
+      await chrome.storage.local.set({ bookmark_tags: tagsById });
+    } else {
+      // 合并模式：合并现有标签
+      const existing = await this.getBookmarkTags();
+      const merged = {
+        ...(existing || {}),
+        ...tagsById
+      };
+      await chrome.storage.local.set({ bookmark_tags: merged });
+    }
+    
+    console.log(`Restored tags for ${Object.keys(tagsById).length} bookmarks`);
   }
 }
 
