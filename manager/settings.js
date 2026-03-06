@@ -589,3 +589,134 @@ function setupFrequentlyUsedEventListeners() {
     }
   });
 }
+
+// ============================================
+// 标签总览功能
+// ============================================
+
+async function loadTagsOverview() {
+  try {
+    const loading = document.getElementById('tags-loading');
+    const tagsList = document.getElementById('tags-list');
+    
+    loading.style.display = 'block';
+    tagsList.innerHTML = '';
+    
+    const allTags = await BookmarkTags.getAll();
+    
+    // 统计每个标签的书签数量
+    const tagStats = {};
+    Object.values(allTags).forEach(tags => {
+      tags.forEach(tag => {
+        tagStats[tag] = (tagStats[tag] || 0) + 1;
+      });
+    });
+    
+    loading.style.display = 'none';
+    
+    const tagNames = Object.keys(tagStats).sort();
+    
+    if (tagNames.length === 0) {
+      tagsList.innerHTML = '<div class="empty-state">暂无标签</div>';
+      return;
+    }
+    
+    tagNames.forEach(tagName => {
+      const count = tagStats[tagName];
+      const tagItem = document.createElement('div');
+      tagItem.className = 'tag-item';
+      tagItem.innerHTML = `
+        <div class="tag-info">
+          <span class="tag-name">${tagName}</span>
+          <span class="tag-count">${count} 个书签</span>
+        </div>
+      `;
+      
+      tagItem.addEventListener('click', () => showTagDetail(tagName));
+      tagsList.appendChild(tagItem);
+    });
+  } catch (error) {
+    console.error('加载标签总览失败:', error);
+  }
+}
+
+async function showTagDetail(tagName) {
+  try {
+    const tagDetailCard = document.getElementById('tag-detail-card');
+    const tagDetailTitle = document.getElementById('tag-detail-title');
+    const tagBookmarksList = document.getElementById('tag-bookmarks-list');
+    
+    tagDetailTitle.textContent = `#${tagName}`;
+    tagDetailCard.style.display = 'block';
+    tagBookmarksList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>加载中...</p></div>';
+    
+    // 获取所有使用该标签的书签
+    const allTags = await BookmarkTags.getAll();
+    const bookmarkIds = [];
+    
+    Object.entries(allTags).forEach(([bookmarkId, tags]) => {
+      if (tags.includes(tagName)) {
+        bookmarkIds.push(bookmarkId);
+      }
+    });
+    
+    // 获取书签详情
+    const bookmarks = [];
+    for (const id of bookmarkIds) {
+      try {
+        const results = await new Promise((resolve) => {
+          chrome.bookmarks.get(id, resolve);
+        });
+        if (results && results.length > 0) {
+          bookmarks.push(results[0]);
+        }
+      } catch (error) {
+        // 书签可能已被删除
+      }
+    }
+    
+    tagBookmarksList.innerHTML = '';
+    
+    if (bookmarks.length === 0) {
+      tagBookmarksList.innerHTML = '<div class="empty-state">暂无书签</div>';
+      return;
+    }
+    
+    bookmarks.forEach(bookmark => {
+      const bookmarkItem = document.createElement('div');
+      bookmarkItem.className = 'tag-bookmark-item';
+      bookmarkItem.innerHTML = `
+        <div class="tag-bookmark-title">${bookmark.title || '无标题'}</div>
+        <div class="tag-bookmark-url">${bookmark.url}</div>
+      `;
+      
+      bookmarkItem.addEventListener('click', () => {
+        window.open(bookmark.url, '_blank');
+      });
+      
+      tagBookmarksList.appendChild(bookmarkItem);
+    });
+  } catch (error) {
+    console.error('加载标签详情失败:', error);
+  }
+}
+
+// 在 setupEventListeners 中添加标签总览事件监听
+document.addEventListener('DOMContentLoaded', () => {
+  // 添加标签总览菜单切换时的加载
+  document.querySelectorAll('.settings-menu-item').forEach(item => {
+    if (item.dataset.section === 'tags') {
+      item.addEventListener('click', () => {
+        loadTagsOverview();
+      });
+    }
+  });
+  
+  // 关闭标签详情
+  const closeBtn = document.getElementById('close-tag-detail');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      document.getElementById('tag-detail-card').style.display = 'none';
+    });
+  }
+});

@@ -268,18 +268,16 @@ function createBookmarkRow(bookmark, index) {
   const info = document.createElement('div');
   info.className = 'bookmark-info';
 
+  const titleRow = document.createElement('div');
+  titleRow.className = 'bookmark-title-row';
+
   const title = document.createElement('div');
   title.className = 'bookmark-title';
   title.textContent = bookmark.title || '未命名书签';
 
-  const url = document.createElement('div');
-  url.className = 'bookmark-url';
-  url.textContent = bookmark.url;
+  titleRow.appendChild(title);
 
-  info.appendChild(title);
-  info.appendChild(url);
-
-  // 添加标签显示
+  // 添加标签显示（在标题右侧）
   if (bookmark.tags && bookmark.tags.length > 0) {
     const tagsContainer = document.createElement('div');
     tagsContainer.className = 'bookmark-tags';
@@ -302,8 +300,15 @@ function createBookmarkRow(bookmark, index) {
       tagsContainer.appendChild(tagEl);
     });
     
-    info.appendChild(tagsContainer);
+    titleRow.appendChild(tagsContainer);
   }
+
+  const url = document.createElement('div');
+  url.className = 'bookmark-url';
+  url.textContent = bookmark.url;
+
+  info.appendChild(titleRow);
+  info.appendChild(url);
 
   const actions = document.createElement('div');
   actions.className = 'bookmark-actions';
@@ -942,6 +947,44 @@ async function handleSearch(e) {
     return;
   }
 
+  // 检查是否是标签搜索（#标签名）
+  if (query.startsWith('#')) {
+    const tagName = query.slice(1).trim().toLowerCase();
+    if (tagName) {
+      // 搜索包含该标签的书签
+      const allTags = await BookmarkTags.getAll();
+      const bookmarkIds = [];
+      
+      Object.entries(allTags).forEach(([bookmarkId, tags]) => {
+        if (tags.some(tag => tag.toLowerCase().includes(tagName))) {
+          bookmarkIds.push(bookmarkId);
+        }
+      });
+      
+      // 获取这些书签的详细信息
+      const results = [];
+      for (const id of bookmarkIds) {
+        try {
+          const bookmarks = await new Promise((resolve) => {
+            chrome.bookmarks.get(id, resolve);
+          });
+          if (bookmarks && bookmarks.length > 0) {
+            const bookmark = bookmarks[0];
+            bookmark.tags = allTags[id] || [];
+            results.push(bookmark);
+          }
+        } catch (error) {
+          // 书签可能已被删除
+        }
+      }
+      
+      state.bookmarks = results;
+      renderBookmarks();
+      return;
+    }
+  }
+
+  // 普通搜索
   const results = await BookmarkUtils.search(query);
   state.bookmarks = results.filter(n => n.url);
 
