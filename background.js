@@ -228,7 +228,12 @@ class SyncManager {
 
     try {
       const bookmarks = await BookmarkManager.getAllBookmarks();
-      const filename = await this.client.uploadBookmarks(bookmarks);
+      const tags = await this.getBookmarkTags();
+      const data = {
+        bookmarks,
+        tags: tags || {}
+      };
+      const filename = await this.client.uploadBookmarks(JSON.stringify(data, null, 2));
       console.log('Bookmarks backed up successfully:', filename);
       return { success: true, filename };
     } catch (error) {
@@ -245,12 +250,44 @@ class SyncManager {
 
     try {
       const data = await this.client.downloadBookmarks(filename);
-      await BookmarkManager.importBookmarks(data.bookmarks, merge);
+      const backupData = typeof data === 'string' ? JSON.parse(data) : data;
+      
+      // 恢复书签
+      await BookmarkManager.importBookmarks(backupData.bookmarks, merge);
+      
+      // 恢复标签数据
+      if (backupData.tags) {
+        await this.restoreBookmarkTags(backupData.tags, merge);
+      }
+      
       console.log('Bookmarks restored successfully');
       return { success: true };
     } catch (error) {
       console.error('Restore failed:', error);
       return { success: false, error: error.message };
+    }
+  }
+
+  async getBookmarkTags() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get('bookmark_tags', (result) => {
+        resolve(result.bookmark_tags);
+      });
+    });
+  }
+
+  async restoreBookmarkTags(tags, merge = false) {
+    if (!merge) {
+      // 覆盖模式：直接设置
+      await chrome.storage.local.set({ bookmark_tags: tags });
+    } else {
+      // 合并模式：合并现有标签
+      const existing = await this.getBookmarkTags();
+      const merged = {
+        ...(existing || {}),
+        ...tags
+      };
+      await chrome.storage.local.set({ bookmark_tags: merged });
     }
   }
 }
@@ -341,4 +378,40 @@ chrome.action.onClicked.addListener(async (tab) => {
   } catch (error) {
     console.error('Failed to open side panel:', error);
   }
+});
+
+// ============================================
+// 书签变动监听 - 同步标签数据
+// ============================================
+
+// 监听书签变更
+chrome.bookmarks.onChanged.addListener((id, changeInfo) => {
+  // URL 变更时，保留标签（标签数据与书签 ID 关联，自动保留）
+  if (changeInfo.url) {
+    console.log('Bookmark URL changed, tags preserved automatically:', id);
+  }
+});
+
+// 监听书签删除
+chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
+  // 书签删除时，通过消息通知清理标签数据
+  chrome.runtime.sendMessage({
+    action: 'cleanBookmarkTags',
+    bookmarkId: id
+  }).catch(() => {
+    // 忽略错误（可能在非活动页面）
+  });
+  console.log('Bookmark removed, tags will be cleaned:', id);
+});
+
+// 监听书签创建
+chrome.bookmarks.onCreated.addListener((id, bookmark) => {
+  // 新书签创建时，标签默认为空
+  console.log('Bookmark created:', id);
+});
+
+// 监听书签移动
+chrome.bookmarks.onMoved.addListener((id, moveInfo) => {
+  // 书签移动文件夹时，标签保持不变
+  console.log('Bookmark moved, tags preserved:', id);
 });

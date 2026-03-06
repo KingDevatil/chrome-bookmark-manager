@@ -637,6 +637,72 @@ const FrequentlyUsedConfig = {
 // 导出模块（如果在模块环境中）
 // ============================================
 
+const BookmarkTags = {
+  STORAGE_KEY: 'bookmark_tags',
+
+  async getAll() {
+    const result = await Storage.get(this.STORAGE_KEY);
+    return result[this.STORAGE_KEY] || {};
+  },
+
+  async getTags(bookmarkId) {
+    const allTags = await this.getAll();
+    return allTags[bookmarkId] || [];
+  },
+
+  async setTags(bookmarkId, tags) {
+    const allTags = await this.getAll();
+    allTags[bookmarkId] = tags;
+    await Storage.set({ [this.STORAGE_KEY]: allTags });
+  },
+
+  async addTag(bookmarkId, tag) {
+    const tags = await this.getTags(bookmarkId);
+    if (!tags.includes(tag)) {
+      tags.push(tag);
+      await this.setTags(bookmarkId, tags);
+    }
+  },
+
+  async removeTag(bookmarkId, tag) {
+    const tags = await this.getTags(bookmarkId);
+    const filteredTags = tags.filter(t => t !== tag);
+    await this.setTags(bookmarkId, filteredTags);
+  },
+
+  async removeTags(bookmarkId) {
+    const allTags = await this.getAll();
+    delete allTags[bookmarkId];
+    await Storage.set({ [this.STORAGE_KEY]: allTags });
+  },
+
+  async preserveTags(bookmarkId) {
+    const tags = await this.getTags(bookmarkId);
+    await this.removeTags(bookmarkId);
+    return tags;
+  },
+
+  async getAllTags() {
+    const allTags = await this.getAll();
+    const tagSet = new Set();
+    Object.values(allTags).forEach(tags => {
+      tags.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet);
+  },
+
+  async searchByTag(tag) {
+    const allTags = await this.getAll();
+    const bookmarkIds = [];
+    Object.entries(allTags).forEach(([bookmarkId, tags]) => {
+      if (tags.includes(tag)) {
+        bookmarkIds.push(bookmarkId);
+      }
+    });
+    return bookmarkIds;
+  }
+};
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     ThemeManager,
@@ -644,6 +710,7 @@ if (typeof module !== 'undefined' && module.exports) {
     DOM,
     BookmarkUtils,
     Utils,
-    FrequentlyUsedConfig
+    FrequentlyUsedConfig,
+    BookmarkTags
   };
 }

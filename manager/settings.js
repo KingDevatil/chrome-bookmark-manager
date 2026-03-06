@@ -77,6 +77,13 @@ function setupEventListeners() {
   // 手动操作按钮
   document.getElementById('backup-now-btn').addEventListener('click', backupNow);
   document.getElementById('restore-btn').addEventListener('click', restoreBackup);
+  
+  // 标签备份按钮
+  document.getElementById('export-tags-btn').addEventListener('click', exportTags);
+  document.getElementById('import-tags-btn').addEventListener('click', () => {
+    document.getElementById('import-tags-file').click();
+  });
+  document.getElementById('import-tags-file').addEventListener('change', handleImportTagsFile);
 
   // 布局设置滑块
   const heightSlider = document.getElementById('bookmark-height-slider');
@@ -295,6 +302,83 @@ function showStatus(elementId, message, type) {
   setTimeout(() => {
     element.classList.remove('visible');
   }, 5000);
+}
+
+// ============================================
+// 标签备份功能
+// ============================================
+
+async function exportTags() {
+  try {
+    const result = await chrome.storage.local.get('bookmark_tags');
+    const tags = result.bookmark_tags || {};
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      tags: tags
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bookmark-tags-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus('export-tags-status', '标签导出成功', 'success');
+  } catch (error) {
+    showStatus('export-tags-status', `导出失败：${error.message}`, 'error');
+  }
+}
+
+function handleImportTagsFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  document.getElementById('import-tags-filename').textContent = file.name;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      // 验证数据格式
+      if (!importedData.tags || typeof importedData.tags !== 'object') {
+        throw new Error('文件格式不正确');
+      }
+      
+      // 显示确认对话框
+      const tagCount = Object.keys(importedData.tags).length;
+      if (!confirm(`确定要导入 ${tagCount} 个书签的标签数据吗？\n\n这将合并到现有标签数据中，冲突的标签将被覆盖。`)) {
+        return;
+      }
+      
+      // 合并标签数据
+      const existing = await chrome.storage.local.get('bookmark_tags');
+      const merged = {
+        ...(existing.bookmark_tags || {}),
+        ...importedData.tags
+      };
+      
+      await chrome.storage.local.set({ bookmark_tags: merged });
+      
+      showStatus('import-tags-status', `导入成功！共导入 ${tagCount} 个书签的标签`, 'success');
+      document.getElementById('import-tags-file').value = '';
+      document.getElementById('import-tags-filename').textContent = '';
+    } catch (error) {
+      showStatus('import-tags-status', `导入失败：${error.message}`, 'error');
+    }
+  };
+  
+  reader.onerror = () => {
+    showStatus('import-tags-status', '文件读取失败', 'error');
+  };
+  
+  reader.readAsText(file);
 }
 
 // ============================================

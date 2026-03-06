@@ -496,6 +496,27 @@
             <div class="status-message" id="webdav-status"></div>
           </div>
         </div>
+
+        <div class="settings-card" style="margin-top: 24px;">
+          <h3 style="margin-bottom: 16px;">标签备份</h3>
+          <p class="settings-description" style="margin-bottom: 16px;">独立导出或导入书签标签数据</p>
+
+          <div class="settings-field">
+            <label class="settings-label">导出标签</label>
+            <p class="settings-description">将当前所有书签标签导出为 JSON 文件</p>
+            <button class="btn btn-primary" id="export-tags-btn">导出标签</button>
+            <div class="status-message" id="export-tags-status"></div>
+          </div>
+
+          <div class="settings-field" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <label class="settings-label">导入标签</label>
+            <p class="settings-description">从 JSON 文件导入书签标签数据（合并到现有数据）</p>
+            <input type="file" id="import-tags-file" accept=".json" style="display: none;">
+            <button class="btn" id="import-tags-btn">选择文件</button>
+            <span id="import-tags-filename" style="margin-left: 12px; color: var(--text-secondary, #64748b); font-size: 13px;"></span>
+            <div class="status-message" id="import-tags-status"></div>
+          </div>
+        </div>
       </section>
 
       <section class="settings-section" id="backup-section" style="display: none;">

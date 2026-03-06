@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadFolderTree();
   await loadBookmarks('1');
   setupEventListeners();
+  
+  // 监听背景消息 - 清理标签数据
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'cleanBookmarkTags' && message.bookmarkId) {
+      BookmarkTags.removeTags(message.bookmarkId);
+      console.log('Tags cleaned for bookmark:', message.bookmarkId);
+    }
+  });
 });
 
 async function loadFolderTree() {
