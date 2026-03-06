@@ -18,6 +18,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupMenuPanel();
   setupAutoRefresh();
   
+  // 初始化主题开关 UI 状态
+  const theme = document.documentElement.getAttribute('data-theme');
+  updateThemeToggleUI(theme);
+  
   // 监听背景消息 - 清理标签数据
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'cleanBookmarkTags' && message.bookmarkId) {
@@ -1610,6 +1614,12 @@ function setupEventListeners() {
       console.log('检测到常用目录配置变化');
       await loadFrequentlyUsedConfig();
       await refreshFrequentlyUsed();
+    }
+    
+    // 监听主题变化，同步更新开关状态
+    if (namespace === 'local' && changes['bookmark_manager_theme']) {
+      const newTheme = changes['bookmark_manager_theme'].newValue;
+      updateThemeToggleUI(newTheme);
     }
   });
 }
