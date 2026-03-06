@@ -50,6 +50,12 @@ function setupEventListeners() {
   document.querySelectorAll('.settings-menu-item').forEach(item => {
     item.addEventListener('click', () => {
       const section = item.dataset.section;
+      
+      // 特殊处理标签总览页面
+      if (section === 'tags') {
+        loadTagsOverview();
+      }
+      
       switchSection(section);
     });
   });
@@ -88,6 +94,14 @@ function setupEventListeners() {
   // 标签清理按钮
   document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
   document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
+  
+  // 关闭标签详情
+  const closeBtn = document.getElementById('close-tag-detail');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      document.getElementById('tag-detail-card').style.display = 'none';
+    });
+  }
 
   // 布局设置滑块
   const heightSlider = document.getElementById('bookmark-height-slider');
@@ -701,22 +715,4 @@ async function showTagDetail(tagName) {
   }
 }
 
-// 在 setupEventListeners 中添加标签总览事件监听
-document.addEventListener('DOMContentLoaded', () => {
-  // 添加标签总览菜单切换时的加载
-  document.querySelectorAll('.settings-menu-item').forEach(item => {
-    if (item.dataset.section === 'tags') {
-      item.addEventListener('click', () => {
-        loadTagsOverview();
-      });
-    }
-  });
-  
-  // 关闭标签详情
-  const closeBtn = document.getElementById('close-tag-detail');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      document.getElementById('tag-detail-card').style.display = 'none';
-    });
-  }
-});
+
