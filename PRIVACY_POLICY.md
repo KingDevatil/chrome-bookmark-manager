@@ -2,7 +2,7 @@
 
 **Chrome Bookmark Manager**
 
-**Last Updated / 最后更新**: 2026-03-06
+**Last Updated / 最后更新**: 2026-03-06 (v1.0.0 - Added Frequently Used Directory)
 
 **Version / 版本**: 1.0.0
 
@@ -24,7 +24,6 @@ Chrome Bookmark Manager ("this extension") is a powerful Chrome browser bookmark
 
 ❌ **本扩展不会收集、存储或传输以下类型的数据：**
 
-- 浏览历史记录
 - 搜索历史
 - 网站访问记录
 - 用户账号信息
@@ -37,7 +36,6 @@ Chrome Bookmark Manager ("this extension") is a powerful Chrome browser bookmark
 
 ❌ **This extension does NOT collect, store, or transmit the following types of data:**
 
-- Browsing history
 - Search history
 - Website visit records
 - User account information
@@ -48,7 +46,38 @@ Chrome Bookmark Manager ("this extension") is a powerful Chrome browser bookmark
 - Email addresses
 - Names or other personally identifiable information
 
-### 2.2 本扩展 **仅在本地存储** 的数据 / Data Stored ONLY Locally
+### 2.2 本扩展 **仅在本地处理** 的数据 / Data Processed ONLY Locally by This Extension
+
+✅ **浏览历史记录（仅用于常用目录统计） / Browsing History (Only for Frequently Used Statistics):**
+
+- **用途**: 自动统计最近访问最频繁的链接，提供便捷的书签管理功能
+- **处理方式**: 仅在浏览器本地读取和统计，不传输、不存储到任何服务器
+- **时间范围**: 用户可配置（3/7/10 天），仅统计指定时间范围内的访问记录
+- **存储位置**: 不存储原始数据，仅在内存中临时计算访问次数
+- **Usage**: Automatically statistics most frequently visited links for convenient bookmark management
+- **Processing**: Only read and statistics locally in the browser, not transmitted or stored to any server
+- **Time Range**: User configurable (3/7/10 days), only statistics visit records within specified time range
+- **Storage**: No raw data stored, only temporarily calculates visit counts in memory
+
+✅ **书签数据 / Bookmark Data:**
+
+- **用途**: 书签管理和展示
+- **处理方式**: 使用 Chrome Bookmarks API 读取和管理用户书签
+- **存储位置**: 仅存储在 Chrome 本地存储和 WebDAV 备份（用户自行配置）
+- **Usage**: Bookmark management and display
+- **Processing**: Uses Chrome Bookmarks API to read and manage user bookmarks
+- **Storage**: Only stored in Chrome local storage and WebDAV backup (user configured)
+
+✅ **配置数据 / Configuration Data:**
+
+- **用途**: 保存用户设置（主题、布局、WebDAV 配置等）
+- **处理方式**: 使用 Chrome Storage API 本地存储
+- **存储位置**: Chrome Storage Local
+- **Usage**: Save user settings (theme, layout, WebDAV configuration, etc.)
+- **Processing**: Stored locally using Chrome Storage API
+- **Storage**: Chrome Storage Local
+
+### 2.3 本扩展 **仅在本地存储** 的数据 / Data Stored ONLY Locally
 
 ✅ **以下数据仅存储在用户本地的 Chrome Storage 中，不会传输到任何服务器：**
 
