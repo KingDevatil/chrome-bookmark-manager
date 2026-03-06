@@ -186,11 +186,40 @@ async function loadBookmarks(folderId) {
     // 加载所有书签的标签
     await loadBookmarkTags();
 
+    // 计算每个文件夹的书签数量
+    await loadFolderCounts();
+
     renderBookmarks();
     updateBreadcrumb(folderId);
   } catch (error) {
     console.error('加载书签失败:', error);
   }
+}
+
+async function loadFolderCounts() {
+  for (const folder of state.folders) {
+    const count = await countBookmarksInFolder(folder.id);
+    folder.bookmarkCount = count;
+  }
+}
+
+async function countBookmarksInFolder(folderId) {
+  let count = 0;
+  try {
+    const children = await BookmarkUtils.getChildren(folderId);
+    for (const child of children) {
+      if (child.url) {
+        // 是书签
+        count++;
+      } else {
+        // 是文件夹，递归计算
+        count += await countBookmarksInFolder(child.id);
+      }
+    }
+  } catch (error) {
+    console.error('计算文件夹书签数量失败:', error);
+  }
+  return count;
 }
 
 async function loadBookmarkTags() {
@@ -447,7 +476,7 @@ function createFolderRow(folder, index) {
 
   const count = document.createElement('div');
   count.className = 'bookmark-url';
-  count.textContent = `${folder.children ? folder.children.length : 0} 项`;
+  count.textContent = `${folder.bookmarkCount || 0} 项`;
 
   info.appendChild(title);
   info.appendChild(count);
@@ -529,7 +558,7 @@ function createFolderCard(folder, index) {
 
   const count = document.createElement('div');
   count.className = 'bookmark-url';
-  count.textContent = `${folder.children ? folder.children.length : 0} 项`;
+  count.textContent = `${folder.bookmarkCount || 0} 项`;
 
   card.appendChild(checkbox);
   card.appendChild(deleteBtn);
@@ -947,6 +976,9 @@ async function handleSearch(e) {
     return;
   }
 
+  // 获取当前目录及所有子目录的 ID
+  const folderIds = await getSubFolderIds(state.currentFolderId);
+
   // 检查是否是标签搜索（#标签名）
   if (query.startsWith('#')) {
     const tagName = query.slice(1).trim().toLowerCase();
@@ -961,7 +993,7 @@ async function handleSearch(e) {
         }
       });
       
-      // 获取这些书签的详细信息
+      // 获取这些书签的详细信息，并过滤出当前目录下的
       const results = [];
       for (const id of bookmarkIds) {
         try {
@@ -970,8 +1002,11 @@ async function handleSearch(e) {
           });
           if (bookmarks && bookmarks.length > 0) {
             const bookmark = bookmarks[0];
-            bookmark.tags = allTags[id] || [];
-            results.push(bookmark);
+            // 检查是否在当前目录或子目录下
+            if (folderIds.includes(bookmark.parentId)) {
+              bookmark.tags = allTags[id] || [];
+              results.push(bookmark);
+            }
           }
         } catch (error) {
           // 书签可能已被删除
@@ -984,11 +1019,43 @@ async function handleSearch(e) {
     }
   }
 
-  // 普通搜索
+  // 普通搜索 - 使用 Chrome API 搜索
   const results = await BookmarkUtils.search(query);
-  state.bookmarks = results.filter(n => n.url);
+  
+  // 过滤出当前目录及子目录下的书签和文件夹
+  const filteredBookmarks = results.filter(n => {
+    if (n.url) {
+      // 是书签，检查 parentId
+      return folderIds.includes(n.parentId);
+    } else {
+      // 是文件夹，检查 id 是否在 folderIds 中
+      return folderIds.includes(n.id);
+    }
+  });
+  
+  state.bookmarks = filteredBookmarks.filter(n => n.url);
+  state.folders = filteredBookmarks.filter(n => !n.url);
 
   renderBookmarks();
+}
+
+// 递归获取所有子文件夹 ID
+async function getSubFolderIds(folderId) {
+  const ids = [folderId];
+  
+  try {
+    const children = await BookmarkUtils.getChildren(folderId);
+    const subFolders = children.filter(item => !item.url);
+    
+    for (const subFolder of subFolders) {
+      const subIds = await getSubFolderIds(subFolder.id);
+      ids.push(...subIds);
+    }
+  } catch (error) {
+    console.error('获取子文件夹失败:', error);
+  }
+  
+  return ids;
 }
 
 function showAddModal() {
