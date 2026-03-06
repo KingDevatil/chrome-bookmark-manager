@@ -26,7 +26,8 @@ chrome-bookmark-manager/
 ├── shared/
 │   ├── styles.css            # 共享样式（本地）
 │   ├── utils.js              # 工具函数（本地）
-│   └── favicon.js            # 图标服务（本地）
+│   ├── favicon.js            # 图标服务（本地）
+│   └── frequentlyUsed.js     # 常用目录功能（本地）
 ├── sidebar/
 │   ├── sidebar.html          # 侧边栏页面（本地）
 │   └── sidebar.js            # 侧边栏逻辑（本地）
@@ -52,6 +53,7 @@ chrome-bookmark-manager/
 ```html
 <script src="../shared/utils.js"></script>
 <script src="../shared/favicon.js"></script>
+<script src="../shared/frequentlyUsed.js"></script>
 <script src="sidebar.js"></script>
 ```
 
@@ -65,6 +67,7 @@ chrome-bookmark-manager/
 #### manager/settings.html:
 ```html
 <script src="../shared/utils.js"></script>
+<script src="../shared/frequentlyUsed.js"></script>
 <script src="settings.js"></script>
 ```
 
