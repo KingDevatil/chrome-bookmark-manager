@@ -301,11 +301,7 @@ If users have any questions or concerns about this privacy policy, please contac
 
 - **GitHub Repository**: https://github.com/KingDevatil/chrome-bookmark-manager
 - **Issues**: https://github.com/KingDevatil/chrome-bookmark-manager/issues
-- **Email**: [待添加 / To be added]
 
-我们将在收到询问后 7 个工作日内回复。
-
-We will respond within 7 business days of receiving inquiries.
 
 ---
 
