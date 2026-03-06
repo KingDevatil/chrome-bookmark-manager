@@ -4,7 +4,7 @@
 
 **扩展名称 / Extension Name**: Chrome Bookmark Manager
 
-**版本号 / Version**: 1.0.0
+**版本号 / Version**: 1.1.0
 
 ---
 
@@ -40,6 +40,15 @@ This extension is a comprehensive Chrome bookmark management tool that provides 
 - 支持定时自动备份
 - 支持从备份恢复书签数据
 - 提供合并和覆盖两种恢复模式
+- 备份数据包含书签和标签
+
+### 5. 书签标签管理 / Bookmark Tags Management
+- 为书签添加自定义标签
+- 支持批量添加标签
+- 标签搜索（#标签名 语法）
+- 标签总览（查看所有标签及书签数量）
+- 标签备份（独立导出/导入）
+- 自动清理已删除书签的标签
 
 ---
 

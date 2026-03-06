@@ -954,6 +954,35 @@
         </div>
 
         <div class="settings-card">
+          <h3 style="margin-bottom: 16px;">🏷️ 标签管理</h3>
+          <div class="help-content">
+            <h4>书签标签</h4>
+            <ul>
+              <li><strong>添加标签</strong>：在书签详情面板输入 #标签名 后按回车</li>
+              <li><strong>批量添加标签</strong>：选中多个书签后点击「添加标签」按钮</li>
+              <li><strong>删除标签</strong>：点击标签上的 × 按钮即可删除</li>
+              <li><strong>标签显示</strong>：书签列表和详情页都会显示标签</li>
+              <li><strong>标签搜索</strong>：在搜索框输入 #标签名 可搜索包含该标签的所有书签</li>
+            </ul>
+
+            <h4>标签总览</h4>
+            <ul>
+              <li><strong>查看所有标签</strong>：设置 → 标签总览，显示所有标签及书签数量</li>
+              <li><strong>查看标签详情</strong>：点击标签卡片可查看该标签下的所有书签</li>
+              <li><strong>打开书签</strong>：点击书签列表中的书签可在新窗口打开</li>
+            </ul>
+
+            <h4>标签备份</h4>
+            <ul>
+              <li><strong>WebDAV 备份</strong>：使用 WebDAV 备份时自动包含标签数据</li>
+              <li><strong>独立导出</strong>：设置 → 备份与恢复 → 导出标签，导出为 JSON 文件</li>
+              <li><strong>独立导入</strong>：从 JSON 文件导入标签数据（合并到现有数据）</li>
+              <li><strong>数据清理</strong>：检测并清理已删除书签的孤立标签</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="settings-card">
           <h3 style="margin-bottom: 16px;">⚙️ 设置</h3>
           <div class="help-content">
             <h4>WebDAV 同步</h4>
@@ -961,12 +990,15 @@
               <li>配置 WebDAV 服务器地址和认证信息</li>
               <li>支持自动定时备份</li>
               <li>支持启动时自动备份</li>
+              <li>备份数据包含书签和标签</li>
             </ul>
 
             <h4>备份与恢复</h4>
             <ul>
               <li><strong>合并模式</strong>：将备份与现有书签合并，保留现有书签</li>
               <li><strong>覆盖模式</strong>：删除所有现有书签，用备份替换（谨慎使用）</li>
+              <li><strong>标签备份</strong>：独立导出或导入标签数据</li>
+              <li><strong>数据清理</strong>：检测并清理孤立标签</li>
             </ul>
 
             <h4>常用目录设置</h4>
