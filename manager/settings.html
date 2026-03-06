@@ -84,7 +84,7 @@
     }
 
     .settings-section {
-      max-width: 600px;
+      max-width: 100%;
       margin-bottom: 32px;
     }
 
@@ -102,6 +102,8 @@
       border-radius: 8px;
       padding: 24px;
       margin-bottom: 16px;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .settings-field {
@@ -424,21 +426,23 @@
     /* 标签总览样式 */
     .tags-list {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
       margin-top: 16px;
+      max-width: 100%;
     }
 
     .tag-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 14px 18px;
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       transition: all 0.2s ease;
       border: 2px solid transparent;
+      min-width: 0;
     }
 
     .tag-item:hover {
@@ -451,20 +455,28 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+      flex: 1;
     }
 
     .tag-name {
       font-weight: 500;
       font-size: 14px;
       color: var(--text-primary, #1e293b);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
     }
 
     .tag-count {
       font-size: 12px;
       color: var(--text-secondary, #64748b);
       background: rgba(255,255,255,0.8);
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .tag-bookmarks-list {
