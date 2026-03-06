@@ -888,6 +888,19 @@ function setupEventListeners() {
       batchDelete();
     }
   });
+
+  // 监听 Chrome 书签变化，实时更新界面
+  chrome.bookmarks.onCreated.addListener(handleBookmarkChanged);
+  chrome.bookmarks.onRemoved.addListener(handleBookmarkChanged);
+  chrome.bookmarks.onChanged.addListener(handleBookmarkChanged);
+  chrome.bookmarks.onMoved.addListener(handleBookmarkChanged);
+}
+
+// 处理书签变化
+async function handleBookmarkChanged() {
+  // 重新加载文件夹树和书签列表
+  await loadFolderTree();
+  await loadBookmarks(state.currentFolderId);
 }
 
 // 拖拽排序功能

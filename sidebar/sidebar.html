@@ -404,6 +404,45 @@
       transform: translateX(20px);
     }
 
+    /* 右键菜单样式 */
+    .context-menu {
+      background-color: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 4px 0;
+      min-width: 150px;
+    }
+
+    .context-menu-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-primary, #1e293b);
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .context-menu-item:hover {
+      background-color: var(--bg-hover, #f1f5f9);
+    }
+
+    /* 拖拽样式 */
+    .tree-node-content.dragging {
+      opacity: 0.5;
+      background-color: var(--bg-hover, #f1f5f9);
+    }
+
+    .tree-node-content.drag-over-top {
+      border-top: 2px solid var(--primary-color, #4f46e5);
+    }
+
+    .tree-node-content.drag-over-bottom {
+      border-bottom: 2px solid var(--primary-color, #4f46e5);
+    }
+
     /* 关于信息 */
     .about-section {
       margin-top: 24px;
