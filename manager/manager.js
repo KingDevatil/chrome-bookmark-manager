@@ -614,9 +614,9 @@ function updateSelectionUI() {
   });
 }
 
-function selectBookmark(bookmark) {
+async function selectBookmark(bookmark) {
   state.currentBookmark = bookmark;
-  renderDetailPanel(bookmark);
+  await renderDetailPanel(bookmark);
 }
 
 function selectFolder(folder) {
@@ -701,7 +701,7 @@ async function deleteFolder(folderId, folderTitle) {
   }
 }
 
-function renderDetailPanel(bookmark) {
+async function renderDetailPanel(bookmark) {
   const panel = document.getElementById('detail-panel');
 
   if (!bookmark) {
@@ -713,6 +713,9 @@ function renderDetailPanel(bookmark) {
     `;
     return;
   }
+
+  // 加载书签的标签
+  const tags = await BookmarkTags.getTags(bookmark.id);
 
   panel.innerHTML = `
     <div class="detail-header">书签详情</div>
@@ -726,6 +729,13 @@ function renderDetailPanel(bookmark) {
         <input type="text" class="detail-input" id="detail-url" value="${bookmark.url}">
       </div>
       <div class="detail-field">
+        <div class="detail-label">标签</div>
+        <div class="detail-tags-input">
+          <input type="text" class="detail-input" id="detail-tag-input" placeholder="输入 #标签 后按回车添加">
+        </div>
+        <div class="detail-tags" id="detail-tags-container"></div>
+      </div>
+      <div class="detail-field">
         <div class="detail-label">添加时间</div>
         <div class="detail-value">${bookmark.dateAdded ? Utils.formatDate(bookmark.dateAdded) : '未知'}</div>
       </div>
@@ -735,6 +745,25 @@ function renderDetailPanel(bookmark) {
       </div>
     </div>
   `;
+
+  // 渲染标签
+  renderDetailTags(bookmark.id, tags);
+
+  // 标签输入框事件
+  const tagInput = document.getElementById('detail-tag-input');
+  tagInput.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const value = tagInput.value.trim();
+      if (value.startsWith('#')) {
+        const tagName = value.slice(1).trim();
+        if (tagName) {
+          await addTagToBookmark(bookmark.id, tagName);
+          tagInput.value = '';
+        }
+      }
+    }
+  });
 
   document.getElementById('open-bookmark-btn').addEventListener('click', () => {
     window.open(bookmark.url, '_blank');
@@ -750,6 +779,70 @@ function renderDetailPanel(bookmark) {
     bookmark.title = newTitle;
     bookmark.url = newUrl;
   });
+}
+
+function renderDetailTags(bookmarkId, tags) {
+  const container = document.getElementById('detail-tags-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (tags.length === 0) {
+    container.innerHTML = '<div class="detail-tags-empty">暂无标签</div>';
+    return;
+  }
+
+  tags.forEach(tag => {
+    const tagEl = document.createElement('span');
+    tagEl.className = 'detail-tag';
+    tagEl.innerHTML = `
+      <span>${tag}</span>
+      <span class="detail-tag-remove" data-tag="${tag}">×</span>
+    `;
+    container.appendChild(tagEl);
+  });
+
+  // 绑定删除事件
+  container.querySelectorAll('.detail-tag-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tagToRemove = btn.dataset.tag;
+      await removeTagFromBookmark(bookmarkId, tagToRemove);
+    });
+  });
+}
+
+async function addTagToBookmark(bookmarkId, tagName) {
+  const tags = await BookmarkTags.getTags(bookmarkId);
+  if (!tags.includes(tagName)) {
+    tags.push(tagName);
+    await BookmarkTags.setTags(bookmarkId, tags);
+    renderDetailTags(bookmarkId, tags);
+    
+    // 更新列表中的书签标签
+    const bookmark = state.bookmarks.find(b => b.id === bookmarkId);
+    if (bookmark) {
+      bookmark.tags = tags;
+    }
+    
+    // 重新渲染列表
+    renderBookmarks();
+  }
+}
+
+async function removeTagFromBookmark(bookmarkId, tagToRemove) {
+  const tags = await BookmarkTags.getTags(bookmarkId);
+  const filteredTags = tags.filter(t => t !== tagToRemove);
+  await BookmarkTags.setTags(bookmarkId, filteredTags);
+  renderDetailTags(bookmarkId, filteredTags);
+  
+  // 更新当前书签对象的标签
+  const bookmark = state.bookmarks.find(b => b.id === bookmarkId);
+  if (bookmark) {
+    bookmark.tags = filteredTags;
+  }
+  
+  // 重新渲染书签列表
+  renderBookmarks();
 }
 
 async function deleteBookmark(id) {

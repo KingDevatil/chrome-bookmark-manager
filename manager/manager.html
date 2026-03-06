@@ -399,6 +399,55 @@
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 
+    /* 详情面板标签样式 */
+    .detail-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      min-height: 24px;
+    }
+
+    .detail-tags-empty {
+      font-size: 13px;
+      color: var(--text-secondary, #64748b);
+      font-style: italic;
+    }
+
+    .detail-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      user-select: none;
+    }
+
+    .detail-tag-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: bold;
+      transition: opacity 0.15s ease;
+    }
+
+    .detail-tag-remove:hover {
+      opacity: 1;
+    }
+
+    .detail-tags-input {
+      margin-top: 8px;
+    }
+
+    .detail-tags-input .detail-input {
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+
     .bookmark-actions {
       display: flex;
       gap: 8px;
