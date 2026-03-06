@@ -333,12 +333,70 @@
       font-size: 14px;
     }
 
-    .bookmark-url {
-      font-size: 12px;
+   .bookmark-card .bookmark-url {
+      font-size: 13px;
       color: var(--text-secondary, #64748b);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    /* 标签样式 */
+    .bookmark-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .tag:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .tag-remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 14px;
+      line-height: 1;
+      margin-left: 2px;
+    }
+
+    .tag-remove:hover {
+      opacity: 1;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .tag-cloud .tag {
+      cursor: pointer;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .tag-cloud .tag:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 
     .bookmark-actions {
@@ -712,6 +770,7 @@
       <div class="batch-toolbar" id="batch-toolbar">
         <div class="batch-info">已选择 <span id="selected-count">0</span> 项</div>
         <button class="btn btn-sm" id="select-all-btn">全选</button>
+        <button class="btn btn-sm" id="add-tags-btn">添加标签</button>
         <button class="btn btn-danger btn-sm" id="batch-delete-btn">批量删除</button>
         <button class="btn btn-sm" id="cancel-selection-btn">取消</button>
       </div>
@@ -750,6 +809,28 @@
       <div class="modal-actions">
         <button class="btn" id="cancel-add-btn">取消</button>
         <button class="btn btn-primary" id="confirm-add-btn">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加标签弹窗 -->
+  <div class="modal-overlay" id="add-tags-modal">
+    <div class="modal">
+      <div class="modal-header">添加标签</div>
+      <div class="modal-field">
+        <label class="modal-label">输入标签</label>
+        <input type="text" class="modal-input" id="new-tags-input" placeholder="输入标签，逗号分隔多个标签">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">或选择已有标签</label>
+        <div class="tag-cloud" id="tag-cloud"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">将应用到 <span id="apply-count">0</span> 个书签</label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="cancel-tags-btn">取消</button>
+        <button class="btn btn-primary" id="confirm-tags-btn">添加</button>
       </div>
     </div>
   </div>

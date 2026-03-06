@@ -183,11 +183,21 @@ async function loadBookmarks(folderId) {
     state.folders = children.filter(item => !item.url); // 文件夹
     state.bookmarks = children.filter(item => item.url); // 书签
 
+    // 加载所有书签的标签
+    await loadBookmarkTags();
+
     renderBookmarks();
     updateBreadcrumb(folderId);
   } catch (error) {
     console.error('加载书签失败:', error);
   }
+}
+
+async function loadBookmarkTags() {
+  const allTags = await BookmarkTags.getAll();
+  state.bookmarks.forEach(bookmark => {
+    bookmark.tags = allTags[bookmark.id] || [];
+  });
 }
 
 function renderBookmarks() {
@@ -268,6 +278,32 @@ function createBookmarkRow(bookmark, index) {
 
   info.appendChild(title);
   info.appendChild(url);
+
+  // 添加标签显示
+  if (bookmark.tags && bookmark.tags.length > 0) {
+    const tagsContainer = document.createElement('div');
+    tagsContainer.className = 'bookmark-tags';
+    
+    bookmark.tags.forEach(tag => {
+      const tagEl = document.createElement('span');
+      tagEl.className = 'tag';
+      tagEl.textContent = tag;
+      
+      // 标签删除按钮
+      const removeBtn = document.createElement('span');
+      removeBtn.className = 'tag-remove';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeTagFromBookmark(bookmark.id, tag);
+      });
+      
+      tagEl.appendChild(removeBtn);
+      tagsContainer.appendChild(tagEl);
+    });
+    
+    info.appendChild(tagsContainer);
+  }
 
   const actions = document.createElement('div');
   actions.className = 'bookmark-actions';
@@ -881,9 +917,20 @@ function setupEventListeners() {
   document.getElementById('select-all-btn').addEventListener('click', selectAll);
   document.getElementById('batch-delete-btn').addEventListener('click', batchDelete);
   document.getElementById('cancel-selection-btn').addEventListener('click', clearSelection);
+  document.getElementById('add-tags-btn').addEventListener('click', showAddTagsModal);
 
   document.getElementById('add-modal').addEventListener('click', (e) => {
     if (e.target.id === 'add-modal') hideAddModal();
+  });
+
+  document.getElementById('add-tags-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'add-tags-modal') hideAddTagsModal();
+  });
+
+  document.getElementById('cancel-tags-btn').addEventListener('click', hideAddTagsModal);
+  document.getElementById('confirm-tags-btn').addEventListener('click', addTagsToSelected);
+  document.getElementById('new-tags-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addTagsToSelected();
   });
 
   document.addEventListener('keydown', (e) => {
@@ -1006,4 +1053,94 @@ async function moveBookmark(fromIndex, toIndex) {
   } catch (error) {
     console.error('移动书签失败:', error);
   }
+}
+
+// ============================================
+// 标签编辑功能
+// ============================================
+
+async function showAddTagsModal() {
+  const modal = document.getElementById('add-tags-modal');
+  const applyCount = document.getElementById('apply-count');
+  const tagCloud = document.getElementById('tag-cloud');
+  const tagsInput = document.getElementById('new-tags-input');
+  
+  // 更新应用数量
+  applyCount.textContent = state.selectedIds.size;
+  
+  // 加载所有已有标签
+  const allTags = await BookmarkTags.getAllTags();
+  tagCloud.innerHTML = '';
+  
+  allTags.forEach(tag => {
+    const tagEl = document.createElement('span');
+    tagEl.className = 'tag';
+    tagEl.textContent = tag;
+    tagEl.addEventListener('click', () => {
+      // 将标签添加到输入框
+      const current = tagsInput.value.trim();
+      if (current) {
+        tagsInput.value = current + ', ' + tag;
+      } else {
+        tagsInput.value = tag;
+      }
+    });
+    tagCloud.appendChild(tagEl);
+  });
+  
+  // 清空输入框
+  tagsInput.value = '';
+  
+  // 显示弹窗
+  modal.style.display = 'flex';
+}
+
+function hideAddTagsModal() {
+  const modal = document.getElementById('add-tags-modal');
+  modal.style.display = 'none';
+}
+
+async function addTagsToSelected() {
+  const tagsInput = document.getElementById('new-tags-input');
+  const tagsText = tagsInput.value.trim();
+  
+  if (!tagsText) {
+    hideAddTagsModal();
+    return;
+  }
+  
+  // 解析标签（逗号分隔）
+  const newTags = tagsText.split(',').map(t => t.trim()).filter(t => t);
+  
+  if (newTags.length === 0) {
+    hideAddTagsModal();
+    return;
+  }
+  
+  // 为每个选中的书签添加标签
+  for (const bookmarkId of state.selectedIds) {
+    const existingTags = await BookmarkTags.getTags(bookmarkId);
+    const mergedTags = [...new Set([...existingTags, ...newTags])];
+    await BookmarkTags.setTags(bookmarkId, mergedTags);
+  }
+  
+  hideAddTagsModal();
+  
+  // 重新加载书签以显示标签
+  await loadBookmarks(state.currentFolderId);
+}
+
+async function removeTagFromBookmark(bookmarkId, tagToRemove) {
+  const tags = await BookmarkTags.getTags(bookmarkId);
+  const filteredTags = tags.filter(t => t !== tagToRemove);
+  await BookmarkTags.setTags(bookmarkId, filteredTags);
+  
+  // 更新当前书签对象的标签
+  const bookmark = state.bookmarks.find(b => b.id === bookmarkId);
+  if (bookmark) {
+    bookmark.tags = filteredTags;
+  }
+  
+  // 重新渲染书签列表
+  renderBookmarks();
 }

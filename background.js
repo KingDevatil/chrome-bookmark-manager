@@ -230,6 +230,8 @@ class SyncManager {
       const bookmarks = await BookmarkManager.getAllBookmarks();
       const tags = await this.getBookmarkTags();
       const data = {
+        version: '1.1',
+        timestamp: new Date().toISOString(),
         bookmarks,
         tags: tags || {}
       };
@@ -255,9 +257,12 @@ class SyncManager {
       // 恢复书签
       await BookmarkManager.importBookmarks(backupData.bookmarks, merge);
       
-      // 恢复标签数据
-      if (backupData.tags) {
-        await this.restoreBookmarkTags(backupData.tags, merge);
+      // 恢复标签数据（如果存在）
+      if (backupData.tags && backupData.tags.bookmark_tags) {
+        console.log('Restoring tags from backup');
+        await this.restoreBookmarkTags(backupData.tags.bookmark_tags, merge);
+      } else {
+        console.log('No tags found in backup, skipping tag restore');
       }
       
       console.log('Bookmarks restored successfully');
