@@ -1146,6 +1146,16 @@ function setupEventListeners() {
   });
 
   document.addEventListener('keydown', (e) => {
+    // 如果焦点在输入框或文本区域中，不处理快捷键
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement && (
+      activeElement.tagName === 'INPUT' || 
+      activeElement.tagName === 'TEXTAREA' || 
+      activeElement.isContentEditable
+    );
+    
+    if (isInputFocused) return;
+    
     if (e.key === 'Escape') clearSelection();
     if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
