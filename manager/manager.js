@@ -367,6 +367,12 @@ function createBookmarkRow(bookmark, index) {
   li.addEventListener('dragenter', handleDragEnter);
   li.addEventListener('dragleave', handleDragLeave);
 
+  // 双击打开书签
+  li.addEventListener('dblclick', (e) => {
+    if (e.target.type === 'checkbox' || e.target.classList.contains('action-btn') || e.target.classList.contains('tag-remove')) return;
+    window.open(bookmark.url, '_blank');
+  });
+
   li.addEventListener('click', (e) => {
     // 如果点击的是复选框或删除按钮，不处理
     if (e.target.type === 'checkbox' || e.target.classList.contains('action-btn')) return;
@@ -440,6 +446,12 @@ function createBookmarkCard(bookmark, index) {
     } else {
       selectBookmark(bookmark);
     }
+  });
+
+  // 双击打开书签
+  card.addEventListener('dblclick', (e) => {
+    if (e.target.type === 'checkbox' || e.target.classList.contains('action-btn')) return;
+    window.open(bookmark.url, '_blank');
   });
 
   return card;
@@ -765,7 +777,7 @@ async function renderDetailPanel(bookmark) {
       <div class="detail-field">
         <div class="detail-label">标签</div>
         <div class="detail-tags-input">
-          <input type="text" class="detail-input" id="detail-tag-input" placeholder="输入 #标签 后按回车添加">
+          <input type="text" class="detail-input" id="detail-tag-input" placeholder="输入标签名后按回车添加">
         </div>
         <div class="detail-tags" id="detail-tags-container"></div>
       </div>
@@ -788,13 +800,10 @@ async function renderDetailPanel(bookmark) {
   tagInput.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const value = tagInput.value.trim();
-      if (value.startsWith('#')) {
-        const tagName = value.slice(1).trim();
-        if (tagName) {
-          await addTagToBookmark(bookmark.id, tagName);
-          tagInput.value = '';
-        }
+      const tagName = tagInput.value.trim();
+      if (tagName) {
+        await addTagToBookmark(bookmark.id, tagName);
+        tagInput.value = '';
       }
     }
   });
