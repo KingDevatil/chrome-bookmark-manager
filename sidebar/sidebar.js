@@ -197,15 +197,13 @@ function createTreeNode(node, level) {
     showContextMenu(e, node, isFolder);
   });
 
-  // 拖拽事件
-  if (!isFolder || hasChildren) {
-    content.draggable = true;
-    content.addEventListener('dragstart', handleDragStart);
-    content.addEventListener('dragend', handleDragEnd);
-    content.addEventListener('dragover', handleDragOver);
-    content.addEventListener('dragleave', handleDragLeave);
-    content.addEventListener('drop', handleDrop);
-  }
+  // 拖拽事件 - 所有节点都可以拖拽
+  content.draggable = true;
+  content.addEventListener('dragstart', handleDragStart);
+  content.addEventListener('dragend', handleDragEnd);
+  content.addEventListener('dragover', handleDragOver);
+  content.addEventListener('dragleave', handleDragLeave);
+  content.addEventListener('drop', handleDrop);
 
   li.appendChild(content);
 
