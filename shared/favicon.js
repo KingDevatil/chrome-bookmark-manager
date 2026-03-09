@@ -27,14 +27,12 @@ const FaviconService = {
       }
 
       return [
-        // 方案1: Chrome 内置 favicon API（最可靠）
-        `chrome://favicon/${url}`,
-        // 方案2: Google Favicon Service
-        `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
-        // 方案3: DuckDuckGo Favicon Service（备选）
+        // 方案1: DuckDuckGo Favicon Service（隐私友好）
         `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-        // 方案4: 直接访问网站的 favicon
-        `${origin}/favicon.ico`
+        // 方案2: 直接访问网站的 favicon
+        `${origin}/favicon.ico`,
+        // 方案3: Chrome 内置 favicon API
+        `chrome://favicon/${url}`
       ];
     } catch (error) {
       console.error('Invalid URL:', url);
