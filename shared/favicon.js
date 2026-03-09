@@ -16,6 +16,15 @@ const FaviconService = {
       const urlObj = new URL(url);
       const domain = urlObj.hostname;
       const origin = urlObj.origin;
+      const protocol = urlObj.protocol;
+
+      // 跳过扩展内部页面和特殊协议
+      if (protocol === 'chrome-extension:' || 
+          protocol === 'chrome:' || 
+          protocol === 'about:' ||
+          protocol === 'edge:') {
+        return [];
+      }
 
       return [
         // 方案1: Chrome 内置 favicon API（最可靠）
