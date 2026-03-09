@@ -979,7 +979,13 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
   }
 
   try {
-    await BookmarkUtils.remove(id);
+    if (isFolder) {
+      // 文件夹使用 removeTree 递归删除
+      await BookmarkUtils.removeTree(id);
+    } else {
+      // 书签使用 remove
+      await BookmarkUtils.remove(id);
+    }
     await loadBookmarkTree();
   } catch (error) {
     console.error('删除失败:', error);
