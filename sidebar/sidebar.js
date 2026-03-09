@@ -610,7 +610,9 @@ function createFolderTreeNode(node, level, selectedFolderId = null) {
     content.classList.add('selected');
     
     // 设置选中的文件夹 ID
-    const folderInput = document.getElementById('add-bookmark-folder') || document.getElementById('edit-folder-parentId');
+    const folderInput = document.getElementById('add-bookmark-folder') || 
+                        document.getElementById('edit-folder-parentId') ||
+                        document.getElementById('new-folder-parentId');
     if (folderInput) {
       folderInput.value = node.id;
     }
