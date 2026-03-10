@@ -59,40 +59,16 @@ const FrequentlyUsed = {
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
       const pinnedSet = new Set(pinned);
       
-      // 1. 获取置顶链接的信息
+      // 1. 获取置顶链接的信息（不查询历史记录）
       const pinnedItems = [];
       for (const url of pinned) {
-        try {
-          let title = url;
-          let visitCount = 0;
-          let lastVisit = 0;
-          
-          try {
-            const results = await chrome.history.search({ url, maxResults: 1 });
-            if (results && results.length > 0) {
-              title = results[0].title || url;
-            }
-          } catch (e) {
-            console.warn('获取历史记录失败:', url, e);
-          }
-          
-          pinnedItems.push({
-            url: url,
-            title: title,
-            visitCount: visitCount,
-            lastVisit: lastVisit,
-            isPinned: true
-          });
-        } catch (error) {
-          // 如果出错也保留置顶链接
-          pinnedItems.push({
-            url: url,
-            title: url,
-            visitCount: 0,
-            lastVisit: 0,
-            isPinned: true
-          });
-        }
+        pinnedItems.push({
+          url: url,
+          title: url,
+          visitCount: 0,
+          lastVisit: 0,
+          isPinned: true
+        });
       }
       
       // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）

@@ -310,15 +310,9 @@ function createFrequentlyUsedNode() {
 function createFrequentlyUsedItem(item, index) {
   const li = document.createElement('li');
   li.className = 'tree-node frequently-used-item';
-  if (item.isPinned) {
-    li.classList.add('pinned-item');
-  }
   
   const content = document.createElement('div');
   content.className = 'tree-node-content frequently-used-link';
-  if (item.isPinned) {
-    content.classList.add('pinned-item');
-  }
   content.style.height = `var(--bookmark-height, 32px)`;
   content.__frequentlyUsedData = item;
   content.__index = index;
@@ -333,6 +327,9 @@ function createFrequentlyUsedItem(item, index) {
   
   const title = document.createElement('span');
   title.className = 'tree-title';
+  if (item.isPinned) {
+    title.style.color = '#f59e0b';
+  }
   title.textContent = item.title || item.url || '无标题';
   title.title = item.title || item.url || '';
   
