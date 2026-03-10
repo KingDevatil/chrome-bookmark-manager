@@ -558,7 +558,10 @@ async function renderPinnedList() {
   pinnedList.style.flexDirection = 'column';
   pinnedList.style.gap = '8px';
   
-  for (const url of config.pinned) {
+  for (const pinnedItem of config.pinned) {
+    const url = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+    const title = typeof pinnedItem === 'string' ? pinnedItem : (pinnedItem.title || url);
+    
     const item = document.createElement('div');
     item.style.display = 'flex';
     item.style.flexDirection = 'column';
@@ -567,11 +570,19 @@ async function renderPinnedList() {
     item.style.borderRadius = '6px';
     item.style.border = '1px solid var(--border-color, #e2e8f0)';
     
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = title;
+    titleSpan.style.fontSize = '13px';
+    titleSpan.style.fontWeight = '500';
+    titleSpan.style.color = 'var(--text-primary, #1e293b)';
+    titleSpan.style.wordBreak = 'break-all';
+    
     const urlSpan = document.createElement('span');
     urlSpan.textContent = url;
-    urlSpan.style.fontSize = '12px';
-    urlSpan.style.color = 'var(--text-secondary, #64748b)';
+    urlSpan.style.fontSize = '11px';
+    urlSpan.style.color = 'var(--text-tertiary, #94a3b8)';
     urlSpan.style.wordBreak = 'break-all';
+    urlSpan.style.marginTop = '4px';
     
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '取消置顶';
@@ -585,6 +596,7 @@ async function renderPinnedList() {
       await renderPinnedList();
     });
     
+    item.appendChild(titleSpan);
     item.appendChild(urlSpan);
     item.appendChild(removeBtn);
     pinnedList.appendChild(item);

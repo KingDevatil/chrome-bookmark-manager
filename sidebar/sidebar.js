@@ -426,7 +426,9 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   // 置顶选项
   const isPinned = window.frequentlyUsedConfig && 
                    window.frequentlyUsedConfig.pinned && 
-                   window.frequentlyUsedConfig.pinned.includes(item.url);
+                   window.frequentlyUsedConfig.pinned.some(item => 
+                     (typeof item === 'string' ? item : item.url) === item.url
+                   );
   
   const pinItem = document.createElement('div');
   pinItem.className = 'context-menu-item';
@@ -856,7 +858,9 @@ function showContextMenu(e, node, isFolder) {
   if (isInFrequentlyUsed && !isFolder && node.url) {
     const isPinned = window.frequentlyUsedConfig && 
                      window.frequentlyUsedConfig.pinned && 
-                     window.frequentlyUsedConfig.pinned.includes(node.url);
+                     window.frequentlyUsedConfig.pinned.some(item => 
+                       (typeof item === 'string' ? item : item.url) === node.url
+                     );
     
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';
