@@ -412,6 +412,30 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   menu.style.top = `${e.clientY}px`;
   menu.style.zIndex = '10000';
   
+  // 置顶选项
+  const isPinned = window.frequentlyUsedConfig && 
+                   window.frequentlyUsedConfig.pinned && 
+                   window.frequentlyUsedConfig.pinned.includes(item.url);
+  
+  const pinItem = document.createElement('div');
+  pinItem.className = 'context-menu-item';
+  pinItem.textContent = isPinned ? '📌 取消置顶' : '📌 置顶';
+  pinItem.addEventListener('click', async () => {
+    if (isPinned) {
+      await FrequentlyUsedConfig.unpinUrl(item.url);
+    } else {
+      await FrequentlyUsedConfig.pinUrl(item.url);
+    }
+    await refreshFrequentlyUsed();
+    removeContextMenu();
+  });
+  menu.appendChild(pinItem);
+  
+  // 分隔线
+  const separator1 = document.createElement('div');
+  separator1.className = 'context-menu-separator';
+  menu.appendChild(separator1);
+  
   if (!item.isBookmarked) {
     const addBookmarkItem = document.createElement('div');
     addBookmarkItem.className = 'context-menu-item';
@@ -422,9 +446,9 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
     });
     menu.appendChild(addBookmarkItem);
     
-    const separator = document.createElement('div');
-    separator.className = 'context-menu-separator';
-    menu.appendChild(separator);
+    const separator2 = document.createElement('div');
+    separator2.className = 'context-menu-separator';
+    menu.appendChild(separator2);
   }
   
   const domain = FrequentlyUsed.extractDomain(item.url);
