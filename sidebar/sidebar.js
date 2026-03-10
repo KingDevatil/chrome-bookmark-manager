@@ -310,9 +310,15 @@ function createFrequentlyUsedNode() {
 function createFrequentlyUsedItem(item, index) {
   const li = document.createElement('li');
   li.className = 'tree-node frequently-used-item';
+  if (item.isPinned) {
+    li.classList.add('pinned-item');
+  }
   
   const content = document.createElement('div');
   content.className = 'tree-node-content frequently-used-link';
+  if (item.isPinned) {
+    content.classList.add('pinned-item');
+  }
   content.style.height = `var(--bookmark-height, 32px)`;
   content.__frequentlyUsedData = item;
   content.__index = index;
@@ -327,15 +333,21 @@ function createFrequentlyUsedItem(item, index) {
   
   const title = document.createElement('span');
   title.className = 'tree-title';
-  title.textContent = item.title || '无标题';
-  title.title = item.title || '';
+  title.textContent = item.title || item.url || '无标题';
+  title.title = item.title || item.url || '';
   
-  const visitCount = document.createElement('span');
-  visitCount.className = 'frequently-used-visit-count';
-  visitCount.textContent = `${item.visitCount} 次`;
+  const visitCountOrPin = document.createElement('span');
+  visitCountOrPin.className = 'frequently-used-visit-count';
+  if (item.isPinned) {
+    visitCountOrPin.textContent = '📌 置顶';
+    visitCountOrPin.style.color = '#f59e0b';
+    visitCountOrPin.style.fontWeight = '500';
+  } else {
+    visitCountOrPin.textContent = `${item.visitCount} 次`;
+  }
   
   titleContainer.appendChild(title);
-  titleContainer.appendChild(visitCount);
+  titleContainer.appendChild(visitCountOrPin);
   
   content.appendChild(spacer);
   content.appendChild(icon);
