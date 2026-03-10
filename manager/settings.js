@@ -651,6 +651,22 @@ function setupFrequentlyUsedEventListeners() {
     }
   });
   
+  document.getElementById('clear-all-pinned-btn').addEventListener('click', async () => {
+    if (!confirm('确定要清空所有置顶链接吗？')) {
+      return;
+    }
+    try {
+      const config = await FrequentlyUsedConfig.getConfig();
+      config.pinned = [];
+      await FrequentlyUsedConfig.saveConfig(config);
+      await renderPinnedList();
+      showStatus('frequently-used-status', '已清空所有置顶', 'success');
+    } catch (error) {
+      console.error('清空置顶失败:', error);
+      showStatus('frequently-used-status', '清空失败，请重试', 'error');
+    }
+  });
+  
   document.getElementById('add-blacklist-btn').addEventListener('click', async () => {
     try {
       const domainInput = document.getElementById('blacklist-domain-input');
