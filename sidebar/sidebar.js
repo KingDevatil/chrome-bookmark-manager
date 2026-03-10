@@ -89,6 +89,8 @@ async function refreshFrequentlyUsed() {
     FrequentlyUsed.clearCache();
   }
   
+  // 重新加载配置
+  await loadFrequentlyUsedConfig();
   await loadFrequentlyUsedData();
   renderBookmarkTree();
 }
