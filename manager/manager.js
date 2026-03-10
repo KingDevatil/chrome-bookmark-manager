@@ -889,15 +889,20 @@ async function removeTagFromBookmark(bookmarkId, tagToRemove) {
 }
 
 async function deleteBookmark(id) {
-  await BookmarkUtils.remove(id);
-  state.selectedIds.delete(id);
+  try {
+    await BookmarkUtils.remove(id);
+    state.selectedIds.delete(id);
 
-  if (state.currentBookmark && state.currentBookmark.id === id) {
-    state.currentBookmark = null;
-    renderDetailPanel(null);
+    if (state.currentBookmark && state.currentBookmark.id === id) {
+      state.currentBookmark = null;
+      renderDetailPanel(null);
+    }
+
+    await loadBookmarks(state.currentFolderId);
+  } catch (error) {
+    console.error('删除书签失败:', error);
+    alert('删除书签失败: ' + (error.message || '未知错误'));
   }
-
-  await loadBookmarks(state.currentFolderId);
 }
 
 async function batchDelete() {

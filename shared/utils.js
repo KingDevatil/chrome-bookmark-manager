@@ -66,9 +66,13 @@ const Storage = {
    * @returns {Promise<Object>}
    */
   get(keys) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.get(keys, (result) => {
-        resolve(result);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
       });
     });
   },
@@ -79,9 +83,13 @@ const Storage = {
    * @returns {Promise<void>}
    */
   set(items) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.set(items, () => {
-        resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
       });
     });
   },
@@ -92,9 +100,13 @@ const Storage = {
    * @returns {Promise<void>}
    */
   remove(keys) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.remove(keys, () => {
-        resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
       });
     });
   },
@@ -104,9 +116,13 @@ const Storage = {
    * @returns {Promise<void>}
    */
   clear() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.storage.local.clear(() => {
-        resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
       });
     });
   }
@@ -263,9 +279,13 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   getTree() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.getTree((tree) => {
-        resolve(tree);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(tree);
+        }
       });
     });
   },
@@ -276,9 +296,13 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   getChildren(parentId) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.getChildren(parentId, (children) => {
-        resolve(children);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(children);
+        }
       });
     });
   },
@@ -289,9 +313,13 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   search(query) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.search(query, (results) => {
-        resolve(results);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(results);
+        }
       });
     });
   },
@@ -302,9 +330,13 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   create(bookmark) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.create(bookmark, (result) => {
-        resolve(result);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
       });
     });
   },
@@ -316,9 +348,13 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   update(id, changes) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.update(id, changes, (result) => {
-        resolve(result);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
       });
     });
   },
@@ -330,9 +366,13 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   move(id, destination) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.move(id, destination, (result) => {
-        resolve(result);
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
       });
     });
   },
@@ -343,9 +383,13 @@ const BookmarkUtils = {
    * @returns {Promise<void>}
    */
   remove(id) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.remove(id, () => {
-        resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
       });
     });
   },
@@ -356,9 +400,13 @@ const BookmarkUtils = {
    * @returns {Promise<void>}
    */
   removeTree(id) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       chrome.bookmarks.removeTree(id, () => {
-        resolve();
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
       });
     });
   },
@@ -403,9 +451,13 @@ const BookmarkUtils = {
     let currentId = id;
     
     while (currentId) {
-      const node = await new Promise((resolve) => {
+      const node = await new Promise((resolve, reject) => {
         chrome.bookmarks.get(currentId, (results) => {
-          resolve(results[0]);
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(results[0]);
+          }
         });
       });
       
@@ -634,8 +686,11 @@ const FrequentlyUsedConfig = {
       config.pinned = [];
     }
     
-    // 检查是否已存在
-    const exists = config.pinned.some(item => item.url === url);
+    // 检查是否已存在（兼容字符串或对象格式）
+    const exists = config.pinned.some(item => {
+      const itemUrl = typeof item === 'string' ? item : item.url;
+      return itemUrl === url;
+    });
     if (!exists) {
       config.pinned.push({
         url: url,
@@ -652,7 +707,11 @@ const FrequentlyUsedConfig = {
   async unpinUrl(url) {
     const config = await this.getConfig();
     if (config.pinned) {
-      config.pinned = config.pinned.filter(item => item.url !== url);
+      // 兼容字符串或对象格式
+      config.pinned = config.pinned.filter(item => {
+        const itemUrl = typeof item === 'string' ? item : item.url;
+        return itemUrl !== url;
+      });
       await this.saveConfig(config);
     }
   },
