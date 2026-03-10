@@ -63,27 +63,35 @@ const FrequentlyUsed = {
       const pinnedItems = [];
       for (const url of pinned) {
         try {
-          const results = await chrome.history.search({ url, maxResults: 1 });
-          if (results && results.length > 0) {
-            pinnedItems.push({
-              url: url,
-              title: results[0].title || url,
-              visitCount: 0,
-              lastVisit: 0,
-              isPinned: true
-            });
-          } else {
-            // 如果历史记录中没有，也保留置顶
-            pinnedItems.push({
-              url: url,
-              title: url,
-              visitCount: 0,
-              lastVisit: 0,
-              isPinned: true
-            });
+          let title = url;
+          let visitCount = 0;
+          let lastVisit = 0;
+          
+          try {
+            const results = await chrome.history.search({ url, maxResults: 1 });
+            if (results && results.length > 0) {
+              title = results[0].title || url;
+            }
+          } catch (e) {
+            console.warn('获取历史记录失败:', url, e);
           }
+          
+          pinnedItems.push({
+            url: url,
+            title: title,
+            visitCount: visitCount,
+            lastVisit: lastVisit,
+            isPinned: true
+          });
         } catch (error) {
-          // 忽略错误，继续处理
+          // 如果出错也保留置顶链接
+          pinnedItems.push({
+            url: url,
+            title: url,
+            visitCount: 0,
+            lastVisit: 0,
+            isPinned: true
+          });
         }
       }
       
