@@ -129,6 +129,30 @@
       background-color: var(--bg-hover, #e2e8f0);
     }
 
+    .pinned-item {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-left: 3px solid #f59e0b;
+    }
+
+    .pinned-item:hover {
+      background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    }
+
+    [data-theme="dark"] .pinned-item {
+      background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+      border-left: 3px solid #f59e0b;
+    }
+
+    [data-theme="dark"] .pinned-item:hover {
+      background: linear-gradient(135deg, #92400e 0%, #b45309 100%);
+    }
+
+    .pinned-icon {
+      color: #f59e0b;
+      font-size: 12px;
+      margin-right: 4px;
+    }
+
     .tree-toggle {
       width: 16px;
       height: 16px;

@@ -530,7 +530,8 @@ const FrequentlyUsedConfig = {
     enabled: false,           // 是否启用
     daysRange: 7,            // 统计时间范围（天）
     displayCount: 10,        // 展示数量
-    blacklist: []            // 黑名单域名列表
+    blacklist: [],           // 黑名单域名列表
+    pinned: []               // 置顶的 URL 列表
   },
   
   /**
@@ -620,6 +621,52 @@ const FrequentlyUsedConfig = {
     const config = await this.getConfig();
     const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
     return config.blacklist.includes(normalizedDomain);
+  },
+  
+  /**
+   * 置顶链接
+   * @param {string} url - 要置顶的 URL
+   */
+  async pinUrl(url) {
+    const config = await this.getConfig();
+    if (!config.pinned) {
+      config.pinned = [];
+    }
+    if (!config.pinned.includes(url)) {
+      config.pinned.push(url);
+      await this.saveConfig(config);
+    }
+  },
+  
+  /**
+   * 取消置顶
+   * @param {string} url - 要取消置顶的 URL
+   */
+  async unpinUrl(url) {
+    const config = await this.getConfig();
+    if (config.pinned) {
+      config.pinned = config.pinned.filter(u => u !== url);
+      await this.saveConfig(config);
+    }
+  },
+  
+  /**
+   * 检查是否已置顶
+   * @param {string} url - 要检查的 URL
+   * @returns {Promise<boolean>}
+   */
+  async isPinned(url) {
+    const config = await this.getConfig();
+    return config.pinned && config.pinned.includes(url);
+  },
+  
+  /**
+   * 获取所有置顶链接
+   * @returns {Promise<string[]>}
+   */
+  async getPinnedUrls() {
+    const config = await this.getConfig();
+    return config.pinned || [];
   },
   
   /**

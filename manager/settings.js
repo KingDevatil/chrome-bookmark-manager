@@ -482,6 +482,7 @@ async function loadFrequentlyUsedSettings() {
     document.getElementById('display-count-value').textContent = `${config.displayCount}个`;
     
     await renderBlacklist();
+    await renderPinnedList();
   } catch (error) {
     console.error('加载常用目录设置失败:', error);
   }
@@ -536,6 +537,60 @@ async function renderBlacklist() {
   });
   
   container.appendChild(blacklistList);
+}
+
+async function renderPinnedList() {
+  const config = await FrequentlyUsedConfig.getConfig();
+  const container = document.getElementById('pinned-list-container');
+  const emptyMsg = document.getElementById('pinned-empty');
+  
+  if (!config.pinned || config.pinned.length === 0) {
+    container.innerHTML = '';
+    container.appendChild(emptyMsg);
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  
+  container.innerHTML = '';
+  
+  const pinnedList = document.createElement('div');
+  pinnedList.style.display = 'flex';
+  pinnedList.style.flexDirection = 'column';
+  pinnedList.style.gap = '8px';
+  
+  for (const url of config.pinned) {
+    const item = document.createElement('div');
+    item.style.display = 'flex';
+    item.style.flexDirection = 'column';
+    item.style.padding = '8px 12px';
+    item.style.backgroundColor = 'var(--bg-secondary, #f8fafc)';
+    item.style.borderRadius = '6px';
+    item.style.border = '1px solid var(--border-color, #e2e8f0)';
+    
+    const urlSpan = document.createElement('span');
+    urlSpan.textContent = url;
+    urlSpan.style.fontSize = '12px';
+    urlSpan.style.color = 'var(--text-secondary, #64748b)';
+    urlSpan.style.wordBreak = 'break-all';
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '取消置顶';
+    removeBtn.className = 'btn';
+    removeBtn.style.padding = '4px 12px';
+    removeBtn.style.fontSize = '12px';
+    removeBtn.style.marginTop = '8px';
+    removeBtn.style.alignSelf = 'flex-start';
+    removeBtn.addEventListener('click', async () => {
+      await FrequentlyUsedConfig.unpinUrl(url);
+      await renderPinnedList();
+    });
+    
+    item.appendChild(urlSpan);
+    item.appendChild(removeBtn);
+    pinnedList.appendChild(item);
+  }
+  
+  container.appendChild(pinnedList);
 }
 
 function setupFrequentlyUsedEventListeners() {

@@ -18,9 +18,10 @@ const FrequentlyUsed = {
    * @param {number} daysRange - 统计时间范围（天数）
    * @param {number} displayCount - 展示数量
    * @param {string[]} blacklist - 黑名单域名列表
+   * @param {string[]} pinned - 置顶的 URL 列表
    * @returns {Promise<Array>} 常用链接列表
    */
-  async getFrequentlyUsed(daysRange = 7, displayCount = 10, blacklist = []) {
+  async getFrequentlyUsed(daysRange = 7, displayCount = 10, blacklist = [], pinned = []) {
     const now = Date.now();
     
     // 检查缓存是否有效
@@ -30,7 +31,8 @@ const FrequentlyUsed = {
       const isConfigMatch = 
         cacheConfig.daysRange === daysRange &&
         cacheConfig.displayCount === displayCount &&
-        JSON.stringify(cacheConfig.blacklist) === JSON.stringify(blacklist);
+        JSON.stringify(cacheConfig.blacklist) === JSON.stringify(blacklist) &&
+        JSON.stringify(cacheConfig.pinned) === JSON.stringify(pinned);
       
       if (isConfigMatch) {
         return this.cache.data;
@@ -38,12 +40,12 @@ const FrequentlyUsed = {
     }
     
     // 重新计算
-    const data = await this.calculateFrequentlyUsed(daysRange, displayCount, blacklist);
+    const data = await this.calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned);
     
     // 更新缓存（包括配置）
     this.cache.data = data;
     this.cache.timestamp = now;
-    this.cache.config = { daysRange, displayCount, blacklist };
+    this.cache.config = { daysRange, displayCount, blacklist, pinned };
     
     return data;
   },
@@ -51,12 +53,41 @@ const FrequentlyUsed = {
   /**
    * 计算常用链接（核心算法）
    */
-  async calculateFrequentlyUsed(daysRange, displayCount, blacklist) {
+  async calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned = []) {
     try {
       const now = Date.now();
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
+      const pinnedSet = new Set(pinned);
       
-      // 1. 获取最近 N 天的浏览记录（去重后的 URL 列表）
+      // 1. 获取置顶链接的信息
+      const pinnedItems = [];
+      for (const url of pinned) {
+        try {
+          const results = await chrome.history.search({ url, maxResults: 1 });
+          if (results && results.length > 0) {
+            pinnedItems.push({
+              url: url,
+              title: results[0].title || url,
+              visitCount: 0,
+              lastVisit: 0,
+              isPinned: true
+            });
+          } else {
+            // 如果历史记录中没有，也保留置顶
+            pinnedItems.push({
+              url: url,
+              title: url,
+              visitCount: 0,
+              lastVisit: 0,
+              isPinned: true
+            });
+          }
+        } catch (error) {
+          // 忽略错误，继续处理
+        }
+      }
+      
+      // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）
       const history = await chrome.history.search({
         text: '', // 必须参数，空字符串表示匹配所有 URL
         startTime: startTime,
@@ -64,12 +95,21 @@ const FrequentlyUsed = {
       });
       
       if (!history || history.length === 0) {
-        return [];
+        // 即使没有历史记录，也要返回置顶链接
+        const bookmarkedSet = await this.checkBookmarkedUrls(pinned);
+        pinnedItems.forEach(item => {
+          item.isBookmarked = bookmarkedSet.has(item.url);
+        });
+        return pinnedItems;
       }
       
-      // 2. 过滤黑名单域名
+      // 3. 过滤黑名单域名和已置顶的链接
       const blacklistSet = new Set(blacklist.map(d => d.toLowerCase()));
       const filtered = history.filter(item => {
+        // 排除已置顶的链接
+        if (pinnedSet.has(item.url)) {
+          return false;
+        }
         const domain = this.extractDomain(item.url);
         return domain && !blacklistSet.has(domain.toLowerCase());
       });
@@ -157,12 +197,17 @@ const FrequentlyUsed = {
         item.isBookmarked = bookmarkedSet.has(item.url);
       });
       
-      // 6. 取前 N 个
-      return items.slice(0, displayCount);
+      // 6. 取前 N 个（不包括置顶链接）
+      const normalItems = items.slice(0, displayCount);
+      
+      // 7. 合并置顶链接和普通链接（置顶在前）
+      const allItems = [...pinnedItems, ...normalItems];
+      
+      return allItems;
       
     } catch (error) {
       console.error('计算常用链接失败:', error);
-      return [];
+      return pinnedItems;
     }
   },
   

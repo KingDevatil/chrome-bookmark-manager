@@ -74,7 +74,8 @@ async function loadFrequentlyUsedData() {
     frequentlyUsedData = await FrequentlyUsed.getFrequentlyUsed(
       config.daysRange,
       config.displayCount,
-      config.blacklist
+      config.blacklist,
+      config.pinned || []
     );
   } catch (error) {
     console.error('加载常用数据失败:', error);
@@ -143,9 +144,13 @@ function createTreeNode(node, level) {
   const isFolder = !node.url;
   const isExpanded = expandedFolders.has(node.id);
   const hasChildren = isFolder && node.children && node.children.length > 0;
+  const isPinned = node.isPinned === true;
 
   const content = document.createElement('div');
   content.className = 'tree-node-content';
+  if (isPinned) {
+    content.classList.add('pinned-item');
+  }
   // 计算缩进：基础16px + 层级 * 缩进宽度
   const baseIndent = 16;
   const rootStyle = document.documentElement.style;
@@ -171,7 +176,12 @@ function createTreeNode(node, level) {
 
   const title = document.createElement('span');
   title.className = 'tree-title';
-  title.textContent = node.title || (isFolder ? '新建文件夹' : '无标题');
+  // 置顶链接显示📌图标
+  if (isPinned && !isFolder) {
+    title.innerHTML = `<span class="pinned-icon">📌</span>${node.title || '无标题'}`;
+  } else {
+    title.textContent = node.title || (isFolder ? '新建文件夹' : '无标题');
+  }
   title.title = node.title || '';
 
   // 保存节点引用以便拖拽时使用
@@ -802,6 +812,37 @@ function showContextMenu(e, node, isFolder) {
   menu.style.left = `${e.clientX}px`;
   menu.style.top = `${e.clientY}px`;
   menu.style.zIndex = '10000';
+
+  // 检查是否在常用文件夹中
+  const isInFrequentlyUsed = node.parentId === 'frequently-used' || 
+                              (frequentlyUsedData && frequentlyUsedData.some(item => item.url === node.url));
+
+  // 置顶选项（仅常用文件夹中的书签）
+  if (isInFrequentlyUsed && !isFolder && node.url) {
+    const isPinned = window.frequentlyUsedConfig && 
+                     window.frequentlyUsedConfig.pinned && 
+                     window.frequentlyUsedConfig.pinned.includes(node.url);
+    
+    const pinItem = document.createElement('div');
+    pinItem.className = 'context-menu-item';
+    pinItem.textContent = isPinned ? '📌 取消置顶' : '📌 置顶';
+    pinItem.addEventListener('click', async () => {
+      if (isPinned) {
+        await FrequentlyUsedConfig.unpinUrl(node.url);
+      } else {
+        await FrequentlyUsedConfig.pinUrl(node.url);
+      }
+      // 刷新常用数据
+      await refreshFrequentlyUsed();
+      removeContextMenu();
+    });
+    menu.appendChild(pinItem);
+    
+    // 添加分隔线
+    const separator = document.createElement('div');
+    separator.className = 'context-menu-separator';
+    menu.appendChild(separator);
+  }
 
   // 修改选项（书签才有）
   if (!isFolder) {
