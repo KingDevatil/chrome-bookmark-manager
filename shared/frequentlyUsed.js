@@ -61,10 +61,12 @@ const FrequentlyUsed = {
       
       // 1. 获取置顶链接的信息（不查询历史记录）
       const pinnedItems = [];
-      for (const url of pinned) {
+      for (const pinnedItem of pinned) {
+        const url = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+        const title = typeof pinnedItem === 'string' ? pinnedItem : (pinnedItem.title || url);
         pinnedItems.push({
           url: url,
-          title: url,
+          title: title,
           visitCount: 0,
           lastVisit: 0,
           isPinned: true

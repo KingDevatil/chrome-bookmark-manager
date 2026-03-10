@@ -626,14 +626,21 @@ const FrequentlyUsedConfig = {
   /**
    * 置顶链接
    * @param {string} url - 要置顶的 URL
+   * @param {string} title - 链接标题（可选）
    */
-  async pinUrl(url) {
+  async pinUrl(url, title = '') {
     const config = await this.getConfig();
     if (!config.pinned) {
       config.pinned = [];
     }
-    if (!config.pinned.includes(url)) {
-      config.pinned.push(url);
+    
+    // 检查是否已存在
+    const exists = config.pinned.some(item => item.url === url);
+    if (!exists) {
+      config.pinned.push({
+        url: url,
+        title: title || url
+      });
       await this.saveConfig(config);
     }
   },
@@ -645,7 +652,7 @@ const FrequentlyUsedConfig = {
   async unpinUrl(url) {
     const config = await this.getConfig();
     if (config.pinned) {
-      config.pinned = config.pinned.filter(u => u !== url);
+      config.pinned = config.pinned.filter(item => item.url !== url);
       await this.saveConfig(config);
     }
   },
@@ -657,16 +664,38 @@ const FrequentlyUsedConfig = {
    */
   async isPinned(url) {
     const config = await this.getConfig();
-    return config.pinned && config.pinned.includes(url);
+    if (!config.pinned) return false;
+    // 兼容字符串或对象格式
+    return config.pinned.some(item => 
+      (typeof item === 'string' ? item : item.url) === url
+    );
   },
   
   /**
-   * 获取所有置顶链接
+   * 获取所有置顶链接（返回 URL 数组）
    * @returns {Promise<string[]>}
    */
   async getPinnedUrls() {
     const config = await this.getConfig();
-    return config.pinned || [];
+    if (!config.pinned) return [];
+    return config.pinned.map(item => 
+      typeof item === 'string' ? item : item.url
+    );
+  },
+
+  /**
+   * 获取所有置顶项（返回对象数组）
+   * @returns {Promise<Array<{url: string, title: string}>>}
+   */
+  async getPinnedItems() {
+    const config = await this.getConfig();
+    if (!config.pinned) return [];
+    return config.pinned.map(item => {
+      if (typeof item === 'string') {
+        return { url: item, title: item };
+      }
+      return { url: item.url, title: item.title || item.url };
+    });
   },
   
   /**

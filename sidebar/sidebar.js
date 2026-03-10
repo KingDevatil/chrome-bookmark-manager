@@ -328,7 +328,7 @@ function createFrequentlyUsedItem(item, index) {
   const title = document.createElement('span');
   title.className = 'tree-title';
   if (item.isPinned) {
-    title.style.color = '#f59e0b';
+    title.style.color = '#f23600';
   }
   title.textContent = item.title || item.url || '无标题';
   title.title = item.title || item.url || '';
@@ -337,7 +337,7 @@ function createFrequentlyUsedItem(item, index) {
   visitCountOrPin.className = 'frequently-used-visit-count';
   if (item.isPinned) {
     visitCountOrPin.textContent = '📌 置顶';
-    visitCountOrPin.style.color = '#f59e0b';
+    visitCountOrPin.style.color = '#f23600';
     visitCountOrPin.style.fontWeight = '500';
   } else {
     visitCountOrPin.textContent = `${item.visitCount} 次`;
@@ -435,7 +435,7 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
     if (isPinned) {
       await FrequentlyUsedConfig.unpinUrl(item.url);
     } else {
-      await FrequentlyUsedConfig.pinUrl(item.url);
+      await FrequentlyUsedConfig.pinUrl(item.url, item.title);
     }
     await refreshFrequentlyUsed();
     removeContextMenu();
@@ -865,7 +865,7 @@ function showContextMenu(e, node, isFolder) {
       if (isPinned) {
         await FrequentlyUsedConfig.unpinUrl(node.url);
       } else {
-        await FrequentlyUsedConfig.pinUrl(node.url);
+        await FrequentlyUsedConfig.pinUrl(node.url, node.title);
       }
       // 刷新常用数据
       await refreshFrequentlyUsed();
