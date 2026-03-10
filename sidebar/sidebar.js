@@ -424,11 +424,13 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   menu.style.zIndex = '10000';
   
   // 置顶选项
+  const currentUrl = item.url;
   const isPinned = window.frequentlyUsedConfig && 
                    window.frequentlyUsedConfig.pinned && 
-                   window.frequentlyUsedConfig.pinned.some(item => 
-                     (typeof item === 'string' ? item : item.url) === item.url
-                   );
+                   window.frequentlyUsedConfig.pinned.some(pinnedItem => {
+                     const pinnedUrl = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+                     return pinnedUrl === currentUrl;
+                   });
   
   const pinItem = document.createElement('div');
   pinItem.className = 'context-menu-item';
@@ -856,11 +858,13 @@ function showContextMenu(e, node, isFolder) {
 
   // 置顶选项（仅常用文件夹中的书签）
   if (isInFrequentlyUsed && !isFolder && node.url) {
+    const currentUrl = node.url;
     const isPinned = window.frequentlyUsedConfig && 
                      window.frequentlyUsedConfig.pinned && 
-                     window.frequentlyUsedConfig.pinned.some(item => 
-                       (typeof item === 'string' ? item : item.url) === node.url
-                     );
+                     window.frequentlyUsedConfig.pinned.some(pinnedItem => {
+                       const pinnedUrl = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+                       return pinnedUrl === currentUrl;
+                     });
     
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';

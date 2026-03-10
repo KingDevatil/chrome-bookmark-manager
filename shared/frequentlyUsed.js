@@ -18,7 +18,7 @@ const FrequentlyUsed = {
    * @param {number} daysRange - 统计时间范围（天数）
    * @param {number} displayCount - 展示数量
    * @param {string[]} blacklist - 黑名单域名列表
-   * @param {string[]} pinned - 置顶的 URL 列表
+   * @param {Array<string|{url:string, title:string}>} pinned - 置顶的 URL 或对象列表
    * @returns {Promise<Array>} 常用链接列表
    */
   async getFrequentlyUsed(daysRange = 7, displayCount = 10, blacklist = [], pinned = []) {
@@ -57,7 +57,10 @@ const FrequentlyUsed = {
     try {
       const now = Date.now();
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
-      const pinnedSet = new Set(pinned);
+      
+      // 将 pinned 转换为 URL 字符串数组
+      const pinnedUrls = pinned.map(p => typeof p === 'string' ? p : p.url);
+      const pinnedSet = new Set(pinnedUrls);
       
       // 1. 获取置顶链接的信息（不查询历史记录）
       const pinnedItems = [];
@@ -82,7 +85,7 @@ const FrequentlyUsed = {
       
       if (!history || history.length === 0) {
         // 即使没有历史记录，也要返回置顶链接
-        const bookmarkedSet = await this.checkBookmarkedUrls(pinned);
+        const bookmarkedSet = await this.checkBookmarkedUrls(pinnedUrls);
         pinnedItems.forEach(item => {
           item.isBookmarked = bookmarkedSet.has(item.url);
         });
