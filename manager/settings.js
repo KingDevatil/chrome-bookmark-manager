@@ -660,10 +660,20 @@ function setupFrequentlyUsedEventListeners() {
       config.pinned = [];
       await FrequentlyUsedConfig.saveConfig(config);
       await renderPinnedList();
-      showStatus('frequently-used-status', '已清空所有置顶', 'success');
+      const statusEl = document.getElementById('frequently-used-status');
+      if (statusEl) {
+        statusEl.textContent = '已清空所有置顶';
+        statusEl.className = 'status-message success visible';
+        setTimeout(() => statusEl.classList.remove('visible'), 3000);
+      }
     } catch (error) {
       console.error('清空置顶失败:', error);
-      showStatus('frequently-used-status', '清空失败，请重试', 'error');
+      const statusEl = document.getElementById('frequently-used-status');
+      if (statusEl) {
+        statusEl.textContent = '清空失败: ' + error.message;
+        statusEl.className = 'status-message error visible';
+        setTimeout(() => statusEl.classList.remove('visible'), 3000);
+      }
     }
   });
   
