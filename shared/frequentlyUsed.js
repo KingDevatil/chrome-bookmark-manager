@@ -54,27 +54,27 @@ const FrequentlyUsed = {
    * 计算常用链接（核心算法）
    */
   async calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned = []) {
+    // 将 pinned 转换为 URL 字符串数组
+    const pinnedUrls = pinned.map(p => typeof p === 'string' ? p : p.url);
+    const pinnedSet = new Set(pinnedUrls);
+    
+    // 1. 获取置顶链接的信息（不查询历史记录）
+    const pinnedItems = [];
+    for (const pinnedItem of pinned) {
+      const url = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+      const title = typeof pinnedItem === 'string' ? pinnedItem : (pinnedItem.title || url);
+      pinnedItems.push({
+        url: url,
+        title: title,
+        visitCount: 0,
+        lastVisit: 0,
+        isPinned: true
+      });
+    }
+    
     try {
       const now = Date.now();
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
-      
-      // 将 pinned 转换为 URL 字符串数组
-      const pinnedUrls = pinned.map(p => typeof p === 'string' ? p : p.url);
-      const pinnedSet = new Set(pinnedUrls);
-      
-      // 1. 获取置顶链接的信息（不查询历史记录）
-      const pinnedItems = [];
-      for (const pinnedItem of pinned) {
-        const url = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
-        const title = typeof pinnedItem === 'string' ? pinnedItem : (pinnedItem.title || url);
-        pinnedItems.push({
-          url: url,
-          title: title,
-          visitCount: 0,
-          lastVisit: 0,
-          isPinned: true
-        });
-      }
       
       // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）
       const history = await chrome.history.search({
