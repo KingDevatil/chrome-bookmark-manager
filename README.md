@@ -2,7 +2,7 @@
 
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)
 
 ## ✨ 功能特性
