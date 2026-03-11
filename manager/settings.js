@@ -734,6 +734,10 @@ function setupFrequentlyUsedEventListeners() {
       showStatus('frequently-used-status', '添加失败，请重试', 'error');
     }
   });
+  
+  // 选择标签弹窗事件
+  document.getElementById('cancel-select-tags-btn').addEventListener('click', hideSelectTagsModal);
+  document.getElementById('confirm-select-tags-btn').addEventListener('click', confirmAddTagsToGroup);
 }
 
 // ============================================
@@ -825,32 +829,16 @@ function createTagGroupCard(group) {
     content.appendChild(tagEl);
   });
   
-  // 添加标签输入框
-  const addContainer = document.createElement('div');
-  addContainer.className = 'add-tag-input-container';
-  addContainer.innerHTML = `
-    <input type="text" placeholder="输入标签名添加到分组" class="add-tag-input">
-    <button class="btn btn-sm add-tag-btn">添加</button>
-  `;
-  
-  const input = addContainer.querySelector('input');
-  const addBtn = addContainer.querySelector('.add-tag-btn');
-  
+  // 添加标签按钮
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-sm';
+  addBtn.textContent = '+ 添加标签';
+  addBtn.style.marginTop = '8px';
   addBtn.addEventListener('click', () => {
-    const tagName = input.value.trim();
-    if (tagName) {
-      addTagToGroup(group.id, tagName);
-      input.value = '';
-    }
+    showSelectTagsModal(group.id);
   });
   
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      addBtn.click();
-    }
-  });
-  
-  content.appendChild(addContainer);
+  content.appendChild(addBtn);
   
   // 事件绑定
   header.querySelector('.edit-group-btn').addEventListener('click', (e) => {
@@ -927,6 +915,169 @@ async function removeTagFromGroup(groupId, tagName) {
     console.error('从分组移除标签失败:', error);
     alert('移除标签失败');
   }
+}
+
+// 当前正在编辑的分组ID
+let currentEditingGroupId = null;
+// 已选择的标签集合
+let selectedTagsForGroup = new Set();
+
+async function showSelectTagsModal(groupId) {
+  const modal = document.getElementById('select-tags-modal');
+  const container = document.getElementById('select-tags-container');
+  const preview = document.getElementById('selected-tags-preview');
+  const countEl = document.getElementById('selected-tags-count');
+  
+  currentEditingGroupId = groupId;
+  selectedTagsForGroup = new Set();
+  
+  // 清空容器
+  container.innerHTML = '';
+  preview.innerHTML = '';
+  countEl.textContent = '0';
+  
+  // 获取当前分组的标签（用于排除）
+  const groupsData = await TagGroups.getAll();
+  const currentGroup = groupsData.groups.find(g => g.id === groupId);
+  const currentGroupTags = new Set(currentGroup ? currentGroup.tags : []);
+  
+  // 获取所有标签
+  const allTags = (await BookmarkTags.getAllTags()) || [];
+  
+  // 渲染其他分组
+  if (groupsData.groups && groupsData.groups.length > 0) {
+    groupsData.groups.forEach(group => {
+      // 跳过当前分组
+      if (group.id === groupId) return;
+      
+      // 过滤出不在当前分组的标签
+      const availableTags = group.tags.filter(tag => !currentGroupTags.has(tag));
+      
+      if (availableTags.length > 0) {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'select-tag-group';
+        
+        const header = document.createElement('div');
+        header.className = 'select-tag-group-header';
+        header.innerHTML = `<span>📁</span><span>${group.name}</span><span style="margin-left:auto;font-weight:normal">(${availableTags.length})</span>`;
+        
+        const content = document.createElement('div');
+        content.className = 'select-tag-group-content';
+        
+        availableTags.forEach(tag => {
+          const tagEl = createSelectableTagItem(tag);
+          content.appendChild(tagEl);
+        });
+        
+        groupEl.appendChild(header);
+        groupEl.appendChild(content);
+        container.appendChild(groupEl);
+      }
+    });
+  }
+  
+  // 获取未分组标签
+  const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
+  const availableUngroupedTags = ungroupedTags.filter(tag => !currentGroupTags.has(tag));
+  
+  if (availableUngroupedTags.length > 0) {
+    const ungroupedEl = document.createElement('div');
+    ungroupedEl.className = 'select-tag-group';
+    
+    const header = document.createElement('div');
+    header.className = 'select-tag-group-header';
+    header.innerHTML = `<span>📋</span><span>未分组</span><span style="margin-left:auto;font-weight:normal">(${availableUngroupedTags.length})</span>`;
+    
+    const content = document.createElement('div');
+    content.className = 'select-tag-group-content';
+    
+    availableUngroupedTags.forEach(tag => {
+      const tagEl = createSelectableTagItem(tag);
+      content.appendChild(tagEl);
+    });
+    
+    ungroupedEl.appendChild(header);
+    ungroupedEl.appendChild(content);
+    container.appendChild(ungroupedEl);
+  }
+  
+  // 如果没有可选择的标签
+  if (container.children.length === 0) {
+    container.innerHTML = '<div class="empty-state">没有可选择的标签，所有标签已在此分组中</div>';
+  }
+  
+  modal.classList.add('visible');
+}
+
+function createSelectableTagItem(tag) {
+  const tagEl = document.createElement('div');
+  tagEl.className = 'select-tag-item';
+  tagEl.dataset.tag = tag;
+  tagEl.innerHTML = `
+    <span class="checkbox"></span>
+    <span>${tag}</span>
+  `;
+  
+  tagEl.addEventListener('click', () => {
+    toggleSelectTag(tag, tagEl);
+  });
+  
+  return tagEl;
+}
+
+function toggleSelectTag(tag, element) {
+  const preview = document.getElementById('selected-tags-preview');
+  const countEl = document.getElementById('selected-tags-count');
+  
+  if (selectedTagsForGroup.has(tag)) {
+    selectedTagsForGroup.delete(tag);
+    element.classList.remove('selected');
+    element.querySelector('.checkbox').textContent = '';
+    
+    // 从预览中移除
+    const previewTag = preview.querySelector(`[data-tag="${tag}"]`);
+    if (previewTag) previewTag.remove();
+  } else {
+    selectedTagsForGroup.add(tag);
+    element.classList.add('selected');
+    element.querySelector('.checkbox').textContent = '✓';
+    
+    // 添加到预览
+    const previewTag = document.createElement('span');
+    previewTag.className = 'preview-tag';
+    previewTag.dataset.tag = tag;
+    previewTag.textContent = tag;
+    preview.appendChild(previewTag);
+  }
+  
+  countEl.textContent = selectedTagsForGroup.size;
+}
+
+async function confirmAddTagsToGroup() {
+  if (selectedTagsForGroup.size === 0) {
+    hideSelectTagsModal();
+    return;
+  }
+  
+  try {
+    // 将选中的标签添加到当前分组
+    for (const tag of selectedTagsForGroup) {
+      await TagGroups.addTagToGroup(currentEditingGroupId, tag);
+    }
+    
+    hideSelectTagsModal();
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('添加标签到分组失败:', error);
+    alert('添加标签失败');
+  }
+}
+
+function hideSelectTagsModal() {
+  const modal = document.getElementById('select-tags-modal');
+  modal.classList.remove('visible');
+  currentEditingGroupId = null;
+  selectedTagsForGroup = new Set();
 }
 
 async function showTagDetail(tagName) {

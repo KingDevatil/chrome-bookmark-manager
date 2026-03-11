@@ -628,6 +628,101 @@
       font-size: 12px;
     }
 
+    /* 选择标签弹窗样式 */
+    .select-tags-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--bg-secondary, #f8fafc);
+    }
+
+    .select-tag-group {
+      margin-bottom: 8px;
+    }
+
+    .select-tag-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .select-tag-group-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary, #64748b);
+      background: var(--bg-tertiary, #f1f5f9);
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .select-tag-group-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+    }
+
+    .select-tag-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .select-tag-item:hover {
+      border-color: var(--primary-color, #4f46e5);
+    }
+
+    .select-tag-item.selected {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .select-tag-item .checkbox {
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .select-tag-item.selected .checkbox {
+      background: white;
+      color: #667eea;
+    }
+
+    .selected-tags-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 30px;
+      padding: 8px;
+      background: var(--bg-secondary, #f8fafc);
+      border-radius: 6px;
+    }
+
+    .selected-tags-preview .preview-tag {
+      padding: 4px 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px;
+      font-size: 12px;
+    }
+
     /* 未分组标签样式 */
     .ungrouped-tag {
       display: inline-flex;
@@ -1220,6 +1315,25 @@
   </div>
 
   <button class="theme-toggle" id="theme-toggle">🌓</button>
+
+  <!-- 选择标签弹窗 -->
+  <div class="modal-overlay" id="select-tags-modal">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">选择标签添加到分组</div>
+      <div class="modal-field">
+        <label class="modal-label">从其他分组或未分组中选择标签</label>
+        <div id="select-tags-container" class="select-tags-container"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">已选择 <span id="selected-tags-count">0</span> 个标签</label>
+        <div id="selected-tags-preview" class="selected-tags-preview"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="cancel-select-tags-btn">取消</button>
+        <button class="btn btn-primary" id="confirm-select-tags-btn">确定</button>
+      </div>
+    </div>
+  </div>
 
   <script src="../shared/utils.js"></script>
   <script src="../shared/frequentlyUsed.js"></script>
