@@ -966,18 +966,17 @@
           <h3 style="margin-bottom: 16px;">手动操作</h3>
 
           <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-            <div class="settings-field" style="flex: 1; min-width: 250px;">
-              <label class="settings-label">立即备份</label>
-              <p class="settings-description">立即将当前书签备份到 WebDAV 服务器</p>
-              <button class="btn btn-primary" id="backup-now-btn">立即备份</button>
+            <div class="settings-field" style="flex: 1; min-width: 200px;">
+              <label class="settings-label">书签备份</label>
+              <p class="settings-description">将当前书签备份到 WebDAV 服务器</p>
+              <button class="btn btn-primary" id="backup-now-btn">备份书签</button>
               <div class="status-message" id="backup-now-status"></div>
             </div>
 
-            <div class="settings-field" style="flex: 1; min-width: 250px;">
-              <label class="settings-label">恢复备份</label>
+            <div class="settings-field" style="flex: 1; min-width: 200px;">
+              <label class="settings-label">书签恢复</label>
               <p class="settings-description">从 WebDAV 服务器恢复书签备份</p>
-
-              <div class="radio-group">
+              <div class="radio-group" style="margin-bottom: 8px;">
                 <label class="radio-item">
                   <input type="radio" name="restore-mode" value="merge" checked>
                   <span>合并</span>
@@ -987,9 +986,22 @@
                   <span>覆盖</span>
                 </label>
               </div>
-
-              <button class="btn" id="restore-btn" style="margin-top: 12px;">恢复备份</button>
+              <button class="btn" id="restore-btn">恢复书签</button>
               <div class="status-message" id="restore-status"></div>
+            </div>
+
+            <div class="settings-field" style="flex: 1; min-width: 200px;">
+              <label class="settings-label">布局备份</label>
+              <p class="settings-description">将布局设置备份到 WebDAV 服务器</p>
+              <button class="btn" id="backup-layout-btn">备份布局</button>
+              <div class="status-message" id="backup-layout-status"></div>
+            </div>
+
+            <div class="settings-field" style="flex: 1; min-width: 200px;">
+              <label class="settings-label">布局恢复</label>
+              <p class="settings-description">从 WebDAV 服务器恢复布局设置</p>
+              <button class="btn" id="restore-layout-btn">恢复布局</button>
+              <div class="status-message" id="restore-layout-status"></div>
             </div>
           </div>
         </div>
@@ -1026,52 +1038,6 @@
               <button class="btn" id="import-all-btn">选择文件</button>
               <span id="import-all-filename" style="margin-left: 12px; color: var(--text-secondary, #64748b); font-size: 13px;"></span>
               <div class="status-message" id="import-all-status"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">布局备份</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">单独导出或导入布局设置</p>
-
-          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-            <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">导出布局</label>
-              <p class="settings-description">将布局设置导出为 JSON 文件</p>
-              <button class="btn" id="export-layout-btn">导出布局</button>
-              <div class="status-message" id="export-layout-status"></div>
-            </div>
-
-            <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">导入布局</label>
-              <p class="settings-description">从 JSON 文件导入布局设置</p>
-              <input type="file" id="import-layout-file" accept=".json" style="display: none;">
-              <button class="btn" id="import-layout-btn">选择文件</button>
-              <span id="import-layout-filename" style="margin-left: 12px; color: var(--text-secondary, #64748b); font-size: 13px;"></span>
-              <div class="status-message" id="import-layout-status"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">标签备份</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">独立导出或导入书签标签数据</p>
-
-          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-            <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">导出标签</label>
-              <p class="settings-description">将当前所有书签标签导出为 JSON 文件</p>
-              <button class="btn" id="export-tags-btn">导出标签</button>
-              <div class="status-message" id="export-tags-status"></div>
-            </div>
-
-            <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">导入标签</label>
-              <p class="settings-description">从 JSON 文件导入书签标签数据（合并到现有数据）</p>
-              <input type="file" id="import-tags-file" accept=".json" style="display: none;">
-              <button class="btn" id="import-tags-btn">选择文件</button>
-              <span id="import-tags-filename" style="margin-left: 12px; color: var(--text-secondary, #64748b); font-size: 13px;"></span>
-              <div class="status-message" id="import-tags-status"></div>
             </div>
           </div>
         </div>

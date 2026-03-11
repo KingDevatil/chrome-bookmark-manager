@@ -97,14 +97,9 @@ function setupEventListeners() {
   // 手动操作按钮
   document.getElementById('backup-now-btn').addEventListener('click', backupNow);
   document.getElementById('restore-btn').addEventListener('click', restoreBackup);
+  document.getElementById('backup-layout-btn').addEventListener('click', backupLayoutToWebDAV);
+  document.getElementById('restore-layout-btn').addEventListener('click', restoreLayoutFromWebDAV);
   
-  // 标签备份按钮
-  document.getElementById('export-tags-btn').addEventListener('click', exportTags);
-  document.getElementById('import-tags-btn').addEventListener('click', () => {
-    document.getElementById('import-tags-file').click();
-  });
-  document.getElementById('import-tags-file').addEventListener('change', handleImportTagsFile);
-
   // 统一导出/导入按钮
   document.getElementById('export-all-btn').addEventListener('click', exportAllConfig);
   document.getElementById('import-all-btn').addEventListener('click', () => {
@@ -378,6 +373,99 @@ async function restoreBackup() {
     showStatus('restore-status', `恢复失败: ${error.message}`, 'error');
   } finally {
     document.getElementById('restore-btn').disabled = false;
+  }
+}
+
+// 备份布局到 WebDAV
+async function backupLayoutToWebDAV() {
+  const result = await Storage.get('webdavConfig');
+  if (!result.webdavConfig || !result.webdavConfig.enabled) {
+    showStatus('backup-layout-status', '请先启用并配置 WebDAV', 'error');
+    return;
+  }
+  
+  showStatus('backup-layout-status', '正在备份布局...', 'info');
+  document.getElementById('backup-layout-btn').disabled = true;
+  
+  try {
+    const layoutResult = await Storage.get('layoutSettings');
+    const layoutSettings = layoutResult.layoutSettings || {};
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      type: 'layout-settings',
+      layoutSettings: layoutSettings
+    };
+    
+    const webdav = result.webdavConfig;
+    const filename = 'layout-settings.json';
+    const url = `${webdav.url.replace(/\/$/, '')}/bookmarks/${filename}`;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`${webdav.username}:${webdav.password}`)
+      },
+      body: JSON.stringify(exportData)
+    });
+    
+    if (response.ok) {
+      showStatus('backup-layout-status', '布局备份成功', 'success');
+    } else {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  } catch (error) {
+    showStatus('backup-layout-status', `备份失败: ${error.message}`, 'error');
+  } finally {
+    document.getElementById('backup-layout-btn').disabled = false;
+  }
+}
+
+// 从 WebDAV 恢复布局
+async function restoreLayoutFromWebDAV() {
+  const result = await Storage.get('webdavConfig');
+  if (!result.webdavConfig || !result.webdavConfig.enabled) {
+    showStatus('restore-layout-status', '请先启用并配置 WebDAV', 'error');
+    return;
+  }
+  
+  if (!confirm('确定要从 WebDAV 恢复布局设置吗？这将覆盖当前布局设置。')) {
+    return;
+  }
+  
+  showStatus('restore-layout-status', '正在恢复布局...', 'info');
+  document.getElementById('restore-layout-btn').disabled = true;
+  
+  try {
+    const webdav = result.webdavConfig;
+    const filename = 'layout-settings.json';
+    const url = `${webdav.url.replace(/\/$/, '')}/bookmarks/${filename}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${webdav.username}:${webdav.password}`)
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.layoutSettings) {
+      await Storage.set({ layoutSettings: data.layoutSettings });
+      showStatus('restore-layout-status', '布局恢复成功', 'success');
+    } else {
+      throw new Error('无效的布局文件');
+    }
+  } catch (error) {
+    showStatus('restore-layout-status', `恢复失败: ${error.message}`, 'error');
+  } finally {
+    document.getElementById('restore-layout-btn').disabled = false;
   }
 }
 
