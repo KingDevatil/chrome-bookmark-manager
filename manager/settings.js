@@ -16,9 +16,7 @@ async function loadSettings() {
   const backupSettings = result.backupSettings || { autoBackup: false, backupInterval: 60, backupOnStartup: false };
   const layoutSettings = result.layoutSettings || { 
     bookmarkHeight: 32, 
-    treeIndent: 20,
-    displayMode: 'sidebar',
-    floatWidth: 400
+    treeIndent: 20
   };
 
   // WebDAV 设置
@@ -34,16 +32,7 @@ async function loadSettings() {
   document.getElementById('backup-interval').value = String(backupSettings.backupInterval || 60);
   document.getElementById('backup-on-startup').checked = backupSettings.backupOnStartup || false;
 
-  // 布局设置 - 显示模式
-  const displayMode = layoutSettings.displayMode || 'sidebar';
-  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
-    radio.checked = radio.value === displayMode;
-  });
-  document.getElementById('float-width-field').style.display = displayMode === 'float' ? 'block' : 'none';
-  document.getElementById('float-width-slider').value = layoutSettings.floatWidth || 400;
-  document.getElementById('float-width-value').textContent = `${layoutSettings.floatWidth || 400}px`;
-
-  // 布局设置 - 其他
+  // 布局设置
   document.getElementById('bookmark-height-slider').value = layoutSettings.bookmarkHeight || 30;
   document.getElementById('bookmark-height-value').textContent = `${layoutSettings.bookmarkHeight || 30}px`;
   document.getElementById('tree-indent-slider').value = layoutSettings.treeIndent || 5;
@@ -162,19 +151,6 @@ function setupEventListeners() {
   // 布局设置按钮
   document.getElementById('save-layout-btn').addEventListener('click', saveLayoutSettings);
   document.getElementById('reset-layout-btn').addEventListener('click', resetLayoutSettings);
-  
-  // 显示模式切换
-  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      const displayMode = e.target.value;
-      document.getElementById('float-width-field').style.display = displayMode === 'float' ? 'block' : 'none';
-    });
-  });
-  
-  // 浮窗宽度滑块
-  document.getElementById('float-width-slider').addEventListener('input', (e) => {
-    document.getElementById('float-width-value').textContent = `${e.target.value}px`;
-  });
 }
 
 function updateLayoutPreview(height, treeIndent, bookmarkIndent) {
@@ -187,13 +163,10 @@ function updateLayoutPreview(height, treeIndent, bookmarkIndent) {
 }
 
 async function saveLayoutSettings() {
-  const displayMode = document.querySelector('input[name="display-mode"]:checked').value;
   const settings = {
     bookmarkHeight: parseInt(document.getElementById('bookmark-height-slider').value),
     treeIndent: parseInt(document.getElementById('tree-indent-slider').value),
-    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value),
-    displayMode: displayMode,
-    floatWidth: parseInt(document.getElementById('float-width-slider').value)
+    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value)
   };
 
   await Storage.set({ layoutSettings: settings });
@@ -204,9 +177,7 @@ async function resetLayoutSettings() {
   const defaultSettings = {
     bookmarkHeight: 30,
     treeIndent: 5,
-    bookmarkIndent: 5,
-    displayMode: 'sidebar',
-    floatWidth: 400
+    bookmarkIndent: 5
   };
 
   document.getElementById('bookmark-height-slider').value = defaultSettings.bookmarkHeight;
@@ -215,14 +186,6 @@ async function resetLayoutSettings() {
   document.getElementById('tree-indent-value').textContent = `${defaultSettings.treeIndent}px`;
   document.getElementById('bookmark-indent-slider').value = defaultSettings.bookmarkIndent;
   document.getElementById('bookmark-indent-value').textContent = `${defaultSettings.bookmarkIndent}px`;
-  
-  // 重置显示模式
-  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
-    radio.checked = radio.value === defaultSettings.displayMode;
-  });
-  document.getElementById('float-width-field').style.display = 'none';
-  document.getElementById('float-width-slider').value = defaultSettings.floatWidth;
-  document.getElementById('float-width-value').textContent = `${defaultSettings.floatWidth}px`;
 
   updateLayoutPreview(defaultSettings.bookmarkHeight, defaultSettings.treeIndent, defaultSettings.bookmarkIndent);
 

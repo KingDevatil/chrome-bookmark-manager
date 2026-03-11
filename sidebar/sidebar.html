@@ -37,55 +37,6 @@
       position: relative;
     }
     
-    /* 浮窗模式样式 - 用于独立窗口 */
-    .sidebar-container.float-mode {
-      max-width: none !important;
-      min-width: 280px !important;
-      width: 100% !important;
-      height: 100vh !important;
-      border-radius: 0;
-    }
-    
-    /* 浮窗拖拽边缘 */
-    .float-resize-handle {
-      display: none;
-    }
-    
-    .float-resize-handle::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      right: 2px;
-      width: 4px;
-      height: 40px;
-      transform: translateY(-50%);
-      background-color: var(--border-color, #e2e8f0);
-      border-radius: 2px;
-      transition: background-color 0.2s;
-    }
-    
-    .float-resize-handle:hover::after,
-    .float-resize-handle.dragging::after {
-      background-color: var(--primary-color, #4f46e5);
-    }
-    
-    .sidebar-container.float-mode .float-resize-handle {
-      display: block;
-    }
-    
-    /* 浮窗模式下底部按钮自适应 */
-    .sidebar-container.float-mode .sidebar-footer {
-      width: 100%;
-    }
-    
-    .sidebar-container.float-mode .footer-row {
-      width: 100%;
-    }
-    
-    .sidebar-container.float-mode .footer-row .btn {
-      min-width: 0;
-    }
-    
     .sidebar-header {
       flex-shrink: 0;
     }
@@ -925,7 +876,6 @@
 </head>
 <body>
   <div class="sidebar-container" id="sidebar-container">
-    <div class="float-resize-handle" id="float-resize-handle"></div>
     <div class="sidebar-header">
       <div class="header-row">
         <div class="sidebar-title">🔖 书签管理器</div>

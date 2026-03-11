@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   setupMenuPanel();
   setupAutoRefresh();
-  initFloatMode();
   
   // 初始化主题开关 UI 状态
   const theme = document.documentElement.getAttribute('data-theme');
@@ -1641,76 +1640,16 @@ async function loadLayoutSettings() {
     const settings = result.layoutSettings || {
       bookmarkHeight: 30,
       treeIndent: 5,
-      bookmarkIndent: 5,
-      displayMode: 'sidebar',
-      floatWidth: 400
+      bookmarkIndent: 5
     };
 
     // 应用 CSS 变量
     document.documentElement.style.setProperty('--bookmark-height', `${settings.bookmarkHeight}px`);
     document.documentElement.style.setProperty('--tree-indent', `${settings.treeIndent}px`);
     document.documentElement.style.setProperty('--bookmark-indent', `${settings.bookmarkIndent}px`);
-    
-    // 应用显示模式和浮窗宽度
-    window.displayMode = settings.displayMode || 'sidebar';
-    window.floatWidth = settings.floatWidth || 400;
   } catch (error) {
     console.error('加载布局设置失败:', error);
   }
-}
-
-// ============================================
-// 浮窗模式
-// ============================================
-
-function initFloatMode() {
-  const container = document.getElementById('sidebar-container');
-  const resizeHandle = document.getElementById('float-resize-handle');
-  
-  if (!container || !resizeHandle) return;
-  
-  // 根据显示模式应用样式
-  if (window.displayMode === 'float') {
-    container.classList.add('float-mode');
-    container.style.width = `${window.floatWidth}px`;
-  }
-  
-  // 拖拽调整宽度
-  let isResizing = false;
-  let startX, startWidth;
-  
-  resizeHandle.addEventListener('mousedown', (e) => {
-    isResizing = true;
-    startX = e.clientX;
-    startWidth = container.offsetWidth;
-    resizeHandle.classList.add('dragging');
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
-  });
-  
-  document.addEventListener('mousemove', (e) => {
-    if (!isResizing) return;
-    
-    const diff = e.clientX - startX;
-    const newWidth = Math.max(280, Math.min(600, startWidth + diff));
-    container.style.width = `${newWidth}px`;
-    window.floatWidth = newWidth;
-  });
-  
-  document.addEventListener('mouseup', async () => {
-    if (!isResizing) return;
-    
-    isResizing = false;
-    resizeHandle.classList.remove('dragging');
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
-    
-    // 保存宽度设置
-    const result = await Storage.get('layoutSettings');
-    const settings = result.layoutSettings || {};
-    settings.floatWidth = window.floatWidth;
-    await Storage.set({ layoutSettings: settings });
-  });
 }
 
 // ============================================

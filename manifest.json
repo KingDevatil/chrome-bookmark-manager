@@ -9,9 +9,7 @@
     "activeTab",
     "alarms",
     "sidePanel",
-    "history",
-    "system.display",
-    "scripting"
+    "history"
   ],
   "host_permissions": [
     "*://*/"
@@ -30,14 +28,6 @@
   "side_panel": {
     "default_path": "sidebar/sidebar.html"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content/float-panel.js"],
-      "css": ["content/float-panel.css"],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -48,10 +38,7 @@
       "resources": [
         "shared/styles.css",
         "shared/utils.js",
-        "icons/*.svg",
-        "sidebar/sidebar.html",
-        "sidebar/sidebar.js",
-        "sidebar/sidebar.css"
+        "icons/*.svg"
       ],
       "matches": ["<all_urls>"]
     }

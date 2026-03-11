@@ -494,39 +494,10 @@ syncManager.init();
 
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    // 检查是否是特殊页面
-    if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('about:'))) {
-      // 特殊页面使用侧边栏模式
-      await chrome.sidePanel.open({ windowId: tab.windowId });
-      return;
-    }
-    
-    // 获取显示模式设置
-    const result = await chrome.storage.local.get('layoutSettings');
-    const displayMode = result.layoutSettings?.displayMode || 'sidebar';
-    
-    if (displayMode === 'float') {
-      // 浮窗模式：注入到当前页面
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content/float-panel.js']
-        });
-        
-        // 发送消息切换浮窗
-        await chrome.tabs.sendMessage(tab.id, { action: 'toggleFloatPanel' });
-      } catch (e) {
-        console.error('Failed to inject float panel, falling back to sidebar:', e);
-        // 失败时回退到侧边栏
-        await chrome.sidePanel.open({ windowId: tab.windowId });
-      }
-    } else {
-      // 侧边栏模式：使用 sidePanel
-      await chrome.sidePanel.open({ windowId: tab.windowId });
-    }
-    console.log('Opened via action click, mode:', displayMode);
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+    console.log('Side panel opened via action click');
   } catch (error) {
-    console.error('Failed to open:', error);
+    console.error('Failed to open side panel:', error);
   }
 });
 
