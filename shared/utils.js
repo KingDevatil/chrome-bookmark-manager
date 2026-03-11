@@ -946,7 +946,7 @@ const TagGroups = {
   async createGroup(name) {
     const data = await this.getAll();
     const newGroup = {
-      id: 'group-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      id: 'group-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11),
       name: name,
       tags: []
     };

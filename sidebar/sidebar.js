@@ -1372,8 +1372,6 @@ async function renderSearchResults() {
   const emptyState = document.getElementById('empty-state');
 
   try {
-    const lowerQuery = currentSearchQuery.toLowerCase();
-    
     // 1. 使用 Chrome API 搜索标题和 URL
     const chromeResults = await BookmarkUtils.search(currentSearchQuery);
     

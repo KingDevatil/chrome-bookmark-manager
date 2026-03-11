@@ -841,10 +841,10 @@ async function renderTagSelector(bookmarkId, currentTags) {
   container.innerHTML = '';
 
   // 获取所有标签和分组
-  const allTags = await BookmarkTags.getAllTags();
+  const allTags = (await BookmarkTags.getAllTags()) || [];
   const groupsData = await TagGroups.getAll();
   const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
-  const currentTagSet = new Set(currentTags);
+  const currentTagSet = new Set(currentTags || []);
 
   // 渲染分组
   if (groupsData.groups && groupsData.groups.length > 0) {
