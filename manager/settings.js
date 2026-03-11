@@ -569,8 +569,9 @@ async function handleImportAllConfig(event) {
     
     // 导入书签
     if (data.bookmarks) {
-      // 合并模式：遍历导入的书签，添加到现有书签树
-      for (const node of data.bookmarks) {
+      // getTree返回数组，需要遍历每个根节点
+      const nodes = Array.isArray(data.bookmarks) ? data.bookmarks : [data.bookmarks];
+      for (const node of nodes) {
         await mergeBookmarks(node);
       }
     }
@@ -618,22 +619,31 @@ async function mergeBookmarks(node, parentId = null) {
     // 检查是否已存在
     const existing = await chrome.bookmarks.search({ url: node.url });
     if (existing.length === 0) {
-      await chrome.bookmarks.create({
-        parentId: parentId,
-        title: node.title,
-        url: node.url
-      });
+      try {
+        await chrome.bookmarks.create({
+          parentId: parentId,
+          title: node.title,
+          url: node.url
+        });
+      } catch (e) {
+        console.error('创建书签失败:', e);
+      }
     }
   }
   if (node.children) {
     for (const child of node.children) {
       let newParentId = parentId;
       if (!child.url) {
-        const folder = await chrome.bookmarks.create({
-          parentId: parentId,
-          title: child.title
-        });
-        newParentId = folder.id;
+        try {
+          const folder = await chrome.bookmarks.create({
+            parentId: parentId,
+            title: child.title
+          });
+          newParentId = folder.id;
+        } catch (e) {
+          console.error('创建文件夹失败:', e);
+          continue;
+        }
       }
       await mergeBookmarks(child, newParentId);
     }
