@@ -1375,8 +1375,8 @@ async function renderSearchResults() {
     // 1. 使用 Chrome API 搜索标题和 URL
     const chromeResults = await BookmarkUtils.search(currentSearchQuery);
     
-    // 2. 搜索标签
-    const tagBookmarkIds = await BookmarkTags.fuzzySearchTags(currentSearchQuery);
+    // 2. 搜索标签（完整匹配）
+    const tagBookmarkIds = await BookmarkTags.searchTags(currentSearchQuery);
     
     // 3. 获取标签搜索结果的书签详情
     const tagResults = [];

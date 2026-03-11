@@ -838,6 +838,27 @@ const BookmarkTags = {
   },
 
   /**
+   * 搜索标签（完整匹配标签名）
+   * @param {string} query - 搜索关键词
+   * @returns {Promise<string[]>} 匹配的书签ID数组
+   */
+  async searchTags(query) {
+    if (!query) return [];
+    const allTags = await this.getAll();
+    const bookmarkIds = [];
+    const lowerQuery = query.toLowerCase();
+    
+    Object.entries(allTags).forEach(([bookmarkId, tags]) => {
+      // 检查是否有任何标签完整匹配查询字符串
+      const hasMatch = tags.some(tag => tag.toLowerCase() === lowerQuery);
+      if (hasMatch) {
+        bookmarkIds.push(bookmarkId);
+      }
+    });
+    return bookmarkIds;
+  },
+
+  /**
    * 模糊搜索标签（标签名包含查询字符串）
    * @param {string} query - 搜索关键词
    * @returns {Promise<string[]>} 匹配的书签ID数组

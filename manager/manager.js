@@ -1094,8 +1094,8 @@ async function handleSearch(e) {
   // 1. 使用 Chrome API 搜索标题和 URL
   const chromeResults = await BookmarkUtils.search(query);
   
-  // 2. 搜索标签
-  const tagBookmarkIds = await BookmarkTags.fuzzySearchTags(query);
+  // 2. 搜索标签（完整匹配）
+  const tagBookmarkIds = await BookmarkTags.searchTags(query);
   
   // 3. 获取标签搜索结果的书签详情
   const tagResults = [];
@@ -1395,31 +1395,122 @@ async function showAddTagsModal() {
   // 更新应用数量
   applyCount.textContent = state.selectedIds.size;
   
-  // 加载所有已有标签
-  const allTags = await BookmarkTags.getAllTags();
+  // 清空已选择的标签
   tagCloud.innerHTML = '';
+  tagsInput.value = '';
   
-  allTags.forEach(tag => {
+  // 渲染标签分组选择器
+  await renderBatchTagSelector();
+  
+  modal.classList.add('visible');
+}
+
+// 已选择的标签集合
+let selectedBatchTags = new Set();
+
+async function renderBatchTagSelector() {
+  const container = document.getElementById('batch-tag-selector-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  selectedBatchTags = new Set();
+  
+  // 获取所有标签和分组
+  const allTags = (await BookmarkTags.getAllTags()) || [];
+  const groupsData = await TagGroups.getAll();
+  const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
+  
+  // 渲染分组
+  if (groupsData.groups && groupsData.groups.length > 0) {
+    groupsData.groups.forEach(group => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'batch-tag-group';
+      
+      const header = document.createElement('div');
+      header.className = 'batch-tag-group-header';
+      header.innerHTML = `<span>📁</span><span>${group.name}</span><span style="margin-left:auto;font-weight:normal">(${group.tags.length})</span>`;
+      
+      const content = document.createElement('div');
+      content.className = 'batch-tag-group-content';
+      
+      group.tags.forEach(tag => {
+        const tagEl = createBatchTagItem(tag);
+        content.appendChild(tagEl);
+      });
+      
+      groupEl.appendChild(header);
+      groupEl.appendChild(content);
+      container.appendChild(groupEl);
+    });
+  }
+  
+  // 渲染未分组标签
+  if (ungroupedTags.length > 0) {
+    const ungroupedEl = document.createElement('div');
+    ungroupedEl.className = 'batch-tag-group';
+    
+    const header = document.createElement('div');
+    header.className = 'batch-tag-group-header';
+    header.innerHTML = `<span>📋</span><span>未分组</span><span style="margin-left:auto;font-weight:normal">(${ungroupedTags.length})</span>`;
+    
+    const content = document.createElement('div');
+    content.className = 'batch-tag-group-content';
+    
+    ungroupedTags.forEach(tag => {
+      const tagEl = createBatchTagItem(tag);
+      content.appendChild(tagEl);
+    });
+    
+    ungroupedEl.appendChild(header);
+    ungroupedEl.appendChild(content);
+    container.appendChild(ungroupedEl);
+  }
+  
+  // 如果没有任何标签
+  if (allTags.length === 0) {
+    container.innerHTML = '<div class="tag-selector-empty">暂无标签，请先在书签详情中添加标签</div>';
+  }
+}
+
+function createBatchTagItem(tag) {
+  const tagEl = document.createElement('span');
+  tagEl.className = 'batch-tag-item';
+  tagEl.textContent = tag;
+  tagEl.dataset.tag = tag;
+  
+  tagEl.addEventListener('click', () => {
+    toggleBatchTag(tag, tagEl);
+  });
+  
+  return tagEl;
+}
+
+function toggleBatchTag(tag, element) {
+  const tagCloud = document.getElementById('tag-cloud');
+  
+  if (selectedBatchTags.has(tag)) {
+    // 取消选择
+    selectedBatchTags.delete(tag);
+    element.classList.remove('selected');
+    
+    // 从 tag-cloud 中移除
+    const tagEl = tagCloud.querySelector(`[data-tag="${tag}"]`);
+    if (tagEl) tagEl.remove();
+  } else {
+    // 添加选择
+    selectedBatchTags.add(tag);
+    element.classList.add('selected');
+    
+    // 添加到 tag-cloud
     const tagEl = document.createElement('span');
     tagEl.className = 'tag';
     tagEl.textContent = tag;
+    tagEl.dataset.tag = tag;
     tagEl.addEventListener('click', () => {
-      // 将标签添加到输入框
-      const current = tagsInput.value.trim();
-      if (current) {
-        tagsInput.value = current + ', ' + tag;
-      } else {
-        tagsInput.value = tag;
-      }
+      toggleBatchTag(tag, element);
     });
     tagCloud.appendChild(tagEl);
-  });
-  
-  // 清空输入框
-  tagsInput.value = '';
-  
-  // 显示弹窗
-  modal.style.display = 'flex';
+  }
 }
 
 function hideAddTagsModal() {
@@ -1431,15 +1522,13 @@ async function addTagsToSelected() {
   const tagsInput = document.getElementById('new-tags-input');
   const tagsText = tagsInput.value.trim();
   
-  if (!tagsText) {
-    hideAddTagsModal();
-    return;
-  }
+  // 解析输入框中的标签（逗号分隔）
+  const inputTags = tagsText ? tagsText.split(',').map(t => t.trim()).filter(t => t) : [];
   
-  // 解析标签（逗号分隔）
-  const newTags = tagsText.split(',').map(t => t.trim()).filter(t => t);
+  // 合并输入框标签和从分组选择的标签
+  const allNewTags = [...new Set([...inputTags, ...selectedBatchTags])];
   
-  if (newTags.length === 0) {
+  if (allNewTags.length === 0) {
     hideAddTagsModal();
     return;
   }
@@ -1447,7 +1536,7 @@ async function addTagsToSelected() {
   // 为每个选中的书签添加标签
   for (const bookmarkId of state.selectedIds) {
     const existingTags = await BookmarkTags.getTags(bookmarkId);
-    const mergedTags = [...new Set([...existingTags, ...newTags])];
+    const mergedTags = [...new Set([...existingTags, ...allNewTags])];
     await BookmarkTags.setTags(bookmarkId, mergedTags);
   }
   

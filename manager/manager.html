@@ -746,6 +746,74 @@
       font-size: 13px;
     }
 
+    /* 批量标签选择器样式 */
+    .batch-tag-selector-container {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--bg-secondary, #f8fafc);
+      margin-bottom: 12px;
+    }
+
+    .batch-tag-group {
+      margin-bottom: 8px;
+    }
+
+    .batch-tag-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .batch-tag-group-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary, #64748b);
+      background: var(--bg-tertiary, #f1f5f9);
+      border-radius: 4px;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+
+    .batch-tag-group-header:hover {
+      background: var(--bg-hover, #e2e8f0);
+    }
+
+    .batch-tag-group-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+    }
+
+    .batch-tag-item {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .batch-tag-item:hover {
+      border-color: var(--primary-color, #4f46e5);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .batch-tag-item.selected {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+
     /* 空状态 */
     .empty-state {
       display: flex;
@@ -948,14 +1016,18 @@
 
   <!-- 添加标签弹窗 -->
   <div class="modal-overlay" id="add-tags-modal">
-    <div class="modal">
+    <div class="modal" style="max-width: 500px;">
       <div class="modal-header">添加标签</div>
       <div class="modal-field">
         <label class="modal-label">输入标签</label>
         <input type="text" class="modal-input" id="new-tags-input" placeholder="输入标签，逗号分隔多个标签">
       </div>
       <div class="modal-field">
-        <label class="modal-label">或选择已有标签</label>
+        <label class="modal-label">从分组中选择标签</label>
+        <div id="batch-tag-selector-container" class="batch-tag-selector-container"></div>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">已选择的标签</label>
         <div class="tag-cloud" id="tag-cloud"></div>
       </div>
       <div class="modal-field">
