@@ -1397,6 +1397,9 @@ async function showAddTagsModal() {
     return;
   }
   
+  // 移除内联样式，确保弹窗能显示
+  modal.style.display = '';
+  
   const applyCount = document.getElementById('apply-count');
   const tagCloud = document.getElementById('tag-cloud');
   const tagsInput = document.getElementById('new-tags-input');
