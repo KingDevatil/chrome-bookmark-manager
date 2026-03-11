@@ -95,10 +95,21 @@ function setupEventListeners() {
   document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
   document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
   
+  // 标签分组管理
+  document.getElementById('create-tag-group-btn').addEventListener('click', createTagGroup);
+  
   // 关闭标签详情
   const closeBtn = document.getElementById('close-tag-detail');
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
+      document.getElementById('tag-detail-card').style.display = 'none';
+    });
+  }
+  
+  // 关闭标签详情卡片（新版）
+  const closeDetailBtn = document.getElementById('close-tag-detail');
+  if (closeDetailBtn) {
+    closeDetailBtn.addEventListener('click', () => {
       document.getElementById('tag-detail-card').style.display = 'none';
     });
   }
@@ -726,52 +737,195 @@ function setupFrequentlyUsedEventListeners() {
 }
 
 // ============================================
-// 标签总览功能
+// 标签分组管理功能
 // ============================================
 
 async function loadTagsOverview() {
   try {
-    const loading = document.getElementById('tags-loading');
-    const tagsList = document.getElementById('tags-list');
+    const groupsLoading = document.getElementById('tag-groups-loading');
+    const groupsList = document.getElementById('tag-groups-list');
+    const ungroupedList = document.getElementById('ungrouped-tags-list');
     
-    loading.style.display = 'block';
-    tagsList.innerHTML = '';
+    groupsLoading.style.display = 'block';
+    groupsList.innerHTML = '';
+    ungroupedList.innerHTML = '';
     
-    const allTags = await BookmarkTags.getAll();
+    // 获取所有标签
+    const allTags = await BookmarkTags.getAllTags();
     
-    // 统计每个标签的书签数量
-    const tagStats = {};
-    Object.values(allTags).forEach(tags => {
-      tags.forEach(tag => {
-        tagStats[tag] = (tagStats[tag] || 0) + 1;
+    // 获取分组数据
+    const groupsData = await TagGroups.getAll();
+    
+    groupsLoading.style.display = 'none';
+    
+    // 渲染分组
+    if (groupsData.groups && groupsData.groups.length > 0) {
+      groupsData.groups.forEach(group => {
+        const groupCard = createTagGroupCard(group);
+        groupsList.appendChild(groupCard);
       });
-    });
-    
-    loading.style.display = 'none';
-    
-    const tagNames = Object.keys(tagStats).sort();
-    
-    if (tagNames.length === 0) {
-      tagsList.innerHTML = '<div class="empty-state">暂无标签</div>';
-      return;
+    } else {
+      groupsList.innerHTML = '<div class="empty-state">暂无分组，点击上方按钮创建</div>';
     }
     
-    tagNames.forEach(tagName => {
-      const count = tagStats[tagName];
-      const tagItem = document.createElement('div');
-      tagItem.className = 'tag-item';
-      tagItem.innerHTML = `
-        <div class="tag-info">
-          <span class="tag-name">${tagName}</span>
-          <span class="tag-count">${count} 个书签</span>
-        </div>
-      `;
-      
-      tagItem.addEventListener('click', () => showTagDetail(tagName));
-      tagsList.appendChild(tagItem);
-    });
+    // 获取未分组的标签
+    const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
+    
+    if (ungroupedTags.length > 0) {
+      ungroupedTags.forEach(tagName => {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'ungrouped-tag';
+        tagEl.textContent = tagName;
+        tagEl.addEventListener('click', () => showTagDetail(tagName));
+        ungroupedList.appendChild(tagEl);
+      });
+    } else {
+      ungroupedList.innerHTML = '<div class="empty-state">所有标签已分组</div>';
+    }
   } catch (error) {
     console.error('加载标签总览失败:', error);
+  }
+}
+
+function createTagGroupCard(group) {
+  const card = document.createElement('div');
+  card.className = 'tag-group-card';
+  card.dataset.groupId = group.id;
+  
+  // 头部
+  const header = document.createElement('div');
+  header.className = 'tag-group-header';
+  header.innerHTML = `
+    <div class="tag-group-title">
+      <span>📁</span>
+      <span>${group.name}</span>
+      <span class="tag-group-count">${group.tags.length} 个标签</span>
+    </div>
+    <div class="tag-group-actions">
+      <button class="btn btn-sm edit-group-btn">编辑</button>
+      <button class="btn btn-sm delete-group-btn" style="color: #dc2626;">删除</button>
+    </div>
+  `;
+  
+  // 内容区
+  const content = document.createElement('div');
+  content.className = 'tag-group-content';
+  
+  group.tags.forEach(tag => {
+    const tagEl = document.createElement('span');
+    tagEl.className = 'tag-group-tag';
+    tagEl.innerHTML = `${tag}<span class="remove-tag">×</span>`;
+    tagEl.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-tag')) {
+        removeTagFromGroup(group.id, tag);
+      } else {
+        showTagDetail(tag);
+      }
+    });
+    content.appendChild(tagEl);
+  });
+  
+  // 添加标签输入框
+  const addContainer = document.createElement('div');
+  addContainer.className = 'add-tag-input-container';
+  addContainer.innerHTML = `
+    <input type="text" placeholder="输入标签名添加到分组" class="add-tag-input">
+    <button class="btn btn-sm add-tag-btn">添加</button>
+  `;
+  
+  const input = addContainer.querySelector('input');
+  const addBtn = addContainer.querySelector('.add-tag-btn');
+  
+  addBtn.addEventListener('click', () => {
+    const tagName = input.value.trim();
+    if (tagName) {
+      addTagToGroup(group.id, tagName);
+      input.value = '';
+    }
+  });
+  
+  input.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      addBtn.click();
+    }
+  });
+  
+  content.appendChild(addContainer);
+  
+  // 事件绑定
+  header.querySelector('.edit-group-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    renameGroup(group.id, group.name);
+  });
+  
+  header.querySelector('.delete-group-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteGroup(group.id, group.name);
+  });
+  
+  card.appendChild(header);
+  card.appendChild(content);
+  
+  return card;
+}
+
+async function createTagGroup() {
+  const name = prompt('请输入分组名称：');
+  if (!name || !name.trim()) return;
+  
+  try {
+    await TagGroups.createGroup(name.trim());
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('创建分组失败:', error);
+    alert('创建分组失败');
+  }
+}
+
+async function deleteGroup(groupId, groupName) {
+  if (!confirm(`确定要删除分组「${groupName}」吗？\n分组内的标签将变为未分组状态。`)) {
+    return;
+  }
+  
+  try {
+    await TagGroups.deleteGroup(groupId);
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('删除分组失败:', error);
+    alert('删除分组失败');
+  }
+}
+
+async function renameGroup(groupId, currentName) {
+  const newName = prompt('请输入新的分组名称：', currentName);
+  if (!newName || !newName.trim() || newName.trim() === currentName) return;
+  
+  try {
+    await TagGroups.renameGroup(groupId, newName.trim());
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('重命名分组失败:', error);
+    alert('重命名分组失败');
+  }
+}
+
+async function addTagToGroup(groupId, tagName) {
+  try {
+    await TagGroups.addTagToGroup(groupId, tagName);
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('添加标签到分组失败:', error);
+    alert('添加标签失败');
+  }
+}
+
+async function removeTagFromGroup(groupId, tagName) {
+  try {
+    await TagGroups.removeTagFromGroup(groupId, tagName);
+    await loadTagsOverview();
+  } catch (error) {
+    console.error('从分组移除标签失败:', error);
+    alert('移除标签失败');
   }
 }
 
