@@ -500,7 +500,11 @@ chrome.action.onClicked.addListener(async (tab) => {
     
     if (displayMode === 'float') {
       // 浮窗模式：打开独立窗口
-      const floatWidth = result.layoutSettings?.floatWidth || 400;
+      const floatConfig = result.layoutSettings?.floatConfig || {};
+      const floatWidth = floatConfig.width || 400;
+      const floatHeight = floatConfig.height || 800;
+      const floatTop = floatConfig.top !== undefined ? floatConfig.top : 50;
+      const floatLeft = floatConfig.left !== undefined ? floatConfig.left : null;
       
       // 获取屏幕信息
       let screenWidth = 1920;
@@ -513,14 +517,39 @@ chrome.action.onClicked.addListener(async (tab) => {
         console.log('Using default screen width');
       }
       
-      await chrome.windows.create({
+      const windowLeft = floatLeft !== null ? floatLeft : (screenWidth - floatWidth - 50);
+      
+      const win = await chrome.windows.create({
         url: 'sidebar/sidebar.html',
         type: 'panel',
         width: floatWidth,
-        height: 800,
-        top: 50,
-        left: screenWidth - floatWidth - 50,
-        focused: true
+        height: floatHeight,
+        top: floatTop,
+        left: windowLeft,
+        focused: true,
+        alwaysOnTop: true
+      });
+      
+      // 保存窗口 ID，用于后续更新尺寸
+      chrome.windows.onBoundsChanged.addListener(function listener(windowsChangeInfo) {
+        if (windowsChangeInfo.id === win.id) {
+          chrome.windows.get(win.id, (window) => {
+            if (!window.incognito) {
+              const newConfig = {
+                width: window.width,
+                height: window.height,
+                top: window.top,
+                left: window.left
+              };
+              chrome.storage.local.get('layoutSettings', (res) => {
+                const settings = res.layoutSettings || {};
+                settings.floatConfig = newConfig;
+                chrome.storage.local.set({ layoutSettings: settings });
+              });
+            }
+          });
+          chrome.windows.onBoundsChanged.removeListener(listener);
+        }
       });
     } else {
       // 侧边栏模式：使用 sidePanel
