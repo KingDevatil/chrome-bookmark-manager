@@ -677,6 +677,75 @@
       opacity: 0.5;
     }
 
+    /* 标签选择器样式 */
+    .tag-selector-container {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--bg-secondary, #f8fafc);
+    }
+
+    .tag-selector-group {
+      margin-bottom: 8px;
+    }
+
+    .tag-selector-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .tag-selector-group-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary, #64748b);
+      background: var(--bg-tertiary, #f1f5f9);
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .tag-selector-group-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+    }
+
+    .tag-selector-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      background: var(--bg-primary, #ffffff);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tag-selector-tag:hover {
+      border-color: var(--primary-color, #4f46e5);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .tag-selector-tag.selected {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-color: transparent;
+    }
+
+    .tag-selector-empty {
+      text-align: center;
+      padding: 20px;
+      color: var(--text-secondary, #64748b);
+      font-size: 13px;
+    }
+
     /* 空状态 */
     .empty-state {
       display: flex;

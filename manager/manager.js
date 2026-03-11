@@ -782,6 +782,10 @@ async function renderDetailPanel(bookmark) {
         <div class="detail-tags" id="detail-tags-container"></div>
       </div>
       <div class="detail-field">
+        <div class="detail-label">快速添加标签</div>
+        <div id="tag-selector-container" class="tag-selector-container"></div>
+      </div>
+      <div class="detail-field">
         <div class="detail-label">添加时间</div>
         <div class="detail-value">${bookmark.dateAdded ? Utils.formatDate(bookmark.dateAdded) : '未知'}</div>
       </div>
@@ -795,6 +799,9 @@ async function renderDetailPanel(bookmark) {
   // 渲染标签
   renderDetailTags(bookmark.id, tags);
 
+  // 渲染标签选择器
+  await renderTagSelector(bookmark.id, tags);
+
   // 标签输入框事件
   const tagInput = document.getElementById('detail-tag-input');
   tagInput.addEventListener('keydown', async (e) => {
@@ -804,6 +811,9 @@ async function renderDetailPanel(bookmark) {
       if (tagName) {
         await addTagToBookmark(bookmark.id, tagName);
         tagInput.value = '';
+        // 刷新标签选择器
+        const newTags = await BookmarkTags.getTags(bookmark.id);
+        await renderTagSelector(bookmark.id, newTags);
       }
     }
   });
@@ -822,6 +832,94 @@ async function renderDetailPanel(bookmark) {
     bookmark.title = newTitle;
     bookmark.url = newUrl;
   });
+}
+
+async function renderTagSelector(bookmarkId, currentTags) {
+  const container = document.getElementById('tag-selector-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // 获取所有标签和分组
+  const allTags = await BookmarkTags.getAllTags();
+  const groupsData = await TagGroups.getAll();
+  const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
+  const currentTagSet = new Set(currentTags);
+
+  // 渲染分组
+  if (groupsData.groups && groupsData.groups.length > 0) {
+    groupsData.groups.forEach(group => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'tag-selector-group';
+      
+      const header = document.createElement('div');
+      header.className = 'tag-selector-group-header';
+      header.innerHTML = `<span>📁</span><span>${group.name}</span>`;
+      
+      const content = document.createElement('div');
+      content.className = 'tag-selector-group-content';
+      
+      group.tags.forEach(tag => {
+        const tagEl = createTagSelectorTag(tag, bookmarkId, currentTagSet.has(tag));
+        content.appendChild(tagEl);
+      });
+      
+      groupEl.appendChild(header);
+      groupEl.appendChild(content);
+      container.appendChild(groupEl);
+    });
+  }
+
+  // 渲染未分组标签
+  if (ungroupedTags.length > 0) {
+    const ungroupedEl = document.createElement('div');
+    ungroupedEl.className = 'tag-selector-group';
+    
+    const header = document.createElement('div');
+    header.className = 'tag-selector-group-header';
+    header.innerHTML = `<span>📋</span><span>未分组</span>`;
+    
+    const content = document.createElement('div');
+    content.className = 'tag-selector-group-content';
+    
+    ungroupedTags.forEach(tag => {
+      const tagEl = createTagSelectorTag(tag, bookmarkId, currentTagSet.has(tag));
+      content.appendChild(tagEl);
+    });
+    
+    ungroupedEl.appendChild(header);
+    ungroupedEl.appendChild(content);
+    container.appendChild(ungroupedEl);
+  }
+
+  // 如果没有任何标签
+  if (allTags.length === 0) {
+    container.innerHTML = '<div class="tag-selector-empty">暂无标签，请先添加标签</div>';
+  }
+}
+
+function createTagSelectorTag(tag, bookmarkId, isSelected) {
+  const tagEl = document.createElement('span');
+  tagEl.className = `tag-selector-tag ${isSelected ? 'selected' : ''}`;
+  tagEl.textContent = tag;
+  
+  if (isSelected) {
+    tagEl.innerHTML = `✓ ${tag}`;
+  }
+  
+  tagEl.addEventListener('click', async () => {
+    if (isSelected) {
+      await BookmarkTags.removeTag(bookmarkId, tag);
+    } else {
+      await BookmarkTags.addTag(bookmarkId, tag);
+    }
+    // 刷新标签显示
+    const newTags = await BookmarkTags.getTags(bookmarkId);
+    renderDetailTags(bookmarkId, newTags);
+    await renderTagSelector(bookmarkId, newTags);
+  });
+  
+  return tagEl;
 }
 
 function renderDetailTags(bookmarkId, tags) {
