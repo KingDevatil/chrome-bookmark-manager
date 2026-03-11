@@ -923,7 +923,16 @@ let currentEditingGroupId = null;
 let selectedTagsForGroup = new Set();
 
 async function showSelectTagsModal(groupId) {
+  console.log('showSelectTagsModal called with groupId:', groupId);
+  
   const modal = document.getElementById('select-tags-modal');
+  console.log('Modal element:', modal);
+  
+  if (!modal) {
+    console.error('Modal not found!');
+    return;
+  }
+  
   const container = document.getElementById('select-tags-container');
   const preview = document.getElementById('selected-tags-preview');
   const countEl = document.getElementById('selected-tags-count');
