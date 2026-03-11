@@ -7,6 +7,7 @@
   let isDragging = false;
   let isResizing = false;
   let dragOffset = { x: 0, y: 0 };
+  let overlay = null;
   
   async function createFloatPanel() {
     const config = await getConfig();
@@ -67,10 +68,11 @@
       position: absolute;
       top: 0;
       left: 0;
-      width: 6px;
+      width: 8px;
       height: 100%;
       cursor: ew-resize;
       background: transparent;
+      z-index: 10;
     `;
     
     floatPanel.appendChild(header);
@@ -90,11 +92,13 @@
       dragOffset.x = e.clientX - rect.left;
       dragOffset.y = e.clientY - rect.top;
       e.preventDefault();
+      showOverlay();
     });
     
     resizeHandle.addEventListener('mousedown', (e) => {
       isResizing = true;
       e.preventDefault();
+      showOverlay();
     });
     
     document.addEventListener('mousemove', (e) => {
@@ -116,7 +120,32 @@
       }
       isDragging = false;
       isResizing = false;
+      hideOverlay();
     });
+  }
+  
+  function showOverlay() {
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2147483646;
+        cursor: inherit;
+      `;
+      document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'block';
+    overlay.style.cursor = isResizing ? 'ew-resize' : 'move';
+  }
+  
+  function hideOverlay() {
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
   }
   
   async function getConfig() {
