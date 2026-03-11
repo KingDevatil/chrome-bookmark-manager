@@ -95,6 +95,9 @@ function setupEventListeners() {
   document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
   document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
   
+  // 书签查重功能
+  initDuplicateDetection();
+  
   // 标签分组管理
   document.getElementById('create-tag-group-btn').addEventListener('click', createTagGroup);
   
@@ -498,6 +501,172 @@ async function cleanOrphanedTags() {
   } catch (error) {
     showStatus('clean-tags-status', `清理失败：${error.message}`, 'error');
   }
+}
+
+// ============================================
+// 书签查重功能
+// ============================================
+
+let duplicatesData = [];
+
+async function detectDuplicateBookmarks() {
+  try {
+    const detectBtn = document.getElementById('detect-duplicates-btn');
+    
+    detectBtn.disabled = true;
+    detectBtn.textContent = '检测中...';
+    showStatus('detect-duplicates-status', '正在扫描书签...', 'info');
+    
+    // 获取所有书签
+    const tree = await chrome.bookmarks.getTree();
+    const allBookmarks = [];
+    
+    function flattenBookmarks(nodes) {
+      for (const node of nodes) {
+        if (node.url) {
+          allBookmarks.push({
+            id: node.id,
+            title: node.title,
+            url: node.url,
+            parentId: node.parentId
+          });
+        }
+        if (node.children) {
+          flattenBookmarks(node.children);
+        }
+      }
+    }
+    flattenBookmarks(tree);
+    
+    // 按URL分组查找重复
+    const urlMap = new Map();
+    for (const bookmark of allBookmarks) {
+      const url = bookmark.url;
+      if (!urlMap.has(url)) {
+        urlMap.set(url, []);
+      }
+      urlMap.get(url).push(bookmark);
+    }
+    
+    // 找出有重复的URL
+    duplicatesData = [];
+    for (const [url, bookmarks] of urlMap) {
+      if (bookmarks.length > 1) {
+        duplicatesData.push({
+          url: url,
+          bookmarks: bookmarks
+        });
+      }
+    }
+    
+    const resultDiv = document.getElementById('duplicates-result');
+    const listDiv = document.getElementById('duplicates-list');
+    
+    if (duplicatesData.length === 0) {
+      showStatus('detect-duplicates-status', '没有发现重复书签', 'success');
+      resultDiv.style.display = 'none';
+    } else {
+      showStatus('detect-duplicates-status', `检测到 ${duplicatesData.length} 组重复书签（共 ${duplicatesData.reduce((sum, d) => sum + d.bookmarks.length, 0)} 个）`, 'success');
+      
+      // 渲染结果
+      listDiv.innerHTML = '';
+      for (const group of duplicatesData) {
+        const groupDiv = document.createElement('div');
+        groupDiv.style.cssText = 'padding: 12px; border-bottom: 1px solid var(--border-color, #e2e8f0);';
+        
+        const urlDiv = document.createElement('div');
+        urlDiv.style.cssText = 'font-size: 13px; color: var(--text-secondary, #64748b); word-break: break-all; margin-bottom: 8px;';
+        urlDiv.textContent = group.url;
+        groupDiv.appendChild(urlDiv);
+        
+        for (const bookmark of group.bookmarks) {
+          const itemDiv = document.createElement('div');
+          itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; padding: 6px 0;';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.dataset.bookmarkId = bookmark.id;
+          checkbox.style.cssText = 'width: auto;';
+          
+          const titleSpan = document.createElement('span');
+          titleSpan.style.cssText = 'flex: 1; font-size: 14px;';
+          titleSpan.textContent = bookmark.title || bookmark.url;
+          
+          itemDiv.appendChild(checkbox);
+          itemDiv.appendChild(titleSpan);
+          groupDiv.appendChild(itemDiv);
+        }
+        
+        listDiv.appendChild(groupDiv);
+      }
+      
+      resultDiv.style.display = 'block';
+    }
+    
+    detectBtn.disabled = false;
+    detectBtn.textContent = '开始检测';
+  } catch (error) {
+    showStatus('detect-duplicates-status', `检测失败：${error.message}`, 'error');
+    const detectBtn = document.getElementById('detect-duplicates-btn');
+    detectBtn.disabled = false;
+    detectBtn.textContent = '开始检测';
+  }
+}
+
+async function deleteSelectedDuplicates() {
+  try {
+    const checkboxes = document.querySelectorAll('#duplicates-list input[type="checkbox"]:checked');
+    const idsToDelete = Array.from(checkboxes).map(cb => cb.dataset.bookmarkId);
+    
+    if (idsToDelete.length === 0) {
+      alert('请选择要删除的书签');
+      return;
+    }
+    
+    if (!confirm(`确定要删除选中的 ${idsToDelete.length} 个书签吗？`)) {
+      return;
+    }
+    
+    const deleteBtn = document.getElementById('delete-duplicates-btn');
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = '删除中...';
+    
+    // 删除选中的书签
+    for (const id of idsToDelete) {
+      await chrome.bookmarks.remove(id);
+    }
+    
+    // 重新检测
+    await detectDuplicateBookmarks();
+    
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = '删除选中';
+  } catch (error) {
+    alert(`删除失败：${error.message}`);
+    const deleteBtn = document.getElementById('delete-duplicates-btn');
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = '删除选中';
+  }
+}
+
+// 全选功能
+function setupDuplicateCheckboxes() {
+  const selectAll = document.getElementById('select-all-duplicates');
+  const listDiv = document.getElementById('duplicates-list');
+  
+  selectAll.addEventListener('change', (e) => {
+    const checkboxes = listDiv.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+      cb.checked = e.target.checked;
+    });
+  });
+}
+
+// 初始化书签查重功能
+function initDuplicateDetection() {
+  document.getElementById('detect-duplicates-btn').addEventListener('click', detectDuplicateBookmarks);
+  document.getElementById('delete-duplicates-btn').addEventListener('click', deleteSelectedDuplicates);
+  setupDuplicateCheckboxes();
 }
 
 // ============================================
@@ -923,13 +1092,9 @@ let currentEditingGroupId = null;
 let selectedTagsForGroup = new Set();
 
 async function showSelectTagsModal(groupId) {
-  console.log('showSelectTagsModal called with groupId:', groupId);
-  
   const modal = document.getElementById('select-tags-modal');
-  console.log('Modal element:', modal);
   
   if (!modal) {
-    console.error('Modal not found!');
     return;
   }
   

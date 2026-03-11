@@ -1387,13 +1387,9 @@ async function moveBookmark(fromIndex, toIndex) {
 // ============================================
 
 async function showAddTagsModal() {
-  console.log('showAddTagsModal called, selected count:', state.selectedIds.size);
-  
   const modal = document.getElementById('add-tags-modal');
-  console.log('Modal element:', modal);
   
   if (!modal) {
-    console.error('Modal not found!');
     return;
   }
   

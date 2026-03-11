@@ -1035,6 +1035,30 @@
             <div class="status-message" id="clean-tags-status"></div>
           </div>
         </div>
+
+        <div class="settings-card" style="margin-top: 24px;">
+          <h3 style="margin-bottom: 16px;">书签查重</h3>
+          <p class="settings-description" style="margin-bottom: 16px;">检测并删除重复的书签（相同URL的书签）</p>
+
+          <div class="settings-field">
+            <label class="settings-label">开始检测</label>
+            <p class="settings-description">扫描所有书签，查找相同URL的重复书签</p>
+            <button class="btn" id="detect-duplicates-btn">开始检测</button>
+            <div class="status-message" id="detect-duplicates-status"></div>
+          </div>
+
+          <div id="duplicates-result" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <label class="settings-label">检测结果</label>
+            <div id="duplicates-list" class="duplicates-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 12px; margin: 12px 0;"></div>
+            <div class="settings-field" style="display: flex; align-items: center; gap: 12px;">
+              <button class="btn btn-primary" id="delete-duplicates-btn">删除选中</button>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                <input type="checkbox" id="select-all-duplicates" style="width: auto;">
+                <span>全选</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="settings-section" id="tags-section" style="display: none;">
