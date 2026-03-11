@@ -499,64 +499,18 @@ chrome.action.onClicked.addListener(async (tab) => {
     const displayMode = result.layoutSettings?.displayMode || 'sidebar';
     
     if (displayMode === 'float') {
-      // 浮窗模式：打开独立窗口
-      const floatConfig = result.layoutSettings?.floatConfig || {};
-      const floatWidth = floatConfig.width || 400;
-      const floatHeight = floatConfig.height || 800;
-      const floatTop = floatConfig.top !== undefined ? floatConfig.top : 50;
-      const floatLeft = floatConfig.left !== undefined ? floatConfig.left : null;
-      
-      // 获取屏幕信息
-      let screenWidth = 1920;
+      // 浮窗模式：注入到当前页面
       try {
-        const displays = await chrome.system.display.getInfo();
-        if (displays.length > 0) {
-          screenWidth = displays[0].workAreaBounds.width;
-        }
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content/float-panel.js']
+        });
+        
+        // 发送消息切换浮窗
+        await chrome.tabs.sendMessage(tab.id, { action: 'toggleFloatPanel' });
       } catch (e) {
-        console.log('Using default screen width');
+        console.error('Failed to inject float panel:', e);
       }
-      
-      const windowLeft = floatLeft !== null ? floatLeft : (screenWidth - floatWidth - 50);
-      
-      const win = await chrome.windows.create({
-        url: 'sidebar/sidebar.html',
-        type: 'normal',
-        width: floatWidth,
-        height: floatHeight,
-        top: floatTop,
-        left: windowLeft,
-        focused: true
-      });
-      
-      // 设置置顶
-      try {
-        await chrome.windows.update(win.id, { alwaysOnTop: true });
-      } catch (e) {
-        console.log('Could not set always on top:', e);
-      }
-      
-      // 保存窗口 ID，用于后续更新尺寸
-      chrome.windows.onBoundsChanged.addListener(function listener(windowsChangeInfo) {
-        if (windowsChangeInfo.id === win.id) {
-          chrome.windows.get(win.id, (window) => {
-            if (!window.incognito) {
-              const newConfig = {
-                width: window.width,
-                height: window.height,
-                top: window.top,
-                left: window.left
-              };
-              chrome.storage.local.get('layoutSettings', (res) => {
-                const settings = res.layoutSettings || {};
-                settings.floatConfig = newConfig;
-                chrome.storage.local.set({ layoutSettings: settings });
-              });
-            }
-          });
-          chrome.windows.onBoundsChanged.removeListener(listener);
-        }
-      });
     } else {
       // 侧边栏模式：使用 sidePanel
       await chrome.sidePanel.open({ windowId: tab.windowId });
