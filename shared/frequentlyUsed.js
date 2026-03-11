@@ -185,6 +185,13 @@ const FrequentlyUsed = {
       items.forEach(item => {
         item.isBookmarked = bookmarkedSet.has(item.url);
       });
+
+      // 5.1 检查置顶链接是否在书签中
+      const pinnedUrlsToCheck = pinnedItems.map(p => p.url);
+      const pinnedBookmarkedSet = await this.checkBookmarkedUrls(pinnedUrlsToCheck);
+      pinnedItems.forEach(item => {
+        item.isBookmarked = pinnedBookmarkedSet.has(item.url);
+      });
       
       // 6. 取前 N 个（不包括置顶链接）
       const normalItems = items.slice(0, displayCount);
