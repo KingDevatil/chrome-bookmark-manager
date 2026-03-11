@@ -852,39 +852,49 @@ function showContextMenu(e, node, isFolder) {
   menu.style.top = `${e.clientY}px`;
   menu.style.zIndex = '10000';
 
-  // 检查是否在常用文件夹中
+  // 检查是否在常用列表中
   const isInFrequentlyUsed = node.parentId === 'frequently-used' || 
                               (frequentlyUsedData && frequentlyUsedData.some(item => item.url === node.url));
 
-  // 置顶选项（仅常用文件夹中的书签）
-  if (isInFrequentlyUsed && !isFolder && node.url) {
-    const currentUrl = node.url;
-    const isPinned = window.frequentlyUsedConfig && 
-                     window.frequentlyUsedConfig.pinned && 
-                     window.frequentlyUsedConfig.pinned.some(pinnedItem => {
-                       const pinnedUrl = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
-                       return pinnedUrl === currentUrl;
-                     });
+  // 检查是否已置顶
+  const currentUrl = node.url;
+  const isPinned = window.frequentlyUsedConfig && 
+                   window.frequentlyUsedConfig.pinned && 
+                   window.frequentlyUsedConfig.pinned.some(pinnedItem => {
+                     const pinnedUrl = typeof pinnedItem === 'string' ? pinnedItem : pinnedItem.url;
+                     return pinnedUrl === currentUrl;
+                   });
+
+  // 书签选项（非文件夹且有URL）
+  if (!isFolder && node.url) {
+    // 置顶选项
+    let pinText = '';
+    if (isPinned) {
+      pinText = '📌 取消置顶';
+    } else if (isInFrequentlyUsed) {
+      pinText = '📌 置顶';
+    } else {
+      pinText = '📌 添加至常用并置顶';
+    }
     
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';
-    pinItem.textContent = isPinned ? '📌 取消置顶' : '📌 置顶';
+    pinItem.textContent = pinText;
     pinItem.addEventListener('click', async () => {
       if (isPinned) {
         await FrequentlyUsedConfig.unpinUrl(node.url);
       } else {
         await FrequentlyUsedConfig.pinUrl(node.url, node.title);
       }
-      // 刷新常用数据
       await refreshFrequentlyUsed();
       removeContextMenu();
     });
     menu.appendChild(pinItem);
     
     // 添加分隔线
-    const separator = document.createElement('div');
-    separator.className = 'context-menu-separator';
-    menu.appendChild(separator);
+    const separator1 = document.createElement('div');
+    separator1.className = 'context-menu-separator';
+    menu.appendChild(separator1);
   }
 
   // 修改选项（书签才有）
@@ -899,9 +909,9 @@ function showContextMenu(e, node, isFolder) {
     menu.appendChild(editItem);
     
     // 添加分隔线
-    const separator = document.createElement('div');
-    separator.className = 'context-menu-separator';
-    menu.appendChild(separator);
+    const separator2 = document.createElement('div');
+    separator2.className = 'context-menu-separator';
+    menu.appendChild(separator2);
   }
 
   // 删除选项
