@@ -627,7 +627,10 @@ async function mergeBookmarks(node, parentId = null) {
   if (parentId === null) {
     if (node.children) {
       for (const child of node.children) {
-        await mergeBookmarks(child, '0');
+        // 只处理书签栏(1)和其他书签(2)
+        if (child.id === '1' || child.id === '2') {
+          await mergeBookmarks(child, child.id);
+        }
       }
     }
     return;
