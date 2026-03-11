@@ -14,7 +14,12 @@ async function loadSettings() {
 
   const webdavConfig = result.webdavConfig || { enabled: false, url: '', username: '', password: '' };
   const backupSettings = result.backupSettings || { autoBackup: false, backupInterval: 60, backupOnStartup: false };
-  const layoutSettings = result.layoutSettings || { bookmarkHeight: 32, treeIndent: 20 };
+  const layoutSettings = result.layoutSettings || { 
+    bookmarkHeight: 32, 
+    treeIndent: 20,
+    displayMode: 'sidebar',
+    floatWidth: 400
+  };
 
   // WebDAV 设置
   document.getElementById('webdav-enabled').checked = webdavConfig.enabled;
@@ -29,7 +34,16 @@ async function loadSettings() {
   document.getElementById('backup-interval').value = String(backupSettings.backupInterval || 60);
   document.getElementById('backup-on-startup').checked = backupSettings.backupOnStartup || false;
 
-  // 布局设置
+  // 布局设置 - 显示模式
+  const displayMode = layoutSettings.displayMode || 'sidebar';
+  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
+    radio.checked = radio.value === displayMode;
+  });
+  document.getElementById('float-width-field').style.display = displayMode === 'float' ? 'block' : 'none';
+  document.getElementById('float-width-slider').value = layoutSettings.floatWidth || 400;
+  document.getElementById('float-width-value').textContent = `${layoutSettings.floatWidth || 400}px`;
+
+  // 布局设置 - 其他
   document.getElementById('bookmark-height-slider').value = layoutSettings.bookmarkHeight || 30;
   document.getElementById('bookmark-height-value').textContent = `${layoutSettings.bookmarkHeight || 30}px`;
   document.getElementById('tree-indent-slider').value = layoutSettings.treeIndent || 5;
@@ -91,6 +105,20 @@ function setupEventListeners() {
   });
   document.getElementById('import-tags-file').addEventListener('change', handleImportTagsFile);
 
+  // 统一导出/导入按钮
+  document.getElementById('export-all-btn').addEventListener('click', exportAllConfig);
+  document.getElementById('import-all-btn').addEventListener('click', () => {
+    document.getElementById('import-all-file').click();
+  });
+  document.getElementById('import-all-file').addEventListener('change', handleImportAllConfig);
+
+  // 布局备份按钮
+  document.getElementById('export-layout-btn').addEventListener('click', exportLayout);
+  document.getElementById('import-layout-btn').addEventListener('click', () => {
+    document.getElementById('import-layout-file').click();
+  });
+  document.getElementById('import-layout-file').addEventListener('change', handleImportLayout);
+
   // 标签清理按钮
   document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
   document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
@@ -146,6 +174,19 @@ function setupEventListeners() {
   // 布局设置按钮
   document.getElementById('save-layout-btn').addEventListener('click', saveLayoutSettings);
   document.getElementById('reset-layout-btn').addEventListener('click', resetLayoutSettings);
+  
+  // 显示模式切换
+  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      const displayMode = e.target.value;
+      document.getElementById('float-width-field').style.display = displayMode === 'float' ? 'block' : 'none';
+    });
+  });
+  
+  // 浮窗宽度滑块
+  document.getElementById('float-width-slider').addEventListener('input', (e) => {
+    document.getElementById('float-width-value').textContent = `${e.target.value}px`;
+  });
 }
 
 function updateLayoutPreview(height, treeIndent, bookmarkIndent) {
@@ -158,10 +199,13 @@ function updateLayoutPreview(height, treeIndent, bookmarkIndent) {
 }
 
 async function saveLayoutSettings() {
+  const displayMode = document.querySelector('input[name="display-mode"]:checked').value;
   const settings = {
     bookmarkHeight: parseInt(document.getElementById('bookmark-height-slider').value),
     treeIndent: parseInt(document.getElementById('tree-indent-slider').value),
-    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value)
+    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value),
+    displayMode: displayMode,
+    floatWidth: parseInt(document.getElementById('float-width-slider').value)
   };
 
   await Storage.set({ layoutSettings: settings });
@@ -172,7 +216,9 @@ async function resetLayoutSettings() {
   const defaultSettings = {
     bookmarkHeight: 30,
     treeIndent: 5,
-    bookmarkIndent: 5
+    bookmarkIndent: 5,
+    displayMode: 'sidebar',
+    floatWidth: 400
   };
 
   document.getElementById('bookmark-height-slider').value = defaultSettings.bookmarkHeight;
@@ -181,6 +227,14 @@ async function resetLayoutSettings() {
   document.getElementById('tree-indent-value').textContent = `${defaultSettings.treeIndent}px`;
   document.getElementById('bookmark-indent-slider').value = defaultSettings.bookmarkIndent;
   document.getElementById('bookmark-indent-value').textContent = `${defaultSettings.bookmarkIndent}px`;
+  
+  // 重置显示模式
+  document.querySelectorAll('input[name="display-mode"]').forEach(radio => {
+    radio.checked = radio.value === defaultSettings.displayMode;
+  });
+  document.getElementById('float-width-field').style.display = 'none';
+  document.getElementById('float-width-slider').value = defaultSettings.floatWidth;
+  document.getElementById('float-width-value').textContent = `${defaultSettings.floatWidth}px`;
 
   updateLayoutPreview(defaultSettings.bookmarkHeight, defaultSettings.treeIndent, defaultSettings.bookmarkIndent);
 
@@ -370,6 +424,182 @@ async function exportTags() {
   } catch (error) {
     showStatus('export-tags-status', `导出失败：${error.message}`, 'error');
   }
+}
+
+// 统一导出配置
+async function exportAllConfig() {
+  try {
+    const exportBookmarks = document.getElementById('export-bookmarks').checked;
+    const exportLayout = document.getElementById('export-layout').checked;
+    const exportTags = document.getElementById('export-tags').checked;
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      type: 'unified-export'
+    };
+    
+    // 导出书签
+    if (exportBookmarks) {
+      const tree = await chrome.bookmarks.getTree();
+      exportData.bookmarks = tree;
+    }
+    
+    // 导出布局
+    if (exportLayout) {
+      const layoutResult = await Storage.get('layoutSettings');
+      exportData.layoutSettings = layoutResult.layoutSettings || {};
+    }
+    
+    // 导出标签
+    if (exportTags) {
+      const tagsResult = await chrome.storage.local.get('bookmark_tags');
+      exportData.tags = tagsResult.bookmark_tags || {};
+      const tagGroupsData = await TagGroups.getAll();
+      exportData.tagGroups = tagGroupsData;
+    }
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bookmark-config-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus('export-all-status', '配置导出成功', 'success');
+  } catch (error) {
+    showStatus('export-all-status', `导出失败：${error.message}`, 'error');
+  }
+}
+
+// 统一导入配置
+async function handleImportAllConfig(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    
+    document.getElementById('import-all-filename').textContent = file.name;
+    
+    // 导入书签
+    if (data.bookmarks) {
+      // 合并模式：遍历导入的书签，添加到现有书签树
+      for (const node of data.bookmarks) {
+        await mergeBookmarks(node);
+      }
+    }
+    
+    // 导入布局
+    if (data.layoutSettings) {
+      await Storage.set({ layoutSettings: data.layoutSettings });
+    }
+    
+    // 导入标签
+    if (data.tags) {
+      const existingTags = await chrome.storage.local.get('bookmark_tags');
+      const mergedTags = { ...(existingTags.bookmark_tags || {}), ...data.tags };
+      await chrome.storage.local.set({ bookmark_tags: mergedTags });
+    }
+    
+    // 导入标签分组
+    if (data.tagGroups) {
+      for (const group of (data.tagGroups.groups || [])) {
+        await TagGroups.createGroup(group.name, group.tags || []);
+      }
+    }
+    
+    showStatus('import-all-status', '配置导入成功', 'success');
+  } catch (error) {
+    showStatus('import-all-status', `导入失败：${error.message}`, 'error');
+  }
+  
+  event.target.value = '';
+}
+
+// 递归合并书签
+async function mergeBookmarks(node, parentId = '0') {
+  if (node.url) {
+    // 检查是否已存在
+    const existing = await chrome.bookmarks.search({ url: node.url });
+    if (existing.length === 0) {
+      await chrome.bookmarks.create({
+        parentId: parentId,
+        title: node.title,
+        url: node.url
+      });
+    }
+  }
+  if (node.children) {
+    for (const child of node.children) {
+      let newParentId = parentId;
+      if (!child.url) {
+        const folder = await chrome.bookmarks.create({
+          parentId: parentId,
+          title: child.title
+        });
+        newParentId = folder.id;
+      }
+      await mergeBookmarks(child, newParentId);
+    }
+  }
+}
+
+// 导出布局
+async function exportLayout() {
+  try {
+    const result = await Storage.get('layoutSettings');
+    const layoutSettings = result.layoutSettings || {};
+    
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      type: 'layout-settings',
+      layoutSettings: layoutSettings
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `layout-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus('export-layout-status', '布局设置导出成功', 'success');
+  } catch (error) {
+    showStatus('export-layout-status', `导出失败：${error.message}`, 'error');
+  }
+}
+
+// 导入布局
+async function handleImportLayout(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    
+    document.getElementById('import-layout-filename').textContent = file.name;
+    
+    if (data.layoutSettings) {
+      await Storage.set({ layoutSettings: data.layoutSettings });
+      showStatus('import-layout-status', '布局设置导入成功', 'success');
+    } else {
+      showStatus('import-layout-status', '无效的布局文件', 'error');
+    }
+  } catch (error) {
+    showStatus('import-layout-status', `导入失败：${error.message}`, 'error');
+  }
+  
+  event.target.value = '';
 }
 
 function handleImportTagsFile(event) {
