@@ -2,6 +2,11 @@
  * Background Service Worker
  */
 
+// 调试开关
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
+const error = console.error.bind(console);
+
 // ============================================
 // WebDAV 备份功能
 // ============================================
@@ -33,33 +38,33 @@ class WebDAVClient {
       body: body ? JSON.stringify(body) : null
     };
 
-    console.log('WebDAV request:', method, url.toString());
+    log('WebDAV request:', method, url.toString());
     
     try {
       const response = await fetch(url, options);
-      console.log('WebDAV response:', response.status, response.statusText);
+      log('WebDAV response:', response.status, response.statusText);
       
       if (!response.ok) {
         throw new Error(`WebDAV error: ${response.status} ${response.statusText}`);
       }
       return response;
-    } catch (error) {
-      console.error('WebDAV request failed:', error);
-      throw error;
+    } catch (err) {
+      error('WebDAV request failed:', err);
+      throw err;
     }
   }
 
   async ensureBookmarksFolder() {
     try {
       await this.request('PROPFIND', 'bookmarks/');
-      console.log('Bookmarks folder exists');
-    } catch (error) {
-      if (error.message.includes('404')) {
-        console.log('Creating bookmarks folder');
+      log('Bookmarks folder exists');
+    } catch (err) {
+      if (err.message.includes('404')) {
+        log('Creating bookmarks folder');
         await this.request('MKCOL', 'bookmarks/');
-        console.log('Bookmarks folder created');
+        log('Bookmarks folder created');
       } else {
-        throw error;
+        throw err;
       }
     }
   }
@@ -84,9 +89,9 @@ class WebDAVClient {
       await this.ensureBookmarksFolder();
       const response = await this.request('GET', `bookmarks/${filename}`);
       return response.json();
-    } catch (error) {
-      console.error('Download bookmarks failed:', error);
-      throw error;
+    } catch (err) {
+      error('Download bookmarks failed:', err);
+      throw err;
     }
   }
 }
@@ -101,27 +106,20 @@ class BookmarkManager {
   }
 
   static async clearAllBookmarks() {
-    return new Promise((resolve) => {
-      const promises = [];
-
-      chrome.bookmarks.getChildren('1', (children) => {
-        children.forEach(child => {
-          promises.push(new Promise((res) => {
-            chrome.bookmarks.removeTree(child.id, res);
-          }));
-        });
-
-        chrome.bookmarks.getChildren('2', (children) => {
-          children.forEach(child => {
-            promises.push(new Promise((res) => {
-              chrome.bookmarks.removeTree(child.id, res);
-            }));
-          });
-
-          Promise.all(promises).then(resolve);
-        });
+    const removeChildren = async (parentId) => {
+      const children = await new Promise((resolve) => {
+        chrome.bookmarks.getChildren(parentId, resolve);
       });
-    });
+      
+      for (const child of children) {
+        await new Promise((resolve) => {
+          chrome.bookmarks.removeTree(child.id, resolve);
+        });
+      }
+    };
+    
+    await removeChildren('1');
+    await removeChildren('2');
   }
 
   static async importBookmarks(bookmarks, merge = false) {
@@ -220,7 +218,7 @@ class SyncManager {
 
   async backupBookmarks() {
     if (!this.client) {
-      console.error('WebDAV client not initialized');
+      error('WebDAV client not initialized');
       return false;
     }
 
@@ -263,17 +261,17 @@ class SyncManager {
         tagGroups: tagGroups || { groups: [] }
       };
       const filename = await this.client.uploadBookmarks(data);
-      console.log('Bookmarks backed up successfully:', filename);
+      log('Bookmarks backed up successfully:', filename);
       return { success: true, filename };
-    } catch (error) {
-      console.error('Backup failed:', error);
-      return { success: false, error: error.message };
+    } catch (err) {
+      error('Backup failed:', err);
+      return { success: false, error: err.message };
     }
   }
 
   async restoreBookmarks(filename, merge = false) {
     if (!this.client) {
-      console.error('WebDAV client not initialized');
+      error('WebDAV client not initialized');
       return false;
     }
 
@@ -286,29 +284,29 @@ class SyncManager {
       
       // 恢复标签数据（如果存在）
       if (backupData.tagsByUrl) {
-        console.log('Restoring tags from backup (URL-based)');
+        log('Restoring tags from backup (URL-based)');
         await this.restoreTagsByUrl(backupData.tagsByUrl, merge);
       } else if (backupData.tags) {
         // 兼容旧版本备份格式（ID-based，可能无法正确恢复）
-        console.log('Restoring tags from backup (legacy ID-based format)');
+        log('Restoring tags from backup (legacy ID-based format)');
         await this.restoreBookmarkTags(backupData.tags, merge);
       } else {
-        console.log('No tags found in backup, skipping tag restore');
+        log('No tags found in backup, skipping tag restore');
       }
       
       // 恢复标签分组（如果存在）
       if (backupData.tagGroups) {
-        console.log('Restoring tag groups from backup');
+        log('Restoring tag groups from backup');
         await this.restoreTagGroups(backupData.tagGroups, merge);
       } else {
-        console.log('No tag groups found in backup, skipping');
+        log('No tag groups found in backup, skipping');
       }
       
-      console.log('Bookmarks restored successfully');
+      log('Bookmarks restored successfully');
       return { success: true };
-    } catch (error) {
-      console.error('Restore failed:', error);
-      return { success: false, error: error.message };
+    } catch (err) {
+      error('Restore failed:', err);
+      return { success: false, error: err.message };
     }
   }
 
@@ -409,7 +407,7 @@ class SyncManager {
       await chrome.storage.local.set({ bookmark_tags: merged });
     }
     
-    console.log(`Restored tags for ${Object.keys(tagsById).length} bookmarks`);
+    log(`Restored tags for ${Object.keys(tagsById).length} bookmarks`);
   }
 }
 
@@ -422,7 +420,7 @@ const syncManager = new SyncManager();
 // 安装时初始化
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('Bookmark Manager 已安装');
+    log('Bookmark Manager 已安装');
     
     chrome.storage.local.set({
       theme: 'light',
@@ -450,7 +448,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 // 监听消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Received message:', message);
+  log('Received message:', message);
   
   switch (message.action) {
     case 'backup':
@@ -495,9 +493,9 @@ syncManager.init();
 chrome.action.onClicked.addListener(async (tab) => {
   try {
     await chrome.sidePanel.open({ windowId: tab.windowId });
-    console.log('Side panel opened via action click');
-  } catch (error) {
-    console.error('Failed to open side panel:', error);
+    log('Side panel opened via action click');
+  } catch (err) {
+    error('Failed to open side panel:', err);
   }
 });
 
@@ -509,7 +507,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 chrome.bookmarks.onChanged.addListener((id, changeInfo) => {
   // URL 变更时，保留标签（标签数据与书签 ID 关联，自动保留）
   if (changeInfo.url) {
-    console.log('Bookmark URL changed, tags preserved automatically:', id);
+    log('Bookmark URL changed, tags preserved automatically:', id);
   }
 });
 
@@ -522,17 +520,17 @@ chrome.bookmarks.onRemoved.addListener((id, removeInfo) => {
   }).catch(() => {
     // 忽略错误（可能在非活动页面）
   });
-  console.log('Bookmark removed, tags will be cleaned:', id);
+  log('Bookmark removed, tags will be cleaned:', id);
 });
 
 // 监听书签创建
 chrome.bookmarks.onCreated.addListener((id, bookmark) => {
   // 新书签创建时，标签默认为空
-  console.log('Bookmark created:', id);
+  log('Bookmark created:', id);
 });
 
 // 监听书签移动
 chrome.bookmarks.onMoved.addListener((id, moveInfo) => {
   // 书签移动文件夹时，标签保持不变
-  console.log('Bookmark moved, tags preserved:', id);
+  log('Bookmark moved, tags preserved:', id);
 });
