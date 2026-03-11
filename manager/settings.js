@@ -589,10 +589,28 @@ async function handleImportAllConfig(event) {
     }
     
     // 导入标签分组
-    if (data.tagGroups) {
-      for (const group of (data.tagGroups.groups || [])) {
-        await TagGroups.createGroup(group.name, group.tags || []);
+    if (data.tagGroups && data.tagGroups.groups) {
+      const existingData = await TagGroups.getAll();
+      const existingGroups = existingData.groups || [];
+      
+      // 合并分组：同名的更新，不存在的创建
+      for (const importedGroup of data.tagGroups.groups) {
+        const existingIndex = existingGroups.findIndex(g => g.name === importedGroup.name);
+        if (existingIndex >= 0) {
+          // 更新现有分组
+          existingGroups[existingIndex].tags = importedGroup.tags || [];
+        } else {
+          // 创建新分组
+          const newGroup = {
+            id: 'group-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11),
+            name: importedGroup.name,
+            tags: importedGroup.tags || []
+          };
+          existingGroups.push(newGroup);
+        }
       }
+      
+      await TagGroups.save(existingGroups);
     }
     
     showStatus('import-all-status', '配置导入成功', 'success');
