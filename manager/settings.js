@@ -107,13 +107,6 @@ function setupEventListeners() {
   });
   document.getElementById('import-all-file').addEventListener('change', handleImportAllConfig);
 
-  // 布局备份按钮
-  document.getElementById('export-layout-btn').addEventListener('click', exportLayout);
-  document.getElementById('import-layout-btn').addEventListener('click', () => {
-    document.getElementById('import-layout-file').click();
-  });
-  document.getElementById('import-layout-file').addEventListener('change', handleImportLayout);
-
   // 标签清理按钮
   document.getElementById('detect-tags-btn').addEventListener('click', detectOrphanedTags);
   document.getElementById('clean-tags-btn').addEventListener('click', cleanOrphanedTags);
