@@ -494,10 +494,29 @@ syncManager.init();
 
 chrome.action.onClicked.addListener(async (tab) => {
   try {
-    await chrome.sidePanel.open({ windowId: tab.windowId });
-    console.log('Side panel opened via action click');
+    // 获取显示模式设置
+    const result = await chrome.storage.local.get('layoutSettings');
+    const displayMode = result.layoutSettings?.displayMode || 'sidebar';
+    
+    if (displayMode === 'float') {
+      // 浮窗模式：打开独立窗口
+      const floatWidth = result.layoutSettings?.floatWidth || 400;
+      await chrome.windows.create({
+        url: 'sidebar/sidebar.html',
+        type: 'panel',
+        width: floatWidth,
+        height: Math.min(800, screen.height - 100),
+        top: 50,
+        left: screen.width - floatWidth - 50,
+        focused: true
+      });
+    } else {
+      // 侧边栏模式：使用 sidePanel
+      await chrome.sidePanel.open({ windowId: tab.windowId });
+    }
+    console.log('Opened via action click, mode:', displayMode);
   } catch (error) {
-    console.error('Failed to open side panel:', error);
+    console.error('Failed to open:', error);
   }
 });
 
