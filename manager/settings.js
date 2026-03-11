@@ -621,7 +621,7 @@ async function handleImportAllConfig(event) {
   event.target.value = '';
 }
 
-// 递归合并书签
+// 递归合并书签 - 参考background.js的逻辑
 async function mergeBookmarks(node, parentId = null) {
   // 跳过根节点，处理其子节点
   if (parentId === null) {
@@ -650,23 +650,31 @@ async function mergeBookmarks(node, parentId = null) {
         console.error('创建书签失败:', e);
       }
     }
-  }
-  if (node.children) {
-    for (const child of node.children) {
-      let newParentId = parentId;
-      if (!child.url) {
-        try {
-          const folder = await chrome.bookmarks.create({
-            parentId: parentId,
-            title: child.title
-          });
-          newParentId = folder.id;
-        } catch (e) {
-          console.error('创建文件夹失败:', e);
-          continue;
-        }
+  } else if (node.children) {
+    // 检查文件夹是否已存在
+    const children = await new Promise((res) => {
+      chrome.bookmarks.getChildren(parentId, res);
+    });
+    const existingFolder = children.find(child => !child.url && child.title === node.title);
+    
+    let folderId;
+    if (existingFolder) {
+      folderId = existingFolder.id;
+    } else {
+      try {
+        const folder = await chrome.bookmarks.create({
+          parentId: parentId,
+          title: node.title
+        });
+        folderId = folder.id;
+      } catch (e) {
+        console.error('创建文件夹失败:', e);
+        return;
       }
-      await mergeBookmarks(child, newParentId);
+    }
+    
+    for (const child of node.children) {
+      await mergeBookmarks(child, folderId);
     }
   }
 }
