@@ -529,9 +529,6 @@ chrome.action.onClicked.addListener(async (tab) => {
         focused: true
       });
       
-      // 设置置顶
-      chrome.windows.update(win.id, { setAlwaysOnTop: true });
-      
       // 保存窗口 ID，用于后续更新尺寸
       chrome.windows.onBoundsChanged.addListener(function listener(windowsChangeInfo) {
         if (windowsChangeInfo.id === win.id) {
