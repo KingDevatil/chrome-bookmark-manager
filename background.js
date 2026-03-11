@@ -501,13 +501,25 @@ chrome.action.onClicked.addListener(async (tab) => {
     if (displayMode === 'float') {
       // 浮窗模式：打开独立窗口
       const floatWidth = result.layoutSettings?.floatWidth || 400;
+      
+      // 获取屏幕信息
+      let screenWidth = 1920;
+      try {
+        const displays = await chrome.system.display.getInfo();
+        if (displays.length > 0) {
+          screenWidth = displays[0].workAreaBounds.width;
+        }
+      } catch (e) {
+        console.log('Using default screen width');
+      }
+      
       await chrome.windows.create({
         url: 'sidebar/sidebar.html',
         type: 'panel',
         width: floatWidth,
-        height: Math.min(800, screen.height - 100),
+        height: 800,
         top: 50,
-        left: screen.width - floatWidth - 50,
+        left: screenWidth - floatWidth - 50,
         focused: true
       });
     } else {
