@@ -1372,81 +1372,58 @@ async function renderSearchResults() {
   const emptyState = document.getElementById('empty-state');
 
   try {
-    // 检查是否是标签搜索（#标签名）
-    if (currentSearchQuery.startsWith('#')) {
-      const tagName = currentSearchQuery.slice(1).trim().toLowerCase();
-      if (tagName) {
-        const allTags = await BookmarkTags.getAll();
-        const bookmarkIds = [];
-        
-        Object.entries(allTags).forEach(([bookmarkId, tags]) => {
-          if (tags.some(tag => tag.toLowerCase().includes(tagName))) {
-            bookmarkIds.push(bookmarkId);
-          }
-        });
-        
-        // 获取这些书签的详细信息
-        const results = [];
-        for (const id of bookmarkIds) {
-          try {
-            const bookmarks = await new Promise((resolve) => {
-              chrome.bookmarks.get(id, resolve);
-            });
-            if (bookmarks && bookmarks.length > 0) {
-              results.push(bookmarks[0]);
+    const lowerQuery = currentSearchQuery.toLowerCase();
+    
+    // 1. 使用 Chrome API 搜索标题和 URL
+    const chromeResults = await BookmarkUtils.search(currentSearchQuery);
+    
+    // 2. 搜索标签
+    const tagBookmarkIds = await BookmarkTags.fuzzySearchTags(currentSearchQuery);
+    
+    // 3. 获取标签搜索结果的书签详情
+    const tagResults = [];
+    for (const id of tagBookmarkIds) {
+      try {
+        const bookmarks = await new Promise((resolve, reject) => {
+          chrome.bookmarks.get(id, (results) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(results);
             }
-          } catch (error) {
-            // 书签可能已被删除
-          }
-        }
-        
-        container.innerHTML = '';
-        const bookmarks = results;
-        
-        if (bookmarks.length === 0) {
-          emptyState.querySelector('div:last-child').textContent = '未找到匹配的书签';
-          emptyState.style.display = 'flex';
-          return;
-        }
-
-        emptyState.style.display = 'none';
-
-        bookmarks.forEach(node => {
-          const li = document.createElement('li');
-          li.className = 'tree-node';
-
-          const content = document.createElement('div');
-          content.className = 'tree-node-content';
-          content.style.height = `var(--bookmark-height, 32px)`;
-
-          const spacer = document.createElement('span');
-          spacer.className = 'tree-toggle empty';
-
-          const icon = FaviconService.createIconElement(node.url, false, false);
-
-          const title = document.createElement('span');
-          title.className = 'tree-title';
-          title.textContent = node.title || '无标题';
-          title.title = `${node.title}\n${node.url}`;
-
-          content.appendChild(spacer);
-          content.appendChild(icon);
-          content.appendChild(title);
-
-          content.addEventListener('click', () => openBookmark(node.url));
-          li.appendChild(content);
-          container.appendChild(li);
+          });
         });
-        return;
+        if (bookmarks && bookmarks.length > 0 && bookmarks[0].url) {
+          tagResults.push(bookmarks[0]);
+        }
+      } catch (error) {
+        // 书签可能已被删除
       }
     }
-
-    // 普通搜索
-    const results = await BookmarkUtils.search(currentSearchQuery);
+    
+    // 4. 合并结果并去重
+    const seenIds = new Set();
+    const allResults = [];
+    
+    // 先添加 Chrome API 结果
+    chromeResults.filter(n => n.url).forEach(bookmark => {
+      if (!seenIds.has(bookmark.id)) {
+        seenIds.add(bookmark.id);
+        allResults.push(bookmark);
+      }
+    });
+    
+    // 再添加标签搜索结果
+    tagResults.forEach(bookmark => {
+      if (!seenIds.has(bookmark.id)) {
+        seenIds.add(bookmark.id);
+        allResults.push(bookmark);
+      }
+    });
+    
     container.innerHTML = '';
-
-    const bookmarks = results.filter(n => n.url);
-    if (bookmarks.length === 0) {
+    
+    if (allResults.length === 0) {
       emptyState.querySelector('div:last-child').textContent = '未找到匹配的书签';
       emptyState.style.display = 'flex';
       return;
@@ -1454,7 +1431,7 @@ async function renderSearchResults() {
 
     emptyState.style.display = 'none';
 
-    bookmarks.forEach(node => {
+    allResults.forEach(node => {
       const li = document.createElement('li');
       li.className = 'tree-node';
 

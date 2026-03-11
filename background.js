@@ -252,11 +252,15 @@ class SyncManager {
         });
       }
       
+      // 获取标签分组数据
+      const tagGroups = await this.getTagGroups();
+      
       const data = {
-        version: '1.2',
+        version: '1.3',
         timestamp: new Date().toISOString(),
         bookmarks,
-        tagsByUrl: tagsByUrl || {}
+        tagsByUrl: tagsByUrl || {},
+        tagGroups: tagGroups || { groups: [] }
       };
       const filename = await this.client.uploadBookmarks(data);
       console.log('Bookmarks backed up successfully:', filename);
@@ -292,6 +296,14 @@ class SyncManager {
         console.log('No tags found in backup, skipping tag restore');
       }
       
+      // 恢复标签分组（如果存在）
+      if (backupData.tagGroups) {
+        console.log('Restoring tag groups from backup');
+        await this.restoreTagGroups(backupData.tagGroups, merge);
+      } else {
+        console.log('No tag groups found in backup, skipping');
+      }
+      
       console.log('Bookmarks restored successfully');
       return { success: true };
     } catch (error) {
@@ -306,6 +318,41 @@ class SyncManager {
         resolve(result.bookmark_tags);
       });
     });
+  }
+
+  async getTagGroups() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get('tagGroups', (result) => {
+        resolve(result.tagGroups || { groups: [] });
+      });
+    });
+  }
+
+  async restoreTagGroups(tagGroups, merge = false) {
+    if (!tagGroups || !tagGroups.groups) return;
+    
+    if (!merge) {
+      // 覆盖模式：直接设置
+      await chrome.storage.local.set({ tagGroups });
+    } else {
+      // 合并模式：按名称合并分组
+      const existing = await this.getTagGroups();
+      const mergedGroups = [...(existing.groups || [])];
+      
+      for (const importedGroup of tagGroups.groups) {
+        const existingIndex = mergedGroups.findIndex(g => g.name === importedGroup.name);
+        if (existingIndex >= 0) {
+          // 合并标签到现有分组
+          const mergedTags = [...new Set([...mergedGroups[existingIndex].tags, ...importedGroup.tags])];
+          mergedGroups[existingIndex].tags = mergedTags;
+        } else {
+          // 添加新分组
+          mergedGroups.push(importedGroup);
+        }
+      }
+      
+      await chrome.storage.local.set({ tagGroups: { groups: mergedGroups } });
+    }
   }
 
   async restoreBookmarkTags(tags, merge = false) {

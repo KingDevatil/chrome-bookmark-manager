@@ -993,62 +993,64 @@ async function handleSearch(e) {
   // 获取当前目录及所有子目录的 ID
   const folderIds = await getSubFolderIds(state.currentFolderId);
 
-  // 检查是否是标签搜索（#标签名）
-  if (query.startsWith('#')) {
-    const tagName = query.slice(1).trim().toLowerCase();
-    if (tagName) {
-      // 搜索包含该标签的书签
-      const allTags = await BookmarkTags.getAll();
-      const bookmarkIds = [];
-      
-      Object.entries(allTags).forEach(([bookmarkId, tags]) => {
-        if (tags.some(tag => tag.toLowerCase().includes(tagName))) {
-          bookmarkIds.push(bookmarkId);
-        }
-      });
-      
-      // 获取这些书签的详细信息，并过滤出当前目录下的
-      const results = [];
-      for (const id of bookmarkIds) {
-        try {
-          const bookmarks = await new Promise((resolve) => {
-            chrome.bookmarks.get(id, resolve);
-          });
-          if (bookmarks && bookmarks.length > 0) {
-            const bookmark = bookmarks[0];
-            // 检查是否在当前目录或子目录下
-            if (folderIds.includes(bookmark.parentId)) {
-              bookmark.tags = allTags[id] || [];
-              results.push(bookmark);
-            }
+  // 1. 使用 Chrome API 搜索标题和 URL
+  const chromeResults = await BookmarkUtils.search(query);
+  
+  // 2. 搜索标签
+  const tagBookmarkIds = await BookmarkTags.fuzzySearchTags(query);
+  
+  // 3. 获取标签搜索结果的书签详情
+  const tagResults = [];
+  const allTags = await BookmarkTags.getAll();
+  for (const id of tagBookmarkIds) {
+    try {
+      const bookmarks = await new Promise((resolve, reject) => {
+        chrome.bookmarks.get(id, (results) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(results);
           }
-        } catch (error) {
-          // 书签可能已被删除
+        });
+      });
+      if (bookmarks && bookmarks.length > 0 && bookmarks[0].url) {
+        // 检查是否在当前目录或子目录下
+        if (folderIds.includes(bookmarks[0].parentId)) {
+          bookmarks[0].tags = allTags[id] || [];
+          tagResults.push(bookmarks[0]);
         }
       }
-      
-      state.bookmarks = results;
-      renderBookmarks();
-      return;
+    } catch (error) {
+      // 书签可能已被删除
     }
   }
-
-  // 普通搜索 - 使用 Chrome API 搜索
-  const results = await BookmarkUtils.search(query);
   
-  // 过滤出当前目录及子目录下的书签和文件夹
-  const filteredBookmarks = results.filter(n => {
-    if (n.url) {
-      // 是书签，检查 parentId
-      return folderIds.includes(n.parentId);
-    } else {
-      // 是文件夹，检查 id 是否在 folderIds 中
-      return folderIds.includes(n.id);
+  // 4. 合并结果并去重
+  const seenIds = new Set();
+  const allResults = [];
+  
+  // 先添加 Chrome API 结果（过滤当前目录）
+  chromeResults.filter(n => n.url && folderIds.includes(n.parentId)).forEach(bookmark => {
+    if (!seenIds.has(bookmark.id)) {
+      seenIds.add(bookmark.id);
+      bookmark.tags = allTags[bookmark.id] || [];
+      allResults.push(bookmark);
     }
   });
   
-  state.bookmarks = filteredBookmarks.filter(n => n.url);
-  state.folders = filteredBookmarks.filter(n => !n.url);
+  // 再添加标签搜索结果
+  tagResults.forEach(bookmark => {
+    if (!seenIds.has(bookmark.id)) {
+      seenIds.add(bookmark.id);
+      allResults.push(bookmark);
+    }
+  });
+  
+  // 过滤文件夹
+  const folders = chromeResults.filter(n => !n.url && folderIds.includes(n.id));
+  
+  state.bookmarks = allResults;
+  state.folders = folders;
 
   renderBookmarks();
 }

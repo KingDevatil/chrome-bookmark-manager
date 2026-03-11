@@ -332,10 +332,14 @@ async function exportTags() {
     const result = await chrome.storage.local.get('bookmark_tags');
     const tags = result.bookmark_tags || {};
     
+    // 获取标签分组数据
+    const tagGroupsData = await TagGroups.getAll();
+    
     const exportData = {
-      version: '1.0',
+      version: '1.1',
       exportedAt: new Date().toISOString(),
-      tags: tags
+      tags: tags,
+      tagGroups: tagGroupsData
     };
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -348,7 +352,7 @@ async function exportTags() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showStatus('export-tags-status', '标签导出成功', 'success');
+    showStatus('export-tags-status', '标签和分组导出成功', 'success');
   } catch (error) {
     showStatus('export-tags-status', `导出失败：${error.message}`, 'error');
   }
@@ -372,7 +376,10 @@ function handleImportTagsFile(event) {
       
       // 显示确认对话框
       const tagCount = Object.keys(importedData.tags).length;
-      if (!confirm(`确定要导入 ${tagCount} 个书签的标签数据吗？\n\n这将合并到现有标签数据中，冲突的标签将被覆盖。`)) {
+      const hasTagGroups = importedData.tagGroups && importedData.tagGroups.groups && importedData.tagGroups.groups.length > 0;
+      const groupInfo = hasTagGroups ? `，${importedData.tagGroups.groups.length} 个标签分组` : '';
+      
+      if (!confirm(`确定要导入 ${tagCount} 个书签的标签数据${groupInfo}吗？\n\n这将合并到现有数据中，冲突的数据将被覆盖。`)) {
         return;
       }
       
@@ -385,7 +392,27 @@ function handleImportTagsFile(event) {
       
       await chrome.storage.local.set({ bookmark_tags: merged });
       
-      showStatus('import-tags-status', `导入成功！共导入 ${tagCount} 个书签的标签`, 'success');
+      // 导入标签分组（如果有）
+      if (hasTagGroups) {
+        const existingGroups = await TagGroups.getAll();
+        // 合并分组（按名称匹配）
+        const mergedGroups = [...(existingGroups.groups || [])];
+        for (const importedGroup of importedData.tagGroups.groups) {
+          const existingGroupIndex = mergedGroups.findIndex(g => g.name === importedGroup.name);
+          if (existingGroupIndex >= 0) {
+            // 合并标签到现有分组
+            const existingGroup = mergedGroups[existingGroupIndex];
+            const mergedTags = [...new Set([...existingGroup.tags, ...importedGroup.tags])];
+            mergedGroups[existingGroupIndex].tags = mergedTags;
+          } else {
+            // 添加新分组
+            mergedGroups.push(importedGroup);
+          }
+        }
+        await TagGroups.save(mergedGroups);
+      }
+      
+      showStatus('import-tags-status', `导入成功！共导入 ${tagCount} 个书签的标签${groupInfo}`, 'success');
       document.getElementById('import-tags-file').value = '';
       document.getElementById('import-tags-filename').textContent = '';
     } catch (error) {
