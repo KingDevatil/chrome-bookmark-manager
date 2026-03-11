@@ -610,7 +610,17 @@ async function handleImportAllConfig(event) {
 }
 
 // 递归合并书签
-async function mergeBookmarks(node, parentId = '0') {
+async function mergeBookmarks(node, parentId = null) {
+  // 跳过根节点，处理其子节点
+  if (parentId === null) {
+    if (node.children) {
+      for (const child of node.children) {
+        await mergeBookmarks(child, '0');
+      }
+    }
+    return;
+  }
+  
   if (node.url) {
     // 检查是否已存在
     const existing = await chrome.bookmarks.search({ url: node.url });
