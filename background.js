@@ -521,13 +521,20 @@ chrome.action.onClicked.addListener(async (tab) => {
       
       const win = await chrome.windows.create({
         url: 'sidebar/sidebar.html',
-        type: 'panel',
+        type: 'normal',
         width: floatWidth,
         height: floatHeight,
         top: floatTop,
         left: windowLeft,
         focused: true
       });
+      
+      // 设置置顶
+      try {
+        await chrome.windows.update(win.id, { alwaysOnTop: true });
+      } catch (e) {
+        console.log('Could not set always on top:', e);
+      }
       
       // 保存窗口 ID，用于后续更新尺寸
       chrome.windows.onBoundsChanged.addListener(function listener(windowsChangeInfo) {
