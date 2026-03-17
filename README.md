@@ -1,6 +1,10 @@
 # Chrome Bookmark Manager
 
 chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffagmficpelipbcddh?utm_source=item-share-cb
+firefox应用商店：审核中
+
+可前往https://github.com/KingDevatil/chrome-bookmark-manager/releases/tag/v1.3  下载relesase扩展文件加载到浏览器中
+
 
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
 
@@ -65,16 +69,10 @@ chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffag
 
 ### 方法一：从 Chrome Web Store 安装（推荐）
 
-> 待上架
+chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffagmficpelipbcddh?utm_source=item-share-cb
 
 ### 方法二：开发者模式安装
-
-1. 下载本项目代码
-2. 打开 Chrome 浏览器，访问 `chrome://extensions/`
-3. 开启右上角的 **开发者模式**
-4. 点击 **加载已解压的扩展程序**
-5. 选择本项目所在的文件夹
-6. 扩展安装完成，会在浏览器工具栏显示图标
+前往https://github.com/KingDevatil/chrome-bookmark-manager/releases/tag/v1.3  下载relesase扩展文件加载到浏览器中
 
 ## 🚀 使用指南
 
