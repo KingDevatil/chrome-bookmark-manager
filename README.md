@@ -1,5 +1,7 @@
 # Chrome Bookmark Manager
 
+chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffagmficpelipbcddh?utm_source=item-share-cb
+
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
 
 ![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
