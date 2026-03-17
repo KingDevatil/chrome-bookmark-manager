@@ -167,14 +167,31 @@ class BookmarkManager {
       }
     };
 
+    // 处理空数据情况
+    if (!bookmarks || bookmarks.length === 0) {
+      console.log('No bookmarks to import');
+      return;
+    }
+
     const root = bookmarks[0];
+    if (!root) {
+      console.log('Root bookmark is null');
+      return;
+    }
+
     if (root.children) {
       for (const child of root.children) {
-        if (child.id === '1') {
+        // 支持 Chrome 数字 ID 和 Firefox GUID 格式
+        if (child.id === '1' || child.id === 'toolbar_____') {
           for (const subChild of (child.children || [])) {
             await importNode('1', subChild);
           }
-        } else if (child.id === '2') {
+        } else if (child.id === '2' || child.id === 'unfiled_____') {
+          for (const subChild of (child.children || [])) {
+            await importNode('2', subChild);
+          }
+        } else if (child.id === 'menu________') {
+          // Firefox 书签菜单，在 Chrome 中创建为普通文件夹
           for (const subChild of (child.children || [])) {
             await importNode('2', subChild);
           }
