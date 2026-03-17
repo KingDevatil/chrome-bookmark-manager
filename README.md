@@ -1,6 +1,7 @@
 # Chrome Bookmark Manager
 
 chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffagmficpelipbcddh?utm_source=item-share-cb
+
 firefox应用商店：审核中
 
 可前往https://github.com/KingDevatil/chrome-bookmark-manager/releases/tag/v1.3  下载relesase扩展文件加载到浏览器中
