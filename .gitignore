@@ -9,9 +9,18 @@ Thumbs.db
 *.swo
 *~
 
+# 忽略 Trae AI 配置
+.trae/
+
 # 忽略日志文件
 *.log
 
 # 忽略临时文件
 *.tmp
 *.bak
+
+# 忽略打包文件
+*.zip
+
+# 忽略 Firefox AMO 上传 UUID
+.amo-upload-uuid
