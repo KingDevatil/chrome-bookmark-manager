@@ -8,6 +8,7 @@ let currentSearchQuery = '';
 let isMenuOpen = false;
 let frequentlyUsedData = [];
 let refreshTimer = null;
+let frequentlyUsedCollapsed = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await ThemeManager.init();
@@ -234,29 +235,28 @@ function createTreeNode(node, level) {
 function createFrequentlyUsedNode() {
   const li = document.createElement('li');
   li.className = 'tree-node';
-  
+
   const content = document.createElement('div');
   content.className = 'tree-node-content frequently-used-folder';
   content.style.height = `var(--bookmark-height, 32px)`;
   content.__isFrequentlyUsed = true;
-  content.__isExpanded = true;
-  
+
   const toggle = document.createElement('span');
-  toggle.className = 'tree-toggle expanded';
-  toggle.textContent = '▶';
+  toggle.className = `tree-toggle ${frequentlyUsedCollapsed ? '' : 'expanded'}`;
+  toggle.textContent = frequentlyUsedCollapsed ? '▶' : '▼';
   toggle.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleFrequentlyUsed();
   });
-  
+
   const icon = document.createElement('span');
   icon.className = 'tree-icon frequently-used-icon';
   icon.textContent = '⭐';
-  
+
   const title = document.createElement('span');
   title.className = 'tree-title frequently-used-title';
   title.textContent = '常用';
-  
+
   const refreshBtn = document.createElement('span');
   refreshBtn.className = 'frequently-used-refresh';
   refreshBtn.textContent = '🔄';
@@ -265,28 +265,30 @@ function createFrequentlyUsedNode() {
     e.stopPropagation();
     await refreshFrequentlyUsed();
   });
-  
+
   content.appendChild(toggle);
   content.appendChild(icon);
   content.appendChild(title);
   content.appendChild(refreshBtn);
-  
+
   content.addEventListener('click', () => {
     toggleFrequentlyUsed();
   });
-  
+
   content.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     e.stopPropagation();
     showFrequentlyUsedContextMenu(e);
   });
-  
+
   li.appendChild(content);
-  
+
   const childrenUl = document.createElement('ul');
-  childrenUl.className = 'tree-children expanded frequently-used-list';
-  
-  if (frequentlyUsedData.length === 0) {
+  childrenUl.className = `tree-children frequently-used-list ${frequentlyUsedCollapsed ? '' : 'expanded'}`;
+
+  if (frequentlyUsedCollapsed) {
+    // 折叠状态不显示子项
+  } else if (frequentlyUsedData.length === 0) {
     const emptyLi = document.createElement('li');
     emptyLi.className = 'tree-node frequently-used-empty';
     emptyLi.textContent = '暂无常用链接';
@@ -375,6 +377,7 @@ function createFrequentlyUsedItem(item, index) {
 }
 
 function toggleFrequentlyUsed() {
+  frequentlyUsedCollapsed = !frequentlyUsedCollapsed;
   renderBookmarkTree();
 }
 
