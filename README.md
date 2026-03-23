@@ -7,7 +7,7 @@ firefox应用商店：https://addons.mozilla.org/zh-CN/firefox/addon/sidebar-boo
 
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)
 
 ## ✨ 功能特性
@@ -15,6 +15,7 @@ firefox应用商店：https://addons.mozilla.org/zh-CN/firefox/addon/sidebar-boo
 ### 🎯 核心功能
 
 - **侧边栏快速访问** - 点击浏览器工具栏图标即可在侧边栏快速查看和访问书签
+- **侧边栏历史记录** - 侧边栏新增"历史"标签页，快速查看最近访问的网页记录
 - **全页面管理器** - 提供完整的书签管理界面，支持列表和网格两种视图模式
 - **文件夹树导航** - 左侧文件夹树支持折叠/展开，快速定位目标文件夹
 - **批量操作** - 支持 Shift 多选、全选、批量删除等功能

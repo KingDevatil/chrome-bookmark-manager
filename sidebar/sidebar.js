@@ -9,6 +9,8 @@ let isMenuOpen = false;
 let frequentlyUsedData = [];
 let refreshTimer = null;
 let frequentlyUsedCollapsed = false;
+let currentTab = 'bookmarks';
+let historyData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await ThemeManager.init();
@@ -18,7 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   setupMenuPanel();
   setupAutoRefresh();
-  
+  setupTabSwitcher();
+
   // 初始化主题开关 UI 状态
   const theme = document.documentElement.getAttribute('data-theme');
   updateThemeToggleUI(theme);
@@ -243,7 +246,7 @@ function createFrequentlyUsedNode() {
 
   const toggle = document.createElement('span');
   toggle.className = `tree-toggle ${frequentlyUsedCollapsed ? '' : 'expanded'}`;
-  toggle.textContent = frequentlyUsedCollapsed ? '▶' : '▼';
+  toggle.textContent = '▶';
   toggle.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleFrequentlyUsed();
@@ -1485,6 +1488,122 @@ function showEmptyState(message) {
 // 菜单面板功能
 // ============================================
 
+function setupTabSwitcher() {
+  const tabBookmarks = document.getElementById('tab-bookmarks');
+  const tabHistory = document.getElementById('tab-history');
+
+  tabBookmarks.addEventListener('click', () => switchTab('bookmarks'));
+  tabHistory.addEventListener('click', () => switchTab('history'));
+}
+
+function switchTab(tabName) {
+  currentTab = tabName;
+
+  const tabBookmarks = document.getElementById('tab-bookmarks');
+  const tabHistory = document.getElementById('tab-history');
+  const bookmarkPanel = document.getElementById('bookmark-panel');
+  const historyPanel = document.getElementById('history-panel');
+  const searchBox = document.getElementById('search-box');
+  const sidebarFooter = document.getElementById('sidebar-footer');
+
+  if (tabName === 'bookmarks') {
+    tabBookmarks.classList.add('active');
+    tabHistory.classList.remove('active');
+    bookmarkPanel.classList.add('active');
+    bookmarkPanel.classList.remove('hidden');
+    historyPanel.classList.remove('active');
+    historyPanel.classList.add('hidden');
+    searchBox.style.display = 'block';
+    sidebarFooter.style.display = 'flex';
+  } else {
+    tabBookmarks.classList.remove('active');
+    tabHistory.classList.add('active');
+    bookmarkPanel.classList.remove('active');
+    bookmarkPanel.classList.add('hidden');
+    historyPanel.classList.add('active');
+    historyPanel.classList.remove('hidden');
+    searchBox.style.display = 'none';
+    sidebarFooter.style.display = 'none';
+
+    if (historyData.length === 0) {
+      loadHistoryData();
+    }
+  }
+}
+
+async function loadHistoryData() {
+  try {
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    historyData = await new Promise((resolve) => {
+      chrome.history.search({
+        text: '',
+        startTime: oneWeekAgo,
+        maxResults: 100
+      }, resolve);
+    });
+    renderHistoryPanel();
+  } catch (error) {
+    console.error('加载历史记录失败:', error);
+  }
+}
+
+function renderHistoryPanel() {
+  const historyList = document.getElementById('history-list');
+  const emptyState = document.getElementById('history-empty-state');
+
+  historyList.innerHTML = '';
+
+  if (historyData.length === 0) {
+    emptyState.style.display = 'flex';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  historyData.forEach((item) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const favicon = FaviconService.createIconElement(item.url);
+
+    const title = document.createElement('span');
+    title.className = 'history-title';
+    title.textContent = item.title || item.url;
+
+    const time = document.createElement('span');
+    time.className = 'history-time';
+    time.textContent = formatHistoryTime(item.lastVisitTime);
+
+    li.appendChild(favicon);
+    li.appendChild(title);
+    li.appendChild(time);
+
+    li.addEventListener('click', () => {
+      chrome.tabs.create({ url: item.url });
+    });
+
+    historyList.appendChild(li);
+  });
+}
+
+function formatHistoryTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+
+  if (diff < 60000) {
+    return '刚刚';
+  } else if (diff < 3600000) {
+    return Math.floor(diff / 60000) + '分钟前';
+  } else if (diff < 86400000) {
+    return Math.floor(diff / 3600000) + '小时前';
+  } else if (diff < 604800000) {
+    return Math.floor(diff / 86400000) + '天前';
+  } else {
+    return date.toLocaleDateString('zh-CN');
+  }
+}
+
 function setupMenuPanel() {
   const menuBtn = document.getElementById('menu-btn');
   const themeToggle = document.getElementById('theme-toggle');
@@ -1548,6 +1667,7 @@ function toggleMenuPanel() {
   isMenuOpen = !isMenuOpen;
   const menuBtn = document.getElementById('menu-btn');
   const bookmarkPanel = document.getElementById('bookmark-panel');
+  const historyPanel = document.getElementById('history-panel');
   const menuPanel = document.getElementById('menu-panel');
   const searchBox = document.getElementById('search-box');
   const sidebarFooter = document.getElementById('sidebar-footer');
@@ -1557,6 +1677,7 @@ function toggleMenuPanel() {
     menuBtn.classList.add('active');
     menuBtn.title = '返回';
     bookmarkPanel.classList.remove('active');
+    historyPanel.classList.remove('active');
     menuPanel.classList.add('active');
     searchBox.style.display = 'none';
     sidebarFooter.style.display = 'none';
@@ -1564,10 +1685,19 @@ function toggleMenuPanel() {
     menuBtn.textContent = '⋮';
     menuBtn.classList.remove('active');
     menuBtn.title = '菜单';
-    bookmarkPanel.classList.add('active');
+    
+    // 根据当前标签页恢复对应面板
+    if (currentTab === 'bookmarks') {
+      bookmarkPanel.classList.add('active');
+      searchBox.style.display = 'block';
+      sidebarFooter.style.display = 'flex';
+    } else {
+      historyPanel.classList.add('active');
+      searchBox.style.display = 'none';
+      sidebarFooter.style.display = 'none';
+    }
+    
     menuPanel.classList.remove('active');
-    searchBox.style.display = 'block';
-    sidebarFooter.style.display = 'flex';
   }
 }
 

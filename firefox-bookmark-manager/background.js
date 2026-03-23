@@ -487,9 +487,8 @@ syncManager.init();
 // ============================================
 
 browser.browserAction.onClicked.addListener(async () => {
-  // Firefox 的 sidebar_action 需要用户手动打开
-  // browserAction 点击可以打开管理页面作为替代
-  log('Browser action clicked');
+  // Firefox: 切换侧边栏
+  await browser.sidebarAction.toggle();
 });
 
 // ============================================
