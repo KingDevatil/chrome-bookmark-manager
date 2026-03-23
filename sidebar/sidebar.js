@@ -922,9 +922,10 @@ function showContextMenu(e, node, isFolder) {
 
   // 删除选项
   const deleteItem = document.createElement('div');
-  deleteItem.className = 'context-menu-item';
+  deleteItem.className = 'context-menu-item danger';
   deleteItem.textContent = '🗑️ 删除';
   deleteItem.addEventListener('click', () => {
+    console.log('删除菜单点击:', { id: node.id, title: node.title, isFolder });
     deleteBookmarkOrFolder(node.id, node.title, isFolder);
     removeContextMenu();
   });
@@ -1070,11 +1071,14 @@ function removeContextMenu() {
 
 // 删除书签或文件夹
 async function deleteBookmarkOrFolder(id, title, isFolder) {
-  const message = isFolder
-    ? `确定要删除文件夹"${title}"及其所有内容吗？`
-    : `确定要删除书签"${title}"吗？`;
-
-  if (!confirm(message)) {
+  console.log('删除操作:', { id, title, isFolder });
+  
+  // 使用自定义确认对话框
+  const confirmed = await showConfirmDialog(
+    isFolder ? `确定要删除文件夹"${title}"及其所有内容吗？` : `确定要删除书签"${title}"吗？`
+  );
+  
+  if (!confirmed) {
     return;
   }
 
@@ -1089,8 +1093,53 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
     await loadBookmarkTree();
   } catch (error) {
     console.error('删除失败:', error);
-    alert('删除失败，请重试');
+    alert('删除失败，请重试: ' + error.message);
   }
+}
+
+// 显示自定义确认对话框
+function showConfirmDialog(message) {
+  return new Promise((resolve) => {
+    // 检查是否已存在对话框
+    const existingDialog = document.querySelector('.confirm-dialog-overlay');
+    if (existingDialog) {
+      existingDialog.remove();
+    }
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-dialog-overlay';
+    overlay.innerHTML = `
+      <div class="confirm-dialog">
+        <div class="confirm-message">${message}</div>
+        <div class="confirm-buttons">
+          <button class="confirm-cancel">取消</button>
+          <button class="confirm-ok">确定</button>
+        </div>
+      </div>
+    `;
+    
+    const cancelBtn = overlay.querySelector('.confirm-cancel');
+    const okBtn = overlay.querySelector('.confirm-ok');
+    
+    cancelBtn.addEventListener('click', () => {
+      overlay.remove();
+      resolve(false);
+    });
+    
+    okBtn.addEventListener('click', () => {
+      overlay.remove();
+      resolve(true);
+    });
+    
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+        resolve(false);
+      }
+    });
+    
+    document.body.appendChild(overlay);
+  });
 }
 
 // 拖拽相关变量
