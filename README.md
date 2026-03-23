@@ -2,9 +2,7 @@
 
 chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffagmficpelipbcddh?utm_source=item-share-cb
 
-firefox应用商店：审核中
-
-可前往[https://github.com/KingDevatil/chrome-bookmark-manager/releases/tag/v1.3](https://github.com/KingDevatil/chrome-bookmark-manager/releases/tag/v1.3)  下载relesase扩展文件加载到浏览器中
+firefox应用商店：https://addons.mozilla.org/zh-CN/firefox/addon/sidebar-bookmark-manager
 
 
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
