@@ -320,6 +320,15 @@ class SyncManager {
       }
       
       log('Bookmarks restored successfully');
+      
+      // 通知所有标签页刷新书签数据
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: 'refreshBookmarks' });
+        } catch (e) {}
+      }
+      
       return { success: true };
     } catch (err) {
       error('Restore failed:', err);
