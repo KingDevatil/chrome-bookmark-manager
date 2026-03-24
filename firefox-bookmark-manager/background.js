@@ -374,36 +374,49 @@ class SyncManager {
   }
 
   async restoreTagsByUrl(tagsByUrl, merge = false) {
+    // 等待一段时间确保书签已完全创建
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // 获取当前所有书签，建立 URL -> ID 的映射
-    const bookmarks = await BookmarkManager.getAllBookmarks();
+    // 注意：不能使用 getAllBookmarks()，因为它会包含回收站中的书签
     const urlToId = {};
     
-    const flattenBookmarks = (nodes) => {
+    const buildUrlToId = (nodes) => {
+      if (!nodes) return;
       nodes.forEach(node => {
         if (node.url) {
+          const normalizedUrl = node.url.replace(/\:$/, '');
+          urlToId[normalizedUrl] = node.id;
           urlToId[node.url] = node.id;
         }
         if (node.children) {
-          flattenBookmarks(node.children);
+          buildUrlToId(node.children);
         }
       });
     };
     
-    flattenBookmarks(bookmarks);
+    // Firefox 使用 GUID 格式的文件夹 ID
+    // 只获取书签栏和其他书签，不包括回收站
+    const toolbarBookmarks = await browser.bookmarks.getSubTree('toolbar_____');
+    const otherBookmarks = await browser.bookmarks.getSubTree('unfiled_____');
+    
+    buildUrlToId(toolbarBookmarks);
+    buildUrlToId(otherBookmarks);
     
     // 将 URL-based 标签转换为 ID-based 标签
     const tagsById = {};
     for (const [url, tags] of Object.entries(tagsByUrl)) {
-      if (urlToId[url]) {
-        tagsById[urlToId[url]] = tags;
+      const normalizedUrl = url.replace(/\:$/, '');
+      const matchedId = urlToId[url] || urlToId[normalizedUrl];
+      if (matchedId) {
+        tagsById[matchedId] = tags;
       }
     }
     
     if (!merge) {
-      // 覆盖模式：直接设置
+      await browser.storage.local.set({ bookmark_tags: {} });
       await browser.storage.local.set({ bookmark_tags: tagsById });
     } else {
-      // 合并模式：合并现有标签
       const existing = await this.getBookmarkTags();
       const merged = {
         ...(existing || {}),

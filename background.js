@@ -106,35 +106,75 @@ class BookmarkManager {
   }
 
   static async clearAllBookmarks() {
-    const removeChildren = async (parentId) => {
-      const children = await new Promise((resolve) => {
-        chrome.bookmarks.getChildren(parentId, resolve);
-      });
-      
-      for (const child of children) {
-        await new Promise((resolve) => {
-          chrome.bookmarks.removeTree(child.id, resolve);
-        });
-      }
-    };
+    // 获取书签栏和其他书签的子节点
+    const toolbarChildren = await new Promise((resolve) => {
+      chrome.bookmarks.getChildren('1', resolve);
+    });
+    const otherChildren = await new Promise((resolve) => {
+      chrome.bookmarks.getChildren('2', resolve);
+    });
     
-    await removeChildren('1');
-    await removeChildren('2');
+    // 删除书签栏的所有内容
+    for (const child of toolbarChildren) {
+      try {
+        if (child.url) {
+          await new Promise((resolve) => {
+            chrome.bookmarks.remove(child.id, () => resolve());
+          });
+        } else {
+          await new Promise((resolve) => {
+            chrome.bookmarks.removeTree(child.id, () => resolve());
+          });
+        }
+      } catch (e) {}
+    }
+    
+    // 删除其他书签的所有内容
+    for (const child of otherChildren) {
+      try {
+        if (child.url) {
+          await new Promise((resolve) => {
+            chrome.bookmarks.remove(child.id, () => resolve());
+          });
+        } else {
+          await new Promise((resolve) => {
+            chrome.bookmarks.removeTree(child.id, () => resolve());
+          });
+        }
+      } catch (e) {}
+    }
+    
+    log('clearAllBookmarks completed');
   }
 
   static async importBookmarks(bookmarks, merge = false) {
     if (!merge) {
+      // 覆盖模式：先清除所有书签和标签
       await this.clearAllBookmarks();
+      // 同时清除标签存储
+      await chrome.storage.local.set({ bookmark_tags: {} });
     }
 
     const importNode = async (parentId, node) => {
       if (node.url) {
-        const children = await new Promise((res) => {
-          chrome.bookmarks.getChildren(parentId, res);
-        });
-        const existingBookmark = children.find(child => child.url === node.url);
-        
-        if (!existingBookmark) {
+        if (merge) {
+          // 合并模式：检查是否已存在
+          const children = await new Promise((res) => {
+            chrome.bookmarks.getChildren(parentId, res);
+          });
+          const existingBookmark = children.find(child => child.url === node.url);
+          
+          if (!existingBookmark) {
+            await new Promise((res) => {
+              chrome.bookmarks.create({
+                parentId,
+                title: node.title,
+                url: node.url
+              }, res);
+            });
+          }
+        } else {
+          // 覆盖模式：直接创建，不检查
           await new Promise((res) => {
             chrome.bookmarks.create({
               parentId,
@@ -144,16 +184,30 @@ class BookmarkManager {
           });
         }
       } else if (node.children) {
-        const children = await new Promise((res) => {
-          chrome.bookmarks.getChildren(parentId, res);
-        });
-        const existingFolder = children.find(child => !child.url && child.title === node.title);
-        
-        if (existingFolder) {
-          for (const child of node.children) {
-            await importNode(existingFolder.id, child);
+        if (merge) {
+          // 合并模式：检查文件夹是否已存在
+          const children = await new Promise((res) => {
+            chrome.bookmarks.getChildren(parentId, res);
+          });
+          const existingFolder = children.find(child => !child.url && child.title === node.title);
+          
+          if (existingFolder) {
+            for (const child of node.children) {
+              await importNode(existingFolder.id, child);
+            }
+          } else {
+            const folder = await new Promise((res) => {
+              chrome.bookmarks.create({
+                parentId,
+                title: node.title
+              }, res);
+            });
+            for (const child of node.children) {
+              await importNode(folder.id, child);
+            }
           }
         } else {
+          // 覆盖模式：直接创建文件夹
           const folder = await new Promise((res) => {
             chrome.bookmarks.create({
               parentId,
@@ -245,7 +299,7 @@ class SyncManager {
       
       // 将 ID-based 标签转换为 URL-based 标签（用于跨设备恢复）
       const tagsByUrl = {};
-      if (tagsById) {
+      if (tagsById && Object.keys(tagsById).length > 0) {
         const flattenBookmarks = (nodes) => {
           const result = [];
           nodes.forEach(node => {
@@ -395,36 +449,52 @@ class SyncManager {
   }
 
   async restoreTagsByUrl(tagsByUrl, merge = false) {
+    // 等待一段时间确保书签已完全创建
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // 获取当前所有书签，建立 URL -> ID 的映射
-    const bookmarks = await BookmarkManager.getAllBookmarks();
+    // 注意：不能使用 getAllBookmarks()，因为它会包含回收站中的书签
     const urlToId = {};
     
-    const flattenBookmarks = (nodes) => {
+    const buildUrlToId = (nodes) => {
+      if (!nodes) return;
       nodes.forEach(node => {
         if (node.url) {
+          const normalizedUrl = node.url.replace(/\:$/, '');
+          urlToId[normalizedUrl] = node.id;
           urlToId[node.url] = node.id;
         }
         if (node.children) {
-          flattenBookmarks(node.children);
+          buildUrlToId(node.children);
         }
       });
     };
     
-    flattenBookmarks(bookmarks);
+    // 只获取书签栏和其他书签，不包括回收站
+    const toolbarBookmarks = await new Promise((resolve) => {
+      chrome.bookmarks.getSubTree('1', resolve);
+    });
+    const otherBookmarks = await new Promise((resolve) => {
+      chrome.bookmarks.getSubTree('2', resolve);
+    });
+    
+    buildUrlToId(toolbarBookmarks);
+    buildUrlToId(otherBookmarks);
     
     // 将 URL-based 标签转换为 ID-based 标签
     const tagsById = {};
     for (const [url, tags] of Object.entries(tagsByUrl)) {
-      if (urlToId[url]) {
-        tagsById[urlToId[url]] = tags;
+      const normalizedUrl = url.replace(/\:$/, '');
+      const matchedId = urlToId[url] || urlToId[normalizedUrl];
+      if (matchedId) {
+        tagsById[matchedId] = tags;
       }
     }
     
     if (!merge) {
-      // 覆盖模式：直接设置
+      await chrome.storage.local.set({ bookmark_tags: {} });
       await chrome.storage.local.set({ bookmark_tags: tagsById });
     } else {
-      // 合并模式：合并现有标签
       const existing = await this.getBookmarkTags();
       const merged = {
         ...(existing || {}),

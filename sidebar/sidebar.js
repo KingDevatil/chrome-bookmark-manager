@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       BookmarkTags.removeTags(message.bookmarkId);
       console.log('Tags cleaned for bookmark:', message.bookmarkId);
     }
+    if (message.action === 'refreshBookmarks') {
+      console.log('Refreshing bookmarks in sidebar...');
+      loadBookmarkTree();
+    }
   });
 });
 
