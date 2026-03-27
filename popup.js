@@ -10,6 +10,7 @@ const btnAddCurrent = document.getElementById('btn-add-current');
 const btnSettings = document.getElementById('btn-settings');
 
 document.addEventListener('DOMContentLoaded', async () => {
+  await I18n.init();
   await loadStats();
   setupEventListeners();
   await initTheme();

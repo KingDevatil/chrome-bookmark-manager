@@ -16,8 +16,9 @@ const state = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 初始化主题
+  // 初始化主题和语言
   ThemeManager.init();
+  await I18n.init();
 
   await loadFolderTree();
   await loadBookmarks('1');

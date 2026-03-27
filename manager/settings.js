@@ -4,7 +4,9 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   ThemeManager.init();
+  await I18n.init();
   await loadSettings();
+  await loadLanguageSettings();
   setupEventListeners();
   await loadFrequentlyUsedSettings();
 });
@@ -203,7 +205,11 @@ function switchSection(section) {
   document.getElementById('tags-section').style.display = section === 'tags' ? 'block' : 'none';
   document.getElementById('layout-section').style.display = section === 'layout' ? 'block' : 'none';
   document.getElementById('frequently-used-section').style.display = section === 'frequently-used' ? 'block' : 'none';
+  document.getElementById('language-section').style.display = section === 'language' ? 'block' : 'none';
   document.getElementById('help-section').style.display = section === 'help' ? 'block' : 'none';
+  
+  // 切换后翻译新显示的内容
+  setTimeout(() => I18n.translatePage(), 100);
 }
 
 async function testWebDAVConnection() {
@@ -1000,6 +1006,17 @@ function initDuplicateDetection() {
 // ============================================
 // 常用目录设置
 // ============================================
+
+async function loadLanguageSettings() {
+  const result = await Storage.get(['language']);
+  const currentLang = result.language || 'zh-CN';
+  document.getElementById('language-select').value = currentLang;
+  
+  document.getElementById('save-language-btn').addEventListener('click', async () => {
+    const selectedLang = document.getElementById('language-select').value;
+    await I18n.setLanguage(selectedLang);
+  });
+}
 
 async function loadFrequentlyUsedSettings() {
   try {

@@ -14,6 +14,7 @@ let historyData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   await ThemeManager.init();
+  await I18n.init();
   await loadLayoutSettings();
   await loadFrequentlyUsedConfig();
   await loadBookmarkTree();
