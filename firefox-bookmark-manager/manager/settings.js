@@ -1006,14 +1006,28 @@ function initDuplicateDetection() {
 // ============================================
 
 async function loadLanguageSettings() {
-  const result = await Storage.get(['language']);
-  const currentLang = result.language || 'zh-CN';
-  document.getElementById('language-select').value = currentLang;
-  
-  document.getElementById('save-language-btn').addEventListener('click', async () => {
-    const selectedLang = document.getElementById('language-select').value;
-    await I18n.setLanguage(selectedLang);
-  });
+  try {
+    const result = await Storage.get(['language']);
+    const currentLang = result.language || 'zh-CN';
+    document.getElementById('language-select').value = currentLang;
+
+    document.getElementById('save-language-btn').addEventListener('click', async () => {
+      try {
+        const selectedLang = document.getElementById('language-select').value;
+        const success = await I18n.setLanguage(selectedLang);
+        if (success) {
+          showStatus('language-status', I18n.t('common.saveSuccess'), 'success');
+        } else {
+          showStatus('language-status', I18n.t('common.saveFailed'), 'error');
+        }
+      } catch (error) {
+        console.error('切换语言失败:', error);
+        showStatus('language-status', I18n.t('common.saveFailed') + ': ' + error.message, 'error');
+      }
+    });
+  } catch (error) {
+    console.error('加载语言设置失败:', error);
+  }
 }
 
 async function loadFrequentlyUsedSettings() {
