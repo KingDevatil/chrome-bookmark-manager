@@ -483,6 +483,20 @@ const i18nData = {
   'tags.removeTagFromGroupFailed': { 'zh-CN': '从分组移除标签失败', 'en': 'Failed to remove tag from group' },
 
   'common.noTitle': { 'zh-CN': '无标题', 'en': 'No title' },
+
+  'common.enterTitleAndUrl': { 'zh-CN': '请填写标题和网址', 'en': 'Please enter title and URL' },
+  'common.createFolderFailed': { 'zh-CN': '创建文件夹失败', 'en': 'Failed to create folder' },
+  'common.addFailedRetry': { 'zh-CN': '添加失败，请重试', 'en': 'Add failed, please try again' },
+  'common.createFolderFailedRetry': { 'zh-CN': '创建文件夹失败，请重试', 'en': 'Failed to create folder, please try again' },
+  'common.dragFailed': { 'zh-CN': '拖拽失败', 'en': 'Drag failed' },
+  'common.targetNotFound': { 'zh-CN': '找不到目标节点', 'en': 'Target not found' },
+  'common.targetLocationNotFound': { 'zh-CN': '无法找到目标位置，请重试', 'en': 'Cannot find target location, please try again' },
+  'common.enterFolderNamePlaceholder': { 'zh-CN': '输入文件夹名称', 'en': 'Enter folder name' },
+  'common.enterGroupName': { 'zh-CN': '输入分组名称', 'en': 'Enter group name' },
+  'common.newFolderTitle': { 'zh-CN': '新建文件夹', 'en': 'New Folder' },
+  'common.folderName': { 'zh-CN': '文件夹名称', 'en': 'Folder Name' },
+  'common.storageLocation': { 'zh-CN': '存放位置', 'en': 'Storage Location' },
+  'common.settingsBookmarkManager': { 'zh-CN': '设置 - 书签管理器', 'en': 'Settings - Bookmark Manager' },
 };
 
 translations['zh-CN'] = Object.fromEntries(
@@ -542,11 +556,16 @@ class I18n {
 
   static translatePage() {
     if (this.currentLang === 'zh-CN') return;
-    
+
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.dataset.i18n;
       if (key) {
-        el.textContent = this.t(key);
+        const translated = this.t(key);
+        if (el.tagName === 'TITLE') {
+          document.title = translated;
+        } else {
+          el.textContent = translated;
+        }
       }
     });
 
