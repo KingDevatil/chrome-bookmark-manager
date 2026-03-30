@@ -497,6 +497,20 @@ const i18nData = {
   'common.folderName': { 'zh-CN': '文件夹名称', 'en': 'Folder Name' },
   'common.storageLocation': { 'zh-CN': '存放位置', 'en': 'Storage Location' },
   'common.settingsBookmarkManager': { 'zh-CN': '设置 - 书签管理器', 'en': 'Settings - Bookmark Manager' },
+
+  'sidebar.enterBookmarkName': { 'zh-CN': '请输入书签名称', 'en': 'Please enter bookmark name' },
+  'sidebar.invalidUrl': { 'zh-CN': '书签 URL 无效', 'en': 'Invalid bookmark URL' },
+  'sidebar.selectFolder': { 'zh-CN': '请选择文件夹', 'en': 'Please select a folder' },
+  'sidebar.addFailed': { 'zh-CN': '添加失败，请重试', 'en': 'Add failed, please try again' },
+  'sidebar.editFailed': { 'zh-CN': '修改失败，请重试', 'en': 'Edit failed, please try again' },
+  'sidebar.systemFolderDelete': { 'zh-CN': '系统文件夹不能删除', 'en': 'System folders cannot be deleted' },
+  'sidebar.deleteFailed': { 'zh-CN': '删除失败', 'en': 'Delete failed' },
+  'sidebar.targetNotFound': { 'zh-CN': '找不到目标节点', 'en': 'Target not found' },
+  'sidebar.targetLocationNotFound': { 'zh-CN': '无法找到目标位置，请重试', 'en': 'Cannot find target location, please try again' },
+  'sidebar.dragFailed': { 'zh-CN': '拖拽失败', 'en': 'Drag failed' },
+
+  'confirm.deleteBookmark': { 'zh-CN': '确定要删除书签 "{name}" 吗？', 'en': 'Are you sure you want to delete bookmark "{name}"?' },
+  'common.tryAgain': { 'zh-CN': '请重试', 'en': 'Please try again' },
 };
 
 translations['zh-CN'] = Object.fromEntries(

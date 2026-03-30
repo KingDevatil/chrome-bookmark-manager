@@ -567,22 +567,22 @@ async function showAddBookmarkModal(item) {
     const title = document.getElementById('add-bookmark-title').value.trim();
     const url = document.getElementById('add-bookmark-url').value.trim();
     const parentId = document.getElementById('add-bookmark-folder').value;
-    
+
     if (!title) {
-      alert('请输入书签名称');
+      alert(I18n.t('sidebar.enterBookmarkName'));
       return;
     }
-    
+
     if (!url) {
-      alert('书签 URL 无效');
+      alert(I18n.t('sidebar.invalidUrl'));
       return;
     }
-    
+
     if (!parentId) {
-      alert('请选择文件夹');
+      alert(I18n.t('sidebar.selectFolder'));
       return;
     }
-    
+
     try {
       await BookmarkUtils.create({
         parentId,
@@ -593,7 +593,7 @@ async function showAddBookmarkModal(item) {
       removeAddBookmarkModal();
     } catch (error) {
       console.error('添加书签失败:', error);
-      alert('添加失败，请重试');
+      alert(I18n.t('sidebar.addFailed'));
     }
   });
   
@@ -804,12 +804,12 @@ async function showCreateFolderModal() {
   modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
     const title = document.getElementById('new-folder-title').value.trim();
     const parentId = document.getElementById('new-folder-parentId').value;
-    
+
     if (!title) {
-      alert('请输入文件夹名称');
+      alert(I18n.t('common.enterFolderName'));
       return;
     }
-    
+
     try {
       await BookmarkUtils.create({
         parentId,
@@ -819,7 +819,7 @@ async function showCreateFolderModal() {
       removeEditModal();
     } catch (error) {
       console.error('创建文件夹失败:', error);
-      alert('创建文件夹失败，请重试');
+      alert(I18n.t('common.createFolderFailedRetry'));
     }
   });
   
@@ -1022,12 +1022,12 @@ async function showEditModal(node) {
     const newParentId = document.getElementById('edit-folder-parentId').value;
 
     if (!newTitle) {
-      alert('请输入书签名称');
+      alert(I18n.t('sidebar.enterBookmarkName'));
       return;
     }
 
     if (!newUrl) {
-      alert('请输入书签 URL');
+      alert(I18n.t('sidebar.invalidUrl'));
       return;
     }
 
@@ -1037,17 +1037,17 @@ async function showEditModal(node) {
         title: newTitle,
         url: newUrl
       });
-      
+
       // 如果需要移动文件夹
       if (newParentId && newParentId !== node.parentId) {
         await browser.bookmarks.move(node.id, { parentId: newParentId });
       }
-      
+
       await loadBookmarkTree();
       removeEditModal();
     } catch (error) {
       console.error('修改书签失败:', error);
-      alert('修改失败，请重试');
+      alert(I18n.t('sidebar.editFailed'));
     }
   });
 
@@ -1079,15 +1079,15 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
   // 检查是否是系统根文件夹（Firefox 的 GUID 格式）
   const systemFolders = ['root________', 'menu________', 'toolbar_____', 'unfiled_____'];
   if (systemFolders.includes(id)) {
-    alert('系统文件夹不能删除');
+    alert(I18n.t('sidebar.systemFolderDelete'));
     return;
   }
 
   // 使用自定义确认对话框
   const confirmed = await showConfirmDialog(
-    isFolder ? `确定要删除文件夹"${title}"及其所有内容吗？` : `确定要删除书签"${title}"吗？`
+    isFolder ? I18n.t('confirm.deleteFolder', { name: title }) : I18n.t('confirm.deleteBookmark', { name: title })
   );
-  
+
   if (!confirmed) {
     return;
   }
@@ -1103,7 +1103,7 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
     await loadBookmarkTree();
   } catch (error) {
     console.error('删除失败:', error);
-    alert('删除失败: ' + (error.message || '请重试'));
+    alert(I18n.t('sidebar.deleteFailed') + ': ' + (error.message || I18n.t('common.tryAgain')));
   }
 }
 
@@ -1115,39 +1115,39 @@ function showConfirmDialog(message) {
     if (existingDialog) {
       existingDialog.remove();
     }
-    
+
     const overlay = document.createElement('div');
     overlay.className = 'confirm-dialog-overlay';
     overlay.innerHTML = `
       <div class="confirm-dialog">
         <div class="confirm-message">${message}</div>
         <div class="confirm-buttons">
-          <button class="confirm-cancel">取消</button>
-          <button class="confirm-ok">确定</button>
+          <button class="confirm-cancel">${I18n.t('common.cancel')}</button>
+          <button class="confirm-ok">${I18n.t('common.ok')}</button>
         </div>
       </div>
     `;
-    
+
     const cancelBtn = overlay.querySelector('.confirm-cancel');
     const okBtn = overlay.querySelector('.confirm-ok');
-    
+
     cancelBtn.addEventListener('click', () => {
       overlay.remove();
       resolve(false);
     });
-    
+
     okBtn.addEventListener('click', () => {
       overlay.remove();
       resolve(true);
     });
-    
+
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
         overlay.remove();
         resolve(false);
       }
     });
-    
+
     document.body.appendChild(overlay);
   });
 }
@@ -1352,8 +1352,8 @@ async function handleDrop(e) {
         console.log('目标索引:', targetIndex);
         
         if (targetIndex === -1) {
-          console.error('找不到目标节点');
-          alert('找不到目标节点');
+          console.error(I18n.t('sidebar.targetNotFound'));
+          alert(I18n.t('sidebar.targetNotFound'));
           return;
         }
         
@@ -1378,8 +1378,8 @@ async function handleDrop(e) {
         
         console.log('>> 移动完成');
       } else {
-        console.error('找不到父节点，无法移动');
-        alert('无法找到目标位置，请重试');
+        console.error(I18n.t('sidebar.targetLocationNotFound'));
+        alert(I18n.t('sidebar.targetLocationNotFound'));
       }
     }
 
@@ -1387,9 +1387,9 @@ async function handleDrop(e) {
     await loadBookmarkTree();
     console.log('=== 拖拽完成 ===');
   } catch (error) {
-    console.error('拖拽失败:', error);
+    console.error(I18n.t('sidebar.dragFailed') + ':', error);
     console.error('错误堆栈:', error.stack);
-    alert('拖拽失败：' + error.message);
+    alert(I18n.t('sidebar.dragFailed') + '：' + error.message);
   }
 
   targetElement.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');
