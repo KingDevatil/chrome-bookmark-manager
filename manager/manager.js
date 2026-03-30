@@ -309,7 +309,7 @@ function createBookmarkRow(bookmark, index) {
 
   const title = document.createElement('div');
   title.className = 'bookmark-title';
-  title.textContent = bookmark.title || '未命名书签';
+  title.textContent = bookmark.title || I18n.t('common.noName');
 
   titleRow.appendChild(title);
 
@@ -432,7 +432,7 @@ function createBookmarkCard(bookmark, index) {
 
   const title = document.createElement('div');
   title.className = 'bookmark-title';
-  title.textContent = bookmark.title || '未命名书签';
+  title.textContent = bookmark.title || I18n.t('common.noName');
 
   const url = document.createElement('div');
   url.className = 'bookmark-url';
@@ -491,11 +491,11 @@ function createFolderRow(folder, index) {
 
   const title = document.createElement('div');
   title.className = 'bookmark-title';
-  title.textContent = folder.title || '未命名文件夹';
+  title.textContent = folder.title || I18n.t('common.noNameFolder');
 
   const count = document.createElement('div');
   count.className = 'bookmark-url';
-  count.textContent = `${folder.bookmarkCount || 0} 项`;
+  count.textContent = `${folder.bookmarkCount || 0} ${I18n.t('common.items')}`;
 
   info.appendChild(title);
   info.appendChild(count);
@@ -573,11 +573,11 @@ function createFolderCard(folder, index) {
 
   const title = document.createElement('div');
   title.className = 'bookmark-title';
-  title.textContent = folder.title || '未命名文件夹';
+  title.textContent = folder.title || I18n.t('common.noNameFolder');
 
   const count = document.createElement('div');
   count.className = 'bookmark-url';
-  count.textContent = `${folder.bookmarkCount || 0} 项`;
+  count.textContent = `${folder.bookmarkCount || 0} ${I18n.t('common.items')}`;
 
   card.appendChild(checkbox);
   card.appendChild(deleteBtn);
@@ -695,23 +695,23 @@ function renderFolderDetailPanel(folder) {
   const bookmarkCount = childCount - folderCount;
 
   panel.innerHTML = `
-    <div class="detail-header">文件夹详情</div>
+    <div class="detail-header" data-i18n="common.folderDetail">文件夹详情</div>
     <div class="detail-content">
       <div class="detail-field">
-        <div class="detail-label">名称</div>
+        <div class="detail-label" data-i18n="common.name">名称</div>
         <input type="text" class="detail-input" id="detail-title" value="${folder.title || ''}">
       </div>
       <div class="detail-field">
-        <div class="detail-label">包含内容</div>
-        <div class="detail-value">${folderCount} 个文件夹，${bookmarkCount} 个书签</div>
+        <div class="detail-label" data-i18n="common.contains">包含内容</div>
+        <div class="detail-value">${folderCount} ${I18n.t('common.folders')}，${bookmarkCount} ${I18n.t('common.bookmarks')}</div>
       </div>
       <div class="detail-field">
-        <div class="detail-label">添加时间</div>
-        <div class="detail-value">${folder.dateAdded ? Utils.formatDate(folder.dateAdded) : '未知'}</div>
+        <div class="detail-label" data-i18n="common.addTime">添加时间</div>
+        <div class="detail-value">${folder.dateAdded ? Utils.formatDate(folder.dateAdded) : I18n.t('common.unknown')}</div>
       </div>
       <div class="detail-actions">
-        <button class="btn" id="open-folder-btn">进入文件夹</button>
-        <button class="btn btn-primary" id="save-folder-btn">保存</button>
+        <button class="btn" id="open-folder-btn" data-i18n="common.enterFolder">进入文件夹</button>
+        <button class="btn btn-primary" id="save-folder-btn" data-i18n="common.save">保存</button>
       </div>
     </div>
   `;
@@ -734,7 +734,7 @@ function renderFolderDetailPanel(folder) {
 }
 
 async function deleteFolder(folderId, folderTitle) {
-  const confirmed = confirm(`确定要删除文件夹"${folderTitle}"及其所有内容吗？此操作不可撤销。`);
+  const confirmed = await showConfirm(I18n.t('confirm.deleteFolder', { name: folderTitle }), { danger: true });
   if (!confirmed) return;
 
   try {
@@ -750,7 +750,7 @@ async function deleteFolder(folderId, folderTitle) {
     await loadFolderTree();
   } catch (error) {
     console.error('删除文件夹失败:', error);
-    alert('删除文件夹失败');
+    await showAlert(I18n.t('common.deleteFailed'));
   }
 }
 
@@ -771,34 +771,34 @@ async function renderDetailPanel(bookmark) {
   const tags = await BookmarkTags.getTags(bookmark.id);
 
   panel.innerHTML = `
-    <div class="detail-header">书签详情</div>
+    <div class="detail-header" data-i18n="common.bookmarkDetail">书签详情</div>
     <div class="detail-content">
       <div class="detail-field">
-        <div class="detail-label">标题</div>
+        <div class="detail-label" data-i18n="common.title">标题</div>
         <input type="text" class="detail-input" id="detail-title" value="${bookmark.title || ''}">
       </div>
       <div class="detail-field">
-        <div class="detail-label">网址</div>
+        <div class="detail-label" data-i18n="common.url">网址</div>
         <input type="text" class="detail-input" id="detail-url" value="${bookmark.url}">
       </div>
       <div class="detail-field">
-        <div class="detail-label">标签</div>
+        <div class="detail-label" data-i18n="common.tags">标签</div>
         <div class="detail-tags-input">
-          <input type="text" class="detail-input" id="detail-tag-input" placeholder="输入标签名后按回车添加">
+          <input type="text" class="detail-input" id="detail-tag-input" data-i18n-placeholder="common.enterTag" placeholder="输入标签名后按回车添加">
         </div>
         <div class="detail-tags" id="detail-tags-container"></div>
       </div>
       <div class="detail-field">
-        <div class="detail-label">快速添加标签</div>
+        <div class="detail-label" data-i18n="common.quickAddTag">快速添加标签</div>
         <div id="tag-selector-container" class="tag-selector-container"></div>
       </div>
       <div class="detail-field">
-        <div class="detail-label">添加时间</div>
-        <div class="detail-value">${bookmark.dateAdded ? Utils.formatDate(bookmark.dateAdded) : '未知'}</div>
+        <div class="detail-label" data-i18n="common.addTime">添加时间</div>
+        <div class="detail-value">${bookmark.dateAdded ? Utils.formatDate(bookmark.dateAdded) : I18n.t('common.unknown')}</div>
       </div>
       <div class="detail-actions">
-        <button class="btn" id="open-bookmark-btn">打开</button>
-        <button class="btn btn-primary" id="save-bookmark-btn">保存</button>
+        <button class="btn" id="open-bookmark-btn" data-i18n="common.open">打开</button>
+        <button class="btn btn-primary" id="save-bookmark-btn" data-i18n="common.save">保存</button>
       </div>
     </div>
   `;
@@ -901,7 +901,7 @@ async function renderTagSelector(bookmarkId, currentTags) {
 
   // 如果没有任何标签
   if (allTags.length === 0) {
-    container.innerHTML = '<div class="tag-selector-empty">暂无标签，请先添加标签</div>';
+    container.innerHTML = '<div class="tag-selector-empty">' + I18n.t('common.noTagsAddFirst') + '</div>';
   }
 }
 
@@ -936,7 +936,7 @@ function renderDetailTags(bookmarkId, tags) {
   container.innerHTML = '';
 
   if (tags.length === 0) {
-    container.innerHTML = '<div class="detail-tags-empty">暂无标签</div>';
+    container.innerHTML = '<div class="detail-tags-empty">' + I18n.t('common.noTags') + '</div>';
     return;
   }
 
@@ -1006,7 +1006,7 @@ async function deleteBookmark(id) {
     await loadBookmarks(state.currentFolderId);
   } catch (error) {
     console.error('删除书签失败:', error);
-    alert('删除书签失败: ' + (error.message || '未知错误'));
+    await showAlert(I18n.t('common.deleteFailed') + ': ' + (error.message || I18n.t('common.unknown')));
   }
 }
 
@@ -1016,11 +1016,12 @@ async function batchDelete() {
 
   // 检查是否包含文件夹
   const hasFolder = state.folders.some(f => state.selectedIds.has(f.id));
-  const message = hasFolder 
-    ? `确定要删除选中的 ${count} 个项目吗？文件夹及其内容都将被删除。`
-    : `确定要删除选中的 ${count} 个书签吗？`;
-  
-  if (!confirm(message)) return;
+  const message = hasFolder
+    ? I18n.t('confirm.deleteItemsWithFolders', { count: count })
+    : I18n.t('confirm.deleteBookmarks', { count: count });
+
+  const confirmed = await showConfirm(message, { danger: true });
+  if (!confirmed) return;
 
   // 分别处理书签和文件夹
   const promises = Array.from(state.selectedIds).map(id => {
@@ -1195,7 +1196,7 @@ async function addNewBookmark() {
   const url = document.getElementById('new-bookmark-url').value.trim();
 
   if (!title || !url) {
-    alert('请填写标题和网址');
+    await showAlert(I18n.t('common.enterTitleAndUrl'));
     return;
   }
 
@@ -1209,21 +1210,35 @@ async function addNewBookmark() {
   await loadBookmarks(state.currentFolderId);
 }
 
+function showNewFolderModal() {
+  document.getElementById('new-folder-modal').classList.add('visible');
+  document.getElementById('new-folder-name-input').value = '';
+  document.getElementById('new-folder-name-input').focus();
+}
+
+function hideNewFolderModal() {
+  document.getElementById('new-folder-modal').classList.remove('visible');
+}
+
 async function createNewFolder() {
-  const title = prompt('请输入文件夹名称:');
-  if (title && title.trim()) {
-    try {
-      await BookmarkUtils.create({
-        parentId: state.currentFolderId,
-        title: title.trim()
-      });
-      // 重新加载文件夹树和书签列表
-      await loadFolderTree();
-      await loadBookmarks(state.currentFolderId);
-    } catch (error) {
-      console.error('创建文件夹失败:', error);
-      alert('创建文件夹失败');
-    }
+  const title = document.getElementById('new-folder-name-input').value.trim();
+  if (!title) {
+    await showAlert(I18n.t('common.enterFolderName'));
+    return;
+  }
+
+  try {
+    await BookmarkUtils.create({
+      parentId: state.currentFolderId,
+      title: title
+    });
+    hideNewFolderModal();
+    // 重新加载文件夹树和书签列表
+    await loadFolderTree();
+    await loadBookmarks(state.currentFolderId);
+  } catch (error) {
+    console.error(I18n.t('common.createFolderFailed') + ':', error);
+    await showAlert(I18n.t('common.createFolderFailed'));
   }
 }
 
@@ -1234,9 +1249,11 @@ function setupEventListeners() {
   document.getElementById('grid-view-btn').addEventListener('click', () => setViewMode('grid'));
 
   document.getElementById('add-bookmark-btn').addEventListener('click', showAddModal);
-  document.getElementById('new-folder-btn').addEventListener('click', createNewFolder);
+  document.getElementById('new-folder-btn').addEventListener('click', showNewFolderModal);
   document.getElementById('cancel-add-btn').addEventListener('click', hideAddModal);
   document.getElementById('confirm-add-btn').addEventListener('click', addNewBookmark);
+  document.getElementById('cancel-folder-btn').addEventListener('click', hideNewFolderModal);
+  document.getElementById('confirm-folder-btn').addEventListener('click', createNewFolder);
 
   document.getElementById('select-all-btn').addEventListener('click', selectAll);
   document.getElementById('batch-delete-btn').addEventListener('click', batchDelete);
@@ -1247,8 +1264,16 @@ function setupEventListeners() {
     if (e.target.id === 'add-modal') hideAddModal();
   });
 
+  document.getElementById('new-folder-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'new-folder-modal') hideNewFolderModal();
+  });
+
   document.getElementById('add-tags-modal').addEventListener('click', (e) => {
     if (e.target.id === 'add-tags-modal') hideAddTagsModal();
+  });
+
+  document.getElementById('new-folder-name-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createNewFolder();
   });
 
   document.getElementById('cancel-tags-btn').addEventListener('click', hideAddTagsModal);
@@ -1483,7 +1508,7 @@ async function renderBatchTagSelector() {
   
   // 如果没有任何标签
   if (allTags.length === 0) {
-    container.innerHTML = '<div class="tag-selector-empty">暂无标签，请先在书签详情中添加标签</div>';
+    container.innerHTML = '<div class="tag-selector-empty">' + I18n.t('common.noTagsInDetail') + '</div>';
   }
 }
 

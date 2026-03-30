@@ -263,12 +263,12 @@ function createFrequentlyUsedNode() {
 
   const title = document.createElement('span');
   title.className = 'tree-title frequently-used-title';
-  title.textContent = '常用';
+  title.textContent = I18n.t('freq.freqUsed');
 
   const refreshBtn = document.createElement('span');
   refreshBtn.className = 'frequently-used-refresh';
   refreshBtn.textContent = '🔄';
-  refreshBtn.title = '刷新常用列表';
+  refreshBtn.title = I18n.t('common.refresh');
   refreshBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     await refreshFrequentlyUsed();
@@ -299,7 +299,7 @@ function createFrequentlyUsedNode() {
   } else if (frequentlyUsedData.length === 0) {
     const emptyLi = document.createElement('li');
     emptyLi.className = 'tree-node frequently-used-empty';
-    emptyLi.textContent = '暂无常用链接';
+    emptyLi.textContent = I18n.t('sidebar.noPinnedLinks');
     emptyLi.style.paddingLeft = '36px';
     emptyLi.style.fontSize = '13px';
     emptyLi.style.color = 'var(--text-tertiary, #94a3b8)';
@@ -346,11 +346,11 @@ function createFrequentlyUsedItem(item, index) {
   const visitCountOrPin = document.createElement('span');
   visitCountOrPin.className = 'frequently-used-visit-count';
   if (item.isPinned) {
-    visitCountOrPin.textContent = '📌 置顶';
+    visitCountOrPin.textContent = '📌 ' + I18n.t('common.pin');
     visitCountOrPin.style.color = '#f23600';
     visitCountOrPin.style.fontWeight = '500';
   } else {
-    visitCountOrPin.textContent = `${item.visitCount} 次`;
+    visitCountOrPin.textContent = `${item.visitCount} ${I18n.t('common.times')}`;
   }
   
   titleContainer.appendChild(title);
@@ -401,7 +401,7 @@ async function showFrequentlyUsedContextMenu(e) {
   
   const configItem = document.createElement('div');
   configItem.className = 'context-menu-item';
-  configItem.textContent = '⚙️ 常用目录设置';
+  configItem.textContent = '⚙️ ' + I18n.t('menu.frequentlyUsed');
   configItem.addEventListener('click', () => {
     chrome.tabs.create({
       url: chrome.runtime.getURL('manager/settings.html')
@@ -445,7 +445,7 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   
   const pinItem = document.createElement('div');
   pinItem.className = 'context-menu-item';
-  pinItem.textContent = isPinned ? '📌 取消置顶' : '📌 置顶';
+  pinItem.textContent = isPinned ? '📌 ' + I18n.t('common.unpin') : '📌 ' + I18n.t('common.pin');
   pinItem.addEventListener('click', async () => {
     if (isPinned) {
       await FrequentlyUsedConfig.unpinUrl(item.url);
@@ -465,7 +465,7 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   if (!item.isBookmarked) {
     const addBookmarkItem = document.createElement('div');
     addBookmarkItem.className = 'context-menu-item';
-    addBookmarkItem.textContent = '📑 添加到书签';
+    addBookmarkItem.textContent = '📑 ' + I18n.t('common.addToBookmark');
     addBookmarkItem.addEventListener('click', () => {
       showAddBookmarkModal(item);
       removeContextMenu();
@@ -480,7 +480,7 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   const domain = FrequentlyUsed.extractDomain(item.url);
   const blockItem = document.createElement('div');
   blockItem.className = 'context-menu-item';
-  blockItem.textContent = `🚫 屏蔽 ${domain}`;
+  blockItem.textContent = '🚫 ' + I18n.t('common.block') + ' ' + domain;
   blockItem.addEventListener('click', async () => {
     await FrequentlyUsedConfig.addToBlacklist(domain);
     await refreshFrequentlyUsed();
@@ -513,9 +513,9 @@ async function showAddBookmarkModal(item) {
   
   modal.innerHTML = `
     <div class="edit-modal-content">
-      <h3 class="edit-modal-title">添加到书签</h3>
+      <h3 class="edit-modal-title">${I18n.t('common.addToBookmark')}</h3>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">名称</label>
+        <label class="edit-modal-label">${I18n.t('common.name')}</label>
         <input type="text" class="edit-modal-input" id="add-bookmark-title" value="${item.title || ''}">
       </div>
       <div class="edit-modal-field">
@@ -523,15 +523,15 @@ async function showAddBookmarkModal(item) {
         <input type="text" class="edit-modal-input" id="add-bookmark-url" value="${item.url}" readonly>
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">文件夹</label>
+        <label class="edit-modal-label">${I18n.t('common.folder')}</label>
         <div class="folder-tree" id="folder-tree">
           <!-- 文件夹树将通过 JS 渲染 -->
         </div>
         <input type="hidden" id="add-bookmark-folder" value="">
       </div>
       <div class="edit-modal-buttons">
-        <button class="edit-modal-btn edit-modal-cancel">取消</button>
-        <button class="edit-modal-btn edit-modal-save">保存</button>
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
       </div>
     </div>
   `;
@@ -567,22 +567,22 @@ async function showAddBookmarkModal(item) {
     const title = document.getElementById('add-bookmark-title').value.trim();
     const url = document.getElementById('add-bookmark-url').value.trim();
     const parentId = document.getElementById('add-bookmark-folder').value;
-    
+
     if (!title) {
-      alert('请输入书签名称');
+      await showAlert(I18n.t('common.enterTitle'));
       return;
     }
-    
+
     if (!url) {
-      alert('书签 URL 无效');
+      await showAlert(I18n.t('common.enterUrl'));
       return;
     }
-    
+
     if (!parentId) {
-      alert('请选择文件夹');
+      await showAlert(I18n.t('common.selectFolder'));
       return;
     }
-    
+
     try {
       await BookmarkUtils.create({
         parentId,
@@ -592,8 +592,8 @@ async function showAddBookmarkModal(item) {
       await refreshFrequentlyUsed();
       removeAddBookmarkModal();
     } catch (error) {
-      console.error('添加书签失败:', error);
-      alert('添加失败，请重试');
+      console.error(I18n.t('common.addFailed') + ':', error);
+      await showAlert(I18n.t('common.addFailedRetry'));
     }
   });
   
@@ -753,21 +753,21 @@ async function showCreateFolderModal() {
   
   modal.innerHTML = `
     <div class="edit-modal-content">
-      <h3 class="edit-modal-title">新建文件夹</h3>
+      <h3 class="edit-modal-title">${I18n.t('common.newFolderTitle')}</h3>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">文件夹名称</label>
-        <input type="text" class="edit-modal-input" id="new-folder-title" placeholder="请输入文件夹名称">
+        <label class="edit-modal-label">${I18n.t('common.folderName')}</label>
+        <input type="text" class="edit-modal-input" id="new-folder-title" placeholder="${I18n.t('common.enterFolderName')}">
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">存放位置</label>
+        <label class="edit-modal-label">${I18n.t('common.storageLocation')}</label>
         <div class="folder-tree" id="new-folder-tree">
           <!-- 文件夹树将通过 JS 渲染 -->
         </div>
         <input type="hidden" id="new-folder-parentId" value="1">
       </div>
       <div class="edit-modal-buttons">
-        <button class="edit-modal-btn edit-modal-cancel">取消</button>
-        <button class="edit-modal-btn edit-modal-save">创建</button>
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.create')}</button>
       </div>
     </div>
   `;
@@ -804,12 +804,12 @@ async function showCreateFolderModal() {
   modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
     const title = document.getElementById('new-folder-title').value.trim();
     const parentId = document.getElementById('new-folder-parentId').value;
-    
+
     if (!title) {
-      alert('请输入文件夹名称');
+      await showAlert(I18n.t('common.enterFolderName'));
       return;
     }
-    
+
     try {
       await BookmarkUtils.create({
         parentId,
@@ -818,8 +818,8 @@ async function showCreateFolderModal() {
       await loadBookmarkTree();
       removeEditModal();
     } catch (error) {
-      console.error('创建文件夹失败:', error);
-      alert('创建文件夹失败，请重试');
+      console.error(I18n.t('common.createFolderFailed') + ':', error);
+      await showAlert(I18n.t('common.createFolderFailedRetry'));
     }
   });
   
@@ -881,11 +881,11 @@ function showContextMenu(e, node, isFolder) {
     // 置顶选项
     let pinText = '';
     if (isPinned) {
-      pinText = '📌 取消置顶';
+      pinText = '📌 ' + I18n.t('common.unpin');
     } else if (isInFrequentlyUsed) {
-      pinText = '📌 置顶';
+      pinText = '📌 ' + I18n.t('common.pin');
     } else {
-      pinText = '📌 添加至常用并置顶';
+      pinText = '📌 ' + I18n.t('pinned.addToFrequent');
     }
     
     const pinItem = document.createElement('div');
@@ -912,7 +912,7 @@ function showContextMenu(e, node, isFolder) {
   if (!isFolder) {
     const editItem = document.createElement('div');
     editItem.className = 'context-menu-item';
-    editItem.textContent = '✏️ 修改';
+    editItem.textContent = '✏️ ' + I18n.t('common.modify');
     editItem.addEventListener('click', () => {
       showEditModal(node);
       removeContextMenu();
@@ -928,7 +928,7 @@ function showContextMenu(e, node, isFolder) {
   // 删除选项
   const deleteItem = document.createElement('div');
   deleteItem.className = 'context-menu-item danger';
-  deleteItem.textContent = '🗑️ 删除';
+  deleteItem.textContent = '🗑️ ' + I18n.t('common.delete');
   deleteItem.addEventListener('click', () => {
     console.log('删除菜单点击:', { id: node.id, title: node.title, isFolder });
     deleteBookmarkOrFolder(node.id, node.title, isFolder);
@@ -963,9 +963,9 @@ async function showEditModal(node) {
   
   modal.innerHTML = `
     <div class="edit-modal-content">
-      <h3 class="edit-modal-title">修改书签</h3>
+      <h3 class="edit-modal-title">${I18n.t('common.editBookmark')}</h3>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">名称</label>
+        <label class="edit-modal-label">${I18n.t('common.name')}</label>
         <input type="text" class="edit-modal-input" id="edit-title-input" value="${node.title || ''}">
       </div>
       <div class="edit-modal-field">
@@ -973,15 +973,15 @@ async function showEditModal(node) {
         <input type="text" class="edit-modal-input" id="edit-url-input" value="${node.url || ''}">
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">文件夹</label>
+        <label class="edit-modal-label">${I18n.t('common.folder')}</label>
         <div class="folder-tree" id="edit-folder-tree">
           <!-- 文件夹树将通过 JS 渲染 -->
         </div>
         <input type="hidden" id="edit-folder-parentId" value="${node.parentId || '1'}">
       </div>
       <div class="edit-modal-buttons">
-        <button class="edit-modal-btn edit-modal-cancel">取消</button>
-        <button class="edit-modal-btn edit-modal-save">保存</button>
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
       </div>
     </div>
   `;
@@ -1022,12 +1022,12 @@ async function showEditModal(node) {
     const newParentId = document.getElementById('edit-folder-parentId').value;
 
     if (!newTitle) {
-      alert('请输入书签名称');
+      await showAlert(I18n.t('common.enterTitle'));
       return;
     }
 
     if (!newUrl) {
-      alert('请输入书签 URL');
+      await showAlert(I18n.t('common.enterUrl'));
       return;
     }
 
@@ -1037,17 +1037,17 @@ async function showEditModal(node) {
         title: newTitle,
         url: newUrl
       });
-      
+
       // 如果需要移动文件夹
       if (newParentId && newParentId !== node.parentId) {
         await chrome.bookmarks.move(node.id, { parentId: newParentId });
       }
-      
+
       await loadBookmarkTree();
       removeEditModal();
     } catch (error) {
-      console.error('修改书签失败:', error);
-      alert('修改失败，请重试');
+      console.error(I18n.t('common.editBookmark') + ' ' + I18n.t('common.error') + ':', error);
+      await showAlert(I18n.t('common.operationFailed'));
     }
   });
 
@@ -1080,7 +1080,7 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
   
   // 使用自定义确认对话框
   const confirmed = await showConfirmDialog(
-    isFolder ? `确定要删除文件夹"${title}"及其所有内容吗？` : `确定要删除书签"${title}"吗？`
+    isFolder ? I18n.t('confirm.deleteFolder', { name: title }) : I18n.t('confirm.deleteBookmark', { name: title })
   );
   
   if (!confirmed) {
@@ -1097,8 +1097,8 @@ async function deleteBookmarkOrFolder(id, title, isFolder) {
     }
     await loadBookmarkTree();
   } catch (error) {
-    console.error('删除失败:', error);
-    alert('删除失败，请重试: ' + error.message);
+    console.error(I18n.t('common.delete') + ' ' + I18n.t('common.error') + ':', error);
+    await showAlert(I18n.t('common.operationFailed') + ': ' + error.message);
   }
 }
 
@@ -1347,8 +1347,8 @@ async function handleDrop(e) {
         console.log('目标索引:', targetIndex);
         
         if (targetIndex === -1) {
-          console.error('找不到目标节点');
-          alert('找不到目标节点');
+          console.error(I18n.t('common.targetNotFound'));
+          await showAlert(I18n.t('common.targetNotFound'));
           return;
         }
         
@@ -1373,8 +1373,8 @@ async function handleDrop(e) {
         
         console.log('>> 移动完成');
       } else {
-        console.error('找不到父节点，无法移动');
-        alert('无法找到目标位置，请重试');
+        console.error(I18n.t('common.targetLocationNotFound'));
+        await showAlert(I18n.t('common.targetLocationNotFound'));
       }
     }
 
@@ -1382,9 +1382,9 @@ async function handleDrop(e) {
     await loadBookmarkTree();
     console.log('=== 拖拽完成 ===');
   } catch (error) {
-    console.error('拖拽失败:', error);
+    console.error(I18n.t('common.dragFailed') + ':', error);
     console.error('错误堆栈:', error.stack);
-    alert('拖拽失败：' + error.message);
+    await showAlert(I18n.t('common.dragFailed') + '：' + error.message);
   }
 
   targetElement.classList.remove('drag-over-top', 'drag-over-bottom', 'drag-over-inside');

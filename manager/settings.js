@@ -106,7 +106,15 @@ function setupEventListeners() {
   initDuplicateDetection();
   
   // 标签分组管理
-  document.getElementById('create-tag-group-btn').addEventListener('click', createTagGroup);
+  document.getElementById('create-tag-group-btn').addEventListener('click', showNewGroupModal);
+  document.getElementById('cancel-group-btn').addEventListener('click', hideNewGroupModal);
+  document.getElementById('confirm-group-btn').addEventListener('click', createTagGroup);
+  document.getElementById('new-group-name-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') createTagGroup();
+  });
+  document.getElementById('new-group-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'new-group-modal') hideNewGroupModal();
+  });
   
   // 关闭标签详情
   const closeBtn = document.getElementById('close-tag-detail');
@@ -172,7 +180,7 @@ async function saveLayoutSettings() {
   };
 
   await Storage.set({ layoutSettings: settings });
-  showStatus('layout-status', '布局设置已保存', 'success');
+  showStatus('layout-status', I18n.t('layout.layoutSaved'), 'success');
 }
 
 async function resetLayoutSettings() {
@@ -192,7 +200,7 @@ async function resetLayoutSettings() {
   updateLayoutPreview(defaultSettings.bookmarkHeight, defaultSettings.treeIndent, defaultSettings.bookmarkIndent);
 
   await Storage.set({ layoutSettings: defaultSettings });
-  showStatus('layout-status', '已恢复默认设置', 'success');
+  showStatus('layout-status', I18n.t('common.resetSuccess'), 'success');
 }
 
 function switchSection(section) {
@@ -220,26 +228,26 @@ async function testWebDAVConnection() {
   };
   
   if (!config.url) {
-    showStatus('webdav-status', '请输入服务器地址', 'error');
+    showStatus('webdav-status', I18n.t('webdav.enterUrl'), 'error');
     return;
   }
-  
-  showStatus('webdav-status', '正在测试连接...', 'info');
+
+  showStatus('webdav-status', I18n.t('webdav.testingConnection'), 'info');
   document.getElementById('test-connection-btn').disabled = true;
-  
+
   try {
     const response = await chrome.runtime.sendMessage({
       action: 'testWebDAV',
       config
     });
-    
+
     if (response.success) {
-      showStatus('webdav-status', '连接成功！', 'success');
+      showStatus('webdav-status', I18n.t('webdav.connectionSuccess') + '！', 'success');
     } else {
-      showStatus('webdav-status', `连接失败: ${response.error}`, 'error');
+      showStatus('webdav-status', I18n.t('webdav.connectionFailed') + ': ' + response.error, 'error');
     }
   } catch (error) {
-    showStatus('webdav-status', `连接失败: ${error.message}`, 'error');
+    showStatus('webdav-status', I18n.t('webdav.connectionFailed') + ': ' + error.message, 'error');
   } finally {
     document.getElementById('test-connection-btn').disabled = false;
   }
@@ -254,14 +262,14 @@ async function saveWebDAVConfig() {
   };
   
   if (config.enabled && !config.url) {
-    showStatus('webdav-status', '启用 WebDAV 时需要填写服务器地址', 'error');
+    showStatus('webdav-status', I18n.t('webdav.enableNeedUrl'), 'error');
     return;
   }
-  
+
   await Storage.set({ webdavConfig: config });
   await chrome.runtime.sendMessage({ action: 'init' });
-  
-  showStatus('webdav-status', '配置已保存', 'success');
+
+  showStatus('webdav-status', I18n.t('webdav.configSaved'), 'success');
 }
 
 async function saveBackupSettings() {
@@ -270,33 +278,33 @@ async function saveBackupSettings() {
     backupInterval: parseInt(document.getElementById('backup-interval').value),
     backupOnStartup: document.getElementById('backup-on-startup').checked
   };
-  
+
   await Storage.set({ backupSettings: settings });
   await chrome.runtime.sendMessage({ action: 'init' });
-  
-  showStatus('backup-settings-status', '备份设置已保存', 'success');
+
+  showStatus('backup-settings-status', I18n.t('backup.settingsSaved'), 'success');
 }
 
 async function backupNow() {
   const result = await Storage.get('webdavConfig');
   if (!result.webdavConfig || !result.webdavConfig.enabled) {
-    showStatus('backup-now-status', '请先启用并配置 WebDAV', 'error');
+    showStatus('backup-now-status', I18n.t('webdav.enableFirst'), 'error');
     return;
   }
-  
-  showStatus('backup-now-status', '正在备份...', 'info');
+
+  showStatus('backup-now-status', I18n.t('backup.backingUp'), 'info');
   document.getElementById('backup-now-btn').disabled = true;
-  
+
   try {
     const response = await chrome.runtime.sendMessage({ action: 'backup' });
-    
+
     if (response.success) {
-      showStatus('backup-now-status', `备份成功: ${response.filename}`, 'success');
+      showStatus('backup-now-status', I18n.t('backup.backupSuccess') + ': ' + response.filename, 'success');
     } else {
-      showStatus('backup-now-status', `备份失败: ${response.error}`, 'error');
+      showStatus('backup-now-status', I18n.t('backup.backupFailed') + ': ' + response.error, 'error');
     }
   } catch (error) {
-    showStatus('backup-now-status', `备份失败: ${error.message}`, 'error');
+    showStatus('backup-now-status', I18n.t('backup.backupFailed') + ': ' + error.message, 'error');
   } finally {
     document.getElementById('backup-now-btn').disabled = false;
   }
@@ -310,13 +318,14 @@ async function restoreBackup() {
   }
   
   const merge = document.querySelector('input[name="restore-mode"]:checked').value === 'merge';
-  const modeText = merge ? '合并' : '覆盖';
-  
-  if (!confirm(`确定要恢复备份吗？这将使用${modeText}模式恢复书签。`)) {
+  const modeText = merge ? I18n.t('backup.merge') : I18n.t('backup.overwrite');
+
+  const confirmed = await showConfirm(I18n.t('backup.restoreConfirm', { mode: modeText }), { danger: true });
+  if (!confirmed) {
     return;
   }
   
-  showStatus('restore-status', '正在恢复...', 'info');
+  showStatus('restore-status', I18n.t('backup.restoring'), 'info');
   document.getElementById('restore-btn').disabled = true;
   
   try {
@@ -327,12 +336,12 @@ async function restoreBackup() {
     });
     
     if (response.success) {
-      showStatus('restore-status', '恢复成功！请刷新页面查看', 'success');
+      showStatus('restore-status', I18n.t('backup.restoreSuccess') + ' ' + I18n.t('common.refreshPage'), 'success');
     } else {
-      showStatus('restore-status', `恢复失败: ${response.error}`, 'error');
+      showStatus('restore-status', I18n.t('backup.restoreFailed') + ': ' + response.error, 'error');
     }
   } catch (error) {
-    showStatus('restore-status', `恢复失败: ${error.message}`, 'error');
+    showStatus('restore-status', I18n.t('backup.restoreFailed') + ': ' + error.message, 'error');
   } finally {
     document.getElementById('restore-btn').disabled = false;
   }
@@ -342,28 +351,28 @@ async function restoreBackup() {
 async function backupLayoutToWebDAV() {
   const result = await Storage.get('webdavConfig');
   if (!result.webdavConfig || !result.webdavConfig.enabled) {
-    showStatus('backup-layout-status', '请先启用并配置 WebDAV', 'error');
+    showStatus('backup-layout-status', I18n.t('webdav.enableFirst'), 'error');
     return;
   }
-  
-  showStatus('backup-layout-status', '正在备份布局...', 'info');
+
+  showStatus('backup-layout-status', I18n.t('backup.backingUpLayout'), 'info');
   document.getElementById('backup-layout-btn').disabled = true;
-  
+
   try {
     const layoutResult = await Storage.get('layoutSettings');
     const layoutSettings = layoutResult.layoutSettings || {};
-    
+
     const exportData = {
       version: '1.0',
       exportedAt: new Date().toISOString(),
       type: 'layout-settings',
       layoutSettings: layoutSettings
     };
-    
+
     const webdav = result.webdavConfig;
     const filename = 'layout-settings.json';
     const url = `${webdav.url.replace(/\/$/, '')}/bookmarks/${filename}`;
-    
+
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -372,14 +381,14 @@ async function backupLayoutToWebDAV() {
       },
       body: JSON.stringify(exportData)
     });
-    
+
     if (response.ok) {
-      showStatus('backup-layout-status', '布局备份成功', 'success');
+      showStatus('backup-layout-status', I18n.t('backup.layoutBackupSuccess'), 'success');
     } else {
       throw new Error(`HTTP ${response.status}`);
     }
   } catch (error) {
-    showStatus('backup-layout-status', `备份失败: ${error.message}`, 'error');
+    showStatus('backup-layout-status', I18n.t('backup.backupFailed') + ': ' + error.message, 'error');
   } finally {
     document.getElementById('backup-layout-btn').disabled = false;
   }
@@ -389,15 +398,16 @@ async function backupLayoutToWebDAV() {
 async function restoreLayoutFromWebDAV() {
   const result = await Storage.get('webdavConfig');
   if (!result.webdavConfig || !result.webdavConfig.enabled) {
-    showStatus('restore-layout-status', '请先启用并配置 WebDAV', 'error');
+    showStatus('restore-layout-status', I18n.t('webdav.enableFirst'), 'error');
     return;
   }
   
-  if (!confirm('确定要从 WebDAV 恢复布局设置吗？这将覆盖当前布局设置。')) {
+  const confirmed = await showConfirm(I18n.t('backup.restoreLayoutConfirm'), { danger: true });
+  if (!confirmed) {
     return;
   }
   
-  showStatus('restore-layout-status', '正在恢复布局...', 'info');
+  showStatus('restore-layout-status', I18n.t('backup.restoringLayout'), 'info');
   document.getElementById('restore-layout-btn').disabled = true;
   
   try {
@@ -420,12 +430,12 @@ async function restoreLayoutFromWebDAV() {
     
     if (data.layoutSettings) {
       await Storage.set({ layoutSettings: data.layoutSettings });
-      showStatus('restore-layout-status', '布局恢复成功', 'success');
+      showStatus('restore-layout-status', I18n.t('backup.restoreLayoutSuccess'), 'success');
     } else {
-      throw new Error('无效的布局文件');
+      throw new Error(I18n.t('backup.invalidLayoutFile'));
     }
   } catch (error) {
-    showStatus('restore-layout-status', `恢复失败: ${error.message}`, 'error');
+    showStatus('restore-layout-status', I18n.t('backup.restoreFailed') + ': ' + error.message, 'error');
   } finally {
     document.getElementById('restore-layout-btn').disabled = false;
   }
@@ -470,9 +480,9 @@ async function exportTags() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showStatus('export-tags-status', '标签和分组导出成功', 'success');
+    showStatus('export-tags-status', I18n.t('tags.exportSuccess'), 'success');
   } catch (error) {
-    showStatus('export-tags-status', `导出失败：${error.message}`, 'error');
+    showStatus('export-tags-status', I18n.t('tags.exportFailed') + '：' + error.message, 'error');
   }
 }
 
@@ -519,9 +529,9 @@ async function exportAllConfig() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showStatus('export-all-status', '配置导出成功', 'success');
+    showStatus('export-all-status', I18n.t('config.exportSuccess'), 'success');
   } catch (error) {
-    showStatus('export-all-status', `导出失败：${error.message}`, 'error');
+    showStatus('export-all-status', I18n.t('config.exportFailed') + '：' + error.message, 'error');
   }
 }
 
@@ -582,9 +592,9 @@ async function handleImportAllConfig(event) {
       await TagGroups.save(existingGroups);
     }
     
-    showStatus('import-all-status', '配置导入成功', 'success');
+    showStatus('import-all-status', I18n.t('config.importSuccess'), 'success');
   } catch (error) {
-    showStatus('import-all-status', `导入失败：${error.message}`, 'error');
+    showStatus('import-all-status', I18n.t('config.importFailed') + '：' + error.message, 'error');
   }
   
   event.target.value = '';
@@ -676,9 +686,9 @@ async function exportLayout() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    showStatus('export-layout-status', '布局设置导出成功', 'success');
+    showStatus('export-layout-status', I18n.t('layout.exportSuccess'), 'success');
   } catch (error) {
-    showStatus('export-layout-status', `导出失败：${error.message}`, 'error');
+    showStatus('export-layout-status', I18n.t('layout.exportFailed') + '：' + error.message, 'error');
   }
 }
 
@@ -686,23 +696,23 @@ async function exportLayout() {
 async function handleImportLayout(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    
+
     document.getElementById('import-layout-filename').textContent = file.name;
-    
+
     if (data.layoutSettings) {
       await Storage.set({ layoutSettings: data.layoutSettings });
-      showStatus('import-layout-status', '布局设置导入成功', 'success');
+      showStatus('import-layout-status', I18n.t('layout.importSuccess'), 'success');
     } else {
-      showStatus('import-layout-status', '无效的布局文件', 'error');
+      showStatus('import-layout-status', I18n.t('backup.invalidLayoutFile'), 'error');
     }
   } catch (error) {
-    showStatus('import-layout-status', `导入失败：${error.message}`, 'error');
+    showStatus('import-layout-status', I18n.t('layout.importFailed') + '：' + error.message, 'error');
   }
-  
+
   event.target.value = '';
 }
 
@@ -719,15 +729,16 @@ function handleImportTagsFile(event) {
       
       // 验证数据格式
       if (!importedData.tags || typeof importedData.tags !== 'object') {
-        throw new Error('文件格式不正确');
+        throw new Error(I18n.t('tags.invalidFileFormat'));
       }
-      
+
       // 显示确认对话框
       const tagCount = Object.keys(importedData.tags).length;
       const hasTagGroups = importedData.tagGroups && importedData.tagGroups.groups && importedData.tagGroups.groups.length > 0;
-      const groupInfo = hasTagGroups ? `，${importedData.tagGroups.groups.length} 个标签分组` : '';
-      
-      if (!confirm(`确定要导入 ${tagCount} 个书签的标签数据${groupInfo}吗？\n\n这将合并到现有数据中，冲突的数据将被覆盖。`)) {
+      const groupInfo = hasTagGroups ? '，' + importedData.tagGroups.groups.length + ' ' + I18n.t('tagGroup.groups') : '';
+
+      const confirmed = await showConfirm(I18n.t('tags.importConfirm', { count: tagCount, groups: groupInfo }), { danger: false });
+      if (!confirmed) {
         return;
       }
       
@@ -760,16 +771,16 @@ function handleImportTagsFile(event) {
         await TagGroups.save(mergedGroups);
       }
       
-      showStatus('import-tags-status', `导入成功！共导入 ${tagCount} 个书签的标签${groupInfo}`, 'success');
+      showStatus('import-tags-status', I18n.t('tags.importSuccessWithCount', { count: tagCount, groups: groupInfo }), 'success');
       document.getElementById('import-tags-file').value = '';
       document.getElementById('import-tags-filename').textContent = '';
     } catch (error) {
-      showStatus('import-tags-status', `导入失败：${error.message}`, 'error');
+      showStatus('import-tags-status', I18n.t('tags.importFailed') + '：' + error.message, 'error');
     }
   };
-  
+
   reader.onerror = () => {
-    showStatus('import-tags-status', '文件读取失败', 'error');
+    showStatus('import-tags-status', I18n.t('tags.readFailed'), 'error');
   };
   
   reader.readAsText(file);
@@ -783,23 +794,23 @@ async function detectOrphanedTags() {
   try {
     const detectBtn = document.getElementById('detect-tags-btn');
     detectBtn.disabled = true;
-    detectBtn.textContent = '检测中...';
+    detectBtn.textContent = I18n.t('common.detecting');
     
-    showStatus('detect-tags-status', '正在检测孤立标签...', 'info');
+    showStatus('detect-tags-status', I18n.t('cleanup.detectingOrphan'), 'info');
     
     const orphaned = await BookmarkTags.detectOrphanedTags();
     const count = Object.keys(orphaned).length;
     
     if (count === 0) {
-      showStatus('detect-tags-status', '检测完成，未发现孤立标签', 'success');
+      showStatus('detect-tags-status', I18n.t('cleanup.noOrphanFound'), 'success');
     } else {
-      showStatus('detect-tags-status', `检测到 ${count} 个孤立标签，请点击"清理无效标签"按钮进行清理`, 'info');
+      showStatus('detect-tags-status', I18n.t('cleanup.orphanFound', { count: count }), 'info');
     }
     
     detectBtn.disabled = false;
-    detectBtn.textContent = '开始检测';
+    detectBtn.textContent = I18n.t('cleanup.startDetection');
   } catch (error) {
-    showStatus('detect-tags-status', `检测失败：${error.message}`, 'error');
+    showStatus('detect-tags-status', I18n.t('cleanup.detectFailed') + '：' + error.message, 'error');
   }
 }
 
@@ -812,28 +823,29 @@ async function cleanOrphanedTags() {
     const count = Object.keys(orphaned).length;
     
     if (count === 0) {
-      showStatus('clean-tags-status', '没有需要清理的孤立标签', 'info');
+      showStatus('clean-tags-status', I18n.t('cleanup.noOrphanToClean'), 'info');
       return;
     }
     
     // 显示确认对话框
-    if (!confirm(`检测到 ${count} 个孤立标签，确定要清理吗？\n\n清理后将删除这些书签的标签数据，此操作不可撤销。`)) {
+    const confirmed = await showConfirm(I18n.t('cleanup.confirmClean', { count: count }), { danger: true });
+    if (!confirmed) {
       return;
     }
     
     cleanBtn.disabled = true;
-    cleanBtn.textContent = '清理中...';
-    showStatus('clean-tags-status', '正在清理孤立标签...', 'info');
+    cleanBtn.textContent = I18n.t('common.cleaning');
+    showStatus('clean-tags-status', I18n.t('cleanup.cleaningOrphan'), 'info');
     
     // 执行清理
     const result = await BookmarkTags.cleanOrphanedTags();
     
-    showStatus('clean-tags-status', `清理完成！共删除 ${result.cleaned} 个孤立标签`, 'success');
+    showStatus('clean-tags-status', I18n.t('cleanup.cleanSuccess', { count: result.cleaned }), 'success');
     
     cleanBtn.disabled = false;
-    cleanBtn.textContent = '清理无效标签';
+    cleanBtn.textContent = I18n.t('cleanup.cleanInvalid');
   } catch (error) {
-    showStatus('clean-tags-status', `清理失败：${error.message}`, 'error');
+    showStatus('clean-tags-status', I18n.t('cleanup.cleanFailed') + '：' + error.message, 'error');
   }
 }
 
@@ -953,17 +965,18 @@ async function deleteSelectedDuplicates() {
     const idsToDelete = Array.from(checkboxes).map(cb => cb.dataset.bookmarkId);
     
     if (idsToDelete.length === 0) {
-      alert('请选择要删除的书签');
+      await showAlert(I18n.t('duplicate.selectFirst'));
       return;
     }
-    
-    if (!confirm(`确定要删除选中的 ${idsToDelete.length} 个书签吗？`)) {
+
+    const confirmed = await showConfirm(I18n.t('confirm.deleteBookmarks', { count: idsToDelete.length }), { danger: true });
+    if (!confirmed) {
       return;
     }
     
     const deleteBtn = document.getElementById('delete-duplicates-btn');
     deleteBtn.disabled = true;
-    deleteBtn.textContent = '删除中...';
+    deleteBtn.textContent = I18n.t('common.deleting');
     
     // 删除选中的书签
     for (const id of idsToDelete) {
@@ -974,12 +987,12 @@ async function deleteSelectedDuplicates() {
     await detectDuplicateBookmarks();
     
     deleteBtn.disabled = false;
-    deleteBtn.textContent = '删除选中';
+    deleteBtn.textContent = I18n.t('duplicate.deleteSelected');
   } catch (error) {
-    alert(`删除失败：${error.message}`);
+    await showAlert(I18n.t('common.delete') + I18n.t('common.error') + '：' + error.message);
     const deleteBtn = document.getElementById('delete-duplicates-btn');
     deleteBtn.disabled = false;
-    deleteBtn.textContent = '删除选中';
+    deleteBtn.textContent = I18n.t('duplicate.deleteSelected');
   }
 }
 
@@ -1074,7 +1087,7 @@ async function renderBlacklist() {
     domainSpan.style.fontWeight = '500';
     
     const removeBtn = document.createElement('button');
-    removeBtn.textContent = '移除';
+    removeBtn.textContent = I18n.t('common.remove');
     removeBtn.className = 'btn';
     removeBtn.style.padding = '4px 12px';
     removeBtn.style.fontSize = '12px';
@@ -1137,7 +1150,7 @@ async function renderPinnedList() {
     urlSpan.style.marginTop = '4px';
     
     const removeBtn = document.createElement('button');
-    removeBtn.textContent = '取消置顶';
+    removeBtn.textContent = I18n.t('common.unpin');
     removeBtn.className = 'btn';
     removeBtn.style.padding = '4px 12px';
     removeBtn.style.fontSize = '12px';
@@ -1185,26 +1198,27 @@ function setupFrequentlyUsedEventListeners() {
       };
       
       await FrequentlyUsedConfig.saveConfig(config);
-      showStatus('frequently-used-status', '设置已保存', 'success');
+      showStatus('frequently-used-status', I18n.t('common.saveSuccess'), 'success');
     } catch (error) {
-      console.error('保存常用目录设置失败:', error);
-      showStatus('frequently-used-status', '保存失败，请重试', 'error');
+      console.error(I18n.t('freq.saveFailed'), error);
+      showStatus('frequently-used-status', I18n.t('common.saveFailed'), 'error');
     }
   });
-  
+
   document.getElementById('reset-frequently-used-btn').addEventListener('click', async () => {
     try {
       await FrequentlyUsedConfig.resetConfig();
       await loadFrequentlyUsedSettings();
-      showStatus('frequently-used-status', '已恢复默认设置', 'success');
+      showStatus('frequently-used-status', I18n.t('common.resetSuccess'), 'success');
     } catch (error) {
-      console.error('重置常用目录设置失败:', error);
-      showStatus('frequently-used-status', '重置失败，请重试', 'error');
+      console.error(I18n.t('freq.resetFailed'), error);
+      showStatus('frequently-used-status', I18n.t('common.resetFailed'), 'error');
     }
   });
-  
+
   document.getElementById('clear-all-pinned-btn').addEventListener('click', async () => {
-    if (!confirm('确定要清空所有置顶链接吗？')) {
+    const confirmed = await showConfirm(I18n.t('common.confirmClearPinned'), { danger: true });
+    if (!confirmed) {
       return;
     }
     try {
@@ -1214,38 +1228,38 @@ function setupFrequentlyUsedEventListeners() {
       await renderPinnedList();
       const statusEl = document.getElementById('frequently-used-status');
       if (statusEl) {
-        statusEl.textContent = '已清空所有置顶';
+        statusEl.textContent = I18n.t('common.clearSuccess');
         statusEl.className = 'status-message success visible';
         setTimeout(() => statusEl.classList.remove('visible'), 3000);
       }
     } catch (error) {
-      console.error('清空置顶失败:', error);
+      console.error(I18n.t('pinned.clearFailed'), error);
       const statusEl = document.getElementById('frequently-used-status');
       if (statusEl) {
-        statusEl.textContent = '清空失败: ' + error.message;
+        statusEl.textContent = I18n.t('common.clearFailed') + ': ' + error.message;
         statusEl.className = 'status-message error visible';
         setTimeout(() => statusEl.classList.remove('visible'), 3000);
       }
     }
   });
-  
+
   document.getElementById('add-blacklist-btn').addEventListener('click', async () => {
     try {
       const domainInput = document.getElementById('blacklist-domain-input');
       const domain = domainInput.value.trim();
-      
+
       if (!domain) {
-        showStatus('frequently-used-status', '请输入域名', 'error');
+        showStatus('frequently-used-status', I18n.t('common.enterDomain'), 'error');
         return;
       }
-      
+
       await FrequentlyUsedConfig.addToBlacklist(domain);
       domainInput.value = '';
       await renderBlacklist();
-      showStatus('frequently-used-status', '已添加到黑名单', 'success');
+      showStatus('frequently-used-status', I18n.t('blacklist.addSuccess'), 'success');
     } catch (error) {
-      console.error('添加到黑名单失败:', error);
-      showStatus('frequently-used-status', '添加失败，请重试', 'error');
+      console.error(I18n.t('blacklist.addFailed'), error);
+      showStatus('frequently-used-status', I18n.t('common.addFailed'), 'error');
     }
   });
   
@@ -1283,7 +1297,7 @@ async function loadTagsOverview() {
         groupsList.appendChild(groupCard);
       });
     } else {
-      groupsList.innerHTML = '<div class="empty-state">暂无分组，点击上方按钮创建</div>';
+      groupsList.innerHTML = '<div class="empty-state">' + I18n.t('tagGroup.noGroups') + '</div>';
     }
     
     // 获取未分组的标签
@@ -1298,10 +1312,10 @@ async function loadTagsOverview() {
         ungroupedList.appendChild(tagEl);
       });
     } else {
-      ungroupedList.innerHTML = '<div class="empty-state">所有标签已分组</div>';
+      ungroupedList.innerHTML = '<div class="empty-state">' + I18n.t('tagGroup.allGrouped') + '</div>';
     }
   } catch (error) {
-    console.error('加载标签总览失败:', error);
+    console.error(I18n.t('tagGroup.loadFailed'), error);
   }
 }
 
@@ -1317,11 +1331,11 @@ function createTagGroupCard(group) {
     <div class="tag-group-title">
       <span>📁</span>
       <span>${group.name}</span>
-      <span class="tag-group-count">${group.tags.length} 个标签</span>
+      <span class="tag-group-count">${group.tags.length} ${I18n.t('tagGroup.tags')}</span>
     </div>
     <div class="tag-group-actions">
-      <button class="btn btn-sm edit-group-btn">编辑</button>
-      <button class="btn btn-sm delete-group-btn" style="color: #dc2626;">删除</button>
+      <button class="btn btn-sm edit-group-btn">${I18n.t('common.edit')}</button>
+      <button class="btn btn-sm delete-group-btn" style="color: #dc2626;">${I18n.t('common.delete')}</button>
     </div>
   `;
   
@@ -1346,7 +1360,7 @@ function createTagGroupCard(group) {
   // 添加标签按钮
   const addBtn = document.createElement('button');
   addBtn.className = 'btn btn-sm';
-  addBtn.textContent = '+ 添加标签';
+  addBtn.textContent = '+ ' + I18n.t('common.addTags');
   addBtn.style.marginTop = '8px';
   addBtn.addEventListener('click', () => {
     showSelectTagsModal(group.id);
@@ -1371,43 +1385,58 @@ function createTagGroupCard(group) {
   return card;
 }
 
+function showNewGroupModal() {
+  document.getElementById('new-group-modal').classList.add('visible');
+  document.getElementById('new-group-name-input').value = '';
+  document.getElementById('new-group-name-input').focus();
+}
+
+function hideNewGroupModal() {
+  document.getElementById('new-group-modal').classList.remove('visible');
+}
+
 async function createTagGroup() {
-  const name = prompt('请输入分组名称：');
-  if (!name || !name.trim()) return;
-  
+  const name = document.getElementById('new-group-name-input').value.trim();
+  if (!name) {
+    await showAlert(I18n.t('tagGroup.enterName'));
+    return;
+  }
+
   try {
-    await TagGroups.createGroup(name.trim());
+    await TagGroups.createGroup(name);
+    hideNewGroupModal();
     await loadTagsOverview();
   } catch (error) {
-    console.error('创建分组失败:', error);
-    alert('创建分组失败');
+    console.error(I18n.t('tags.createGroupFailed'), error);
+    await showAlert(I18n.t('tags.createGroupFailed'));
   }
 }
 
 async function deleteGroup(groupId, groupName) {
-  if (!confirm(`确定要删除分组「${groupName}」吗？\n分组内的标签将变为未分组状态。`)) {
+  const confirmed = await showConfirm(I18n.t('tagGroup.confirmDelete', { name: groupName }), { danger: true });
+  if (!confirmed) {
     return;
   }
-  
+
   try {
     await TagGroups.deleteGroup(groupId);
     await loadTagsOverview();
   } catch (error) {
-    console.error('删除分组失败:', error);
-    alert('删除分组失败');
+    console.error(I18n.t('tags.deleteGroupFailed'), error);
+    await showAlert(I18n.t('tags.deleteGroupFailed'));
   }
 }
 
 async function renameGroup(groupId, currentName) {
-  const newName = prompt('请输入新的分组名称：', currentName);
+  const newName = await showPrompt(I18n.t('tagGroup.enterNewName'), currentName);
   if (!newName || !newName.trim() || newName.trim() === currentName) return;
-  
+
   try {
     await TagGroups.renameGroup(groupId, newName.trim());
     await loadTagsOverview();
   } catch (error) {
-    console.error('重命名分组失败:', error);
-    alert('重命名分组失败');
+    console.error(I18n.t('tags.renameGroupFailed'), error);
+    await showAlert(I18n.t('tags.renameGroupFailed'));
   }
 }
 
@@ -1416,8 +1445,8 @@ async function addTagToGroup(groupId, tagName) {
     await TagGroups.addTagToGroup(groupId, tagName);
     await loadTagsOverview();
   } catch (error) {
-    console.error('添加标签到分组失败:', error);
-    alert('添加标签失败');
+    console.error(I18n.t('tags.addTagToGroupFailed'), error);
+    await showAlert(I18n.t('tags.addFailed'));
   }
 }
 
@@ -1426,8 +1455,8 @@ async function removeTagFromGroup(groupId, tagName) {
     await TagGroups.removeTagFromGroup(groupId, tagName);
     await loadTagsOverview();
   } catch (error) {
-    console.error('从分组移除标签失败:', error);
-    alert('移除标签失败');
+    console.error(I18n.t('tags.removeTagFromGroupFailed'), error);
+    await showAlert(I18n.t('common.removeFailed'));
   }
 }
 
@@ -1505,7 +1534,7 @@ async function showSelectTagsModal(groupId) {
     
     const header = document.createElement('div');
     header.className = 'select-tag-group-header';
-    header.innerHTML = `<span>📋</span><span>未分组</span><span style="margin-left:auto;font-weight:normal">(${availableUngroupedTags.length})</span>`;
+    header.innerHTML = `<span>📋</span><span>${I18n.t('tagGroup.ungrouped')}</span><span style="margin-left:auto;font-weight:normal">(${availableUngroupedTags.length})</span>`;
     
     const content = document.createElement('div');
     content.className = 'select-tag-group-content';
@@ -1522,7 +1551,7 @@ async function showSelectTagsModal(groupId) {
   
   // 如果没有可选择的标签
   if (container.children.length === 0) {
-    container.innerHTML = '<div class="empty-state">没有可选择的标签，所有标签已在此分组中</div>';
+    container.innerHTML = '<div class="empty-state">' + I18n.t('tagGroup.noTagsToSelect') + '</div>';
   }
   
   modal.classList.add('visible');
@@ -1577,18 +1606,18 @@ async function confirmAddTagsToGroup() {
     hideSelectTagsModal();
     return;
   }
-  
+
   try {
     // 将选中的标签添加到当前分组
     for (const tag of selectedTagsForGroup) {
       await TagGroups.addTagToGroup(currentEditingGroupId, tag);
     }
-    
+
     hideSelectTagsModal();
     await loadTagsOverview();
   } catch (error) {
-    console.error('添加标签到分组失败:', error);
-    alert('添加标签失败');
+    console.error(I18n.t('tags.addTagToGroupFailed'), error);
+    await showAlert(I18n.t('tags.addFailed'));
   }
 }
 
@@ -1607,7 +1636,7 @@ async function showTagDetail(tagName) {
     
     tagDetailTitle.textContent = `#${tagName}`;
     tagDetailCard.style.display = 'block';
-    tagBookmarksList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>加载中...</p></div>';
+    tagBookmarksList.innerHTML = '<div class="loading-spinner"><div class="spinner"></div><p>' + I18n.t('common.loading') + '</p></div>';
     
     // 获取所有使用该标签的书签
     const allTags = await BookmarkTags.getAll();
@@ -1637,15 +1666,15 @@ async function showTagDetail(tagName) {
     tagBookmarksList.innerHTML = '';
     
     if (bookmarks.length === 0) {
-      tagBookmarksList.innerHTML = '<div class="empty-state">暂无书签</div>';
+      tagBookmarksList.innerHTML = '<div class="empty-state">' + I18n.t('common.noBookmark') + '</div>';
       return;
     }
-    
+
     bookmarks.forEach(bookmark => {
       const bookmarkItem = document.createElement('div');
       bookmarkItem.className = 'tag-bookmark-item';
       bookmarkItem.innerHTML = `
-        <div class="tag-bookmark-title">${bookmark.title || '无标题'}</div>
+        <div class="tag-bookmark-title">${bookmark.title || I18n.t('common.noTitle')}</div>
         <div class="tag-bookmark-url">${bookmark.url}</div>
       `;
       
@@ -1656,7 +1685,7 @@ async function showTagDetail(tagName) {
       tagBookmarksList.appendChild(bookmarkItem);
     });
   } catch (error) {
-    console.error('加载标签详情失败:', error);
+    console.error(I18n.t('tagGroup.loadDetailFailed'), error);
   }
 }
 
