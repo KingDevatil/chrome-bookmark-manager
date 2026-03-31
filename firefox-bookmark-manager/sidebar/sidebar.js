@@ -13,6 +13,22 @@ let currentTab = 'bookmarks';
 let historyData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // 检查 browser 对象是否可用
+  console.log('=== Sidebar 启动诊断 ===');
+  console.log('browser 对象:', typeof browser);
+  
+  // 如果 browser 对象不存在，尝试使用 chrome 对象（Firefox 原生支持 browser API）
+  if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+    console.log('browser 未定义，使用 chrome 对象');
+    window.browser = chrome;
+  }
+  
+  console.log('browser.history:', browser?.history);
+  console.log('browser.history.search:', browser?.history?.search);
+  console.log('chrome 对象:', typeof chrome);
+  console.log('chrome.history:', chrome?.history);
+  console.log('chrome.history.search:', chrome?.history?.search);
+  
   await ThemeManager.init();
   await I18n.init();
   await loadLayoutSettings();
@@ -1584,15 +1600,32 @@ function switchTab(tabName) {
 
 async function loadHistoryData() {
   try {
+    console.log('开始加载历史记录...');
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    console.log('搜索参数:', {
+      text: '',
+      startTime: oneWeekAgo,
+      maxResults: 100
+    });
+    
+    // 检查 browser.history API 是否可用
+    if (!browser.history || !browser.history.search) {
+      console.error('browser.history.search API 不可用');
+      console.log('browser.history:', browser.history);
+      return;
+    }
+    
     historyData = await browser.history.search({
       text: '',
       startTime: oneWeekAgo,
       maxResults: 100
     });
+    
+    console.log('历史记录加载成功，数量:', historyData.length);
     renderHistoryPanel();
   } catch (error) {
     console.error('加载历史记录失败:', error);
+    console.error('错误堆栈:', error.stack);
   }
 }
 

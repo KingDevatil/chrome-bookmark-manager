@@ -66,6 +66,10 @@ const Storage = {
    * @returns {Promise<Object>}
    */
   async get(keys) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.storage.local.get(keys);
   },
   
@@ -75,6 +79,10 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async set(items) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     await browser.storage.local.set(items);
   },
   
@@ -84,6 +92,10 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async remove(keys) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     await browser.storage.local.remove(keys);
   },
   
@@ -92,6 +104,10 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async clear() {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     await browser.storage.local.clear();
   }
 };
@@ -247,15 +263,23 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async getTree() {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.getTree();
   },
   
   /**
    * 获取指定文件夹下的书签
-   * @param {string} parentId - 父文件夹ID
+   * @param {string} parentId - 父文件夹 ID
    * @returns {Promise<Array>}
    */
   async getChildren(parentId) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.getChildren(parentId);
   },
   
@@ -265,6 +289,10 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async search(query) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.search(query);
   },
   
@@ -274,50 +302,70 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   async create(bookmark) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.create(bookmark);
   },
   
   /**
    * 更新书签
-   * @param {string} id - 书签ID
+   * @param {string} id - 书签 ID
    * @param {Object} changes - 更改内容
    * @returns {Promise<Object>}
    */
   async update(id, changes) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.update(id, changes);
   },
   
   /**
    * 移动书签
-   * @param {string} id - 书签ID
+   * @param {string} id - 书签 ID
    * @param {Object} destination - 目标位置
    * @returns {Promise<Object>}
    */
   async move(id, destination) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     return await browser.bookmarks.move(id, destination);
   },
   
   /**
    * 删除书签
-   * @param {string} id - 书签ID
+   * @param {string} id - 书签 ID
    * @returns {Promise<void>}
    */
   async remove(id) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     await browser.bookmarks.remove(id);
   },
   
   /**
    * 删除书签树（文件夹）
-   * @param {string} id - 文件夹ID
+   * @param {string} id - 文件夹 ID
    * @returns {Promise<void>}
    */
   async removeTree(id) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
     await browser.bookmarks.removeTree(id);
   },
   
   /**
-   * 获取书签的收藏夹图标URL
-   * @param {string} url - 网页URL
+   * 获取书签的收藏夹图标 URL
+   * @param {string} url - 网页 URL
    * @returns {string}
    */
   getFaviconUrl(url) {
@@ -347,10 +395,15 @@ const BookmarkUtils = {
   
   /**
    * 获取文件夹路径
-   * @param {string} id - 书签ID
+   * @param {string} id - 书签 ID
    * @returns {Promise<Array>}
    */
   async getPath(id) {
+    // 确保 browser 对象存在
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      window.browser = chrome;
+    }
+    
     const path = [];
     let currentId = id;
     

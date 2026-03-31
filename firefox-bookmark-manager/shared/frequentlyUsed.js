@@ -58,6 +58,22 @@ const FrequentlyUsed = {
     const pinnedUrls = pinned.map(p => typeof p === 'string' ? p : p.url);
     const pinnedSet = new Set(pinnedUrls);
     
+    // 诊断信息
+    console.log('=== FrequentlyUsed 诊断 ===');
+    console.log('browser 对象:', typeof browser);
+    
+    // 如果 browser 对象不存在，尝试使用 chrome 对象
+    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
+      console.log('browser 未定义，使用 chrome 对象');
+      window.browser = chrome;
+    }
+    
+    console.log('browser.history:', browser?.history);
+    console.log('browser.history.search:', browser?.history?.search);
+    console.log('chrome 对象:', typeof chrome);
+    console.log('chrome.history:', chrome?.history);
+    console.log('chrome.history.search:', chrome?.history?.search);
+    
     // 1. 获取置顶链接的信息（不查询历史记录）
     const pinnedItems = [];
     for (const pinnedItem of pinned) {
@@ -76,6 +92,15 @@ const FrequentlyUsed = {
       const now = Date.now();
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
       
+      console.log('常用文件夹：开始加载历史数据，参数:', { daysRange, startTime });
+      
+      // 检查 browser.history API 是否可用
+      if (!browser.history || !browser.history.search) {
+        console.error('常用文件夹：browser.history.search API 不可用');
+        console.log('browser.history:', browser.history);
+        return pinnedItems;
+      }
+      
       // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）
       const history = await browser.history.search({
         text: '', // 必须参数，空字符串表示匹配所有 URL
@@ -83,8 +108,11 @@ const FrequentlyUsed = {
         maxResults: 10000 // 最多获取 10000 条记录
       });
       
+      console.log('常用文件夹：历史记录加载成功，数量:', history.length);
+      
       if (!history || history.length === 0) {
         // 即使没有历史记录，也要返回置顶链接
+        console.log('常用文件夹：没有历史记录，返回置顶链接');
         const bookmarkedSet = await this.checkBookmarkedUrls(pinnedUrls);
         pinnedItems.forEach(item => {
           item.isBookmarked = bookmarkedSet.has(item.url);
