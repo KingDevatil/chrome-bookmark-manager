@@ -1559,6 +1559,7 @@ function switchTab(tabName) {
   const bookmarkPanel = document.getElementById('bookmark-panel');
   const historyPanel = document.getElementById('history-panel');
   const searchBox = document.getElementById('search-box');
+  const historySearchBox = document.getElementById('history-search-box');
   const sidebarFooter = document.getElementById('sidebar-footer');
 
   if (tabName === 'bookmarks') {
@@ -1569,6 +1570,7 @@ function switchTab(tabName) {
     historyPanel.classList.remove('active');
     historyPanel.classList.add('hidden');
     searchBox.style.display = 'block';
+    historySearchBox.style.display = 'none';
     sidebarFooter.style.display = 'flex';
   } else {
     tabBookmarks.classList.remove('active');
@@ -1578,6 +1580,7 @@ function switchTab(tabName) {
     historyPanel.classList.add('active');
     historyPanel.classList.remove('hidden');
     searchBox.style.display = 'none';
+    historySearchBox.style.display = 'block';
     sidebarFooter.style.display = 'none';
 
     if (historyData.length === 0) {

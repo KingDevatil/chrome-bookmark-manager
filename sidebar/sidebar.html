@@ -115,12 +115,8 @@
       height: 100%;
     }
 
-    .history-panel .search-box {
-      padding: 12px 16px 6px 16px;
-    }
-
     .history-panel.active .history-list {
-      height: calc(100% - 58px);
+      height: calc(100% - 16px);
       overflow-y: auto;
     }
 
@@ -1064,6 +1060,9 @@
       <div class="search-box" id="search-box">
         <input type="text" id="search-input" data-i18n-placeholder="common.searchPlaceholder" placeholder="搜索书签（标题、网址、标签）">
       </div>
+      <div class="search-box" id="history-search-box" style="display: none;">
+        <input type="text" id="history-search-input" data-i18n-placeholder="common.searchHistoryPlaceholder" placeholder="搜索历史记录">
+      </div>
     </div>
 
     <div class="sidebar-content" id="bookmark-tree-container">
@@ -1078,9 +1077,6 @@
 
       <!-- 历史记录面板 -->
       <div class="panel history-panel" id="history-panel">
-        <div class="search-box" id="history-search-box">
-          <input type="text" id="history-search-input" data-i18n-placeholder="common.searchHistoryPlaceholder" placeholder="搜索历史记录">
-        </div>
         <ul class="history-list" id="history-list"></ul>
         <div class="empty-state" id="history-empty-state" style="display: none;">
           <div class="empty-state-icon">📭</div>
