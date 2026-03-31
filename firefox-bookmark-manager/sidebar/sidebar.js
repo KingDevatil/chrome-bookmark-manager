@@ -189,9 +189,9 @@ function createTreeNode(node, level) {
   title.className = 'tree-title';
   // 置顶链接显示📌图标
   if (isPinned && !isFolder) {
-    title.innerHTML = `<span class="pinned-icon">📌</span>${node.title || '无标题'}`;
+    title.innerHTML = `<span class="pinned-icon">📌</span>${node.title || I18n.t('common.noTitle')}`;
   } else {
-    title.textContent = node.title || (isFolder ? '新建文件夹' : '无标题');
+    title.textContent = node.title || (isFolder ? I18n.t('common.newFolder') : I18n.t('common.noTitle'));
   }
   title.title = node.title || '';
 
@@ -263,12 +263,12 @@ function createFrequentlyUsedNode() {
 
   const title = document.createElement('span');
   title.className = 'tree-title frequently-used-title';
-  title.textContent = '常用';
+  title.textContent = I18n.t('freq.freqUsed');
 
   const refreshBtn = document.createElement('span');
   refreshBtn.className = 'frequently-used-refresh';
   refreshBtn.textContent = '🔄';
-  refreshBtn.title = '刷新常用列表';
+  refreshBtn.title = I18n.t('common.refresh');
   refreshBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
     await refreshFrequentlyUsed();
@@ -299,7 +299,7 @@ function createFrequentlyUsedNode() {
   } else if (frequentlyUsedData.length === 0) {
     const emptyLi = document.createElement('li');
     emptyLi.className = 'tree-node frequently-used-empty';
-    emptyLi.textContent = '暂无常用链接';
+    emptyLi.textContent = I18n.t('sidebar.noPinnedLinks');
     emptyLi.style.paddingLeft = '36px';
     emptyLi.style.fontSize = '13px';
     emptyLi.style.color = 'var(--text-tertiary, #94a3b8)';
@@ -340,17 +340,17 @@ function createFrequentlyUsedItem(item, index) {
   if (item.isPinned) {
     title.style.color = '#f23600';
   }
-  title.textContent = item.title || item.url || '无标题';
+  title.textContent = item.title || item.url || I18n.t('common.noTitle');
   title.title = item.title || item.url || '';
   
   const visitCountOrPin = document.createElement('span');
   visitCountOrPin.className = 'frequently-used-visit-count';
   if (item.isPinned) {
-    visitCountOrPin.textContent = '📌 置顶';
+    visitCountOrPin.textContent = '📌 ' + I18n.t('common.pin');
     visitCountOrPin.style.color = '#f23600';
     visitCountOrPin.style.fontWeight = '500';
   } else {
-    visitCountOrPin.textContent = `${item.visitCount} 次`;
+    visitCountOrPin.textContent = `${item.visitCount} ${I18n.t('sidebar.visitTimes')}`;
   }
   
   titleContainer.appendChild(title);
@@ -365,7 +365,7 @@ function createFrequentlyUsedItem(item, index) {
     const bookmarkIcon = document.createElement('span');
     bookmarkIcon.className = 'frequently-used-bookmark-icon';
     bookmarkIcon.textContent = '📑';
-    bookmarkIcon.title = '已在书签中';
+    bookmarkIcon.title = I18n.t('common.bookmark');
     content.appendChild(bookmarkIcon);
   }
   
@@ -401,7 +401,7 @@ async function showFrequentlyUsedContextMenu(e) {
   
   const configItem = document.createElement('div');
   configItem.className = 'context-menu-item';
-  configItem.textContent = '⚙️ 常用目录设置';
+  configItem.textContent = '⚙️ ' + I18n.t('freq.title');
   configItem.addEventListener('click', () => {
     browser.tabs.create({
       url: browser.runtime.getURL('manager/settings.html')
@@ -445,7 +445,7 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   
   const pinItem = document.createElement('div');
   pinItem.className = 'context-menu-item';
-  pinItem.textContent = isPinned ? '📌 取消置顶' : '📌 置顶';
+  pinItem.textContent = isPinned ? '📌 ' + I18n.t('common.unpin') : '📌 ' + I18n.t('common.pin');
   pinItem.addEventListener('click', async () => {
     if (isPinned) {
       await FrequentlyUsedConfig.unpinUrl(item.url);
@@ -465,22 +465,22 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   if (!item.isBookmarked) {
     const addBookmarkItem = document.createElement('div');
     addBookmarkItem.className = 'context-menu-item';
-    addBookmarkItem.textContent = '📑 添加到书签';
+    addBookmarkItem.textContent = '📑 ' + I18n.t('common.addToBookmark');
     addBookmarkItem.addEventListener('click', () => {
       showAddBookmarkModal(item);
       removeContextMenu();
     });
     menu.appendChild(addBookmarkItem);
-    
+
     const separator2 = document.createElement('div');
     separator2.className = 'context-menu-separator';
     menu.appendChild(separator2);
   }
-  
+
   const domain = FrequentlyUsed.extractDomain(item.url);
   const blockItem = document.createElement('div');
   blockItem.className = 'context-menu-item';
-  blockItem.textContent = `🚫 屏蔽 ${domain}`;
+  blockItem.textContent = '🚫 ' + I18n.t('common.block') + ' ' + domain;
   blockItem.addEventListener('click', async () => {
     await FrequentlyUsedConfig.addToBlacklist(domain);
     await refreshFrequentlyUsed();
@@ -513,25 +513,25 @@ async function showAddBookmarkModal(item) {
   
   modal.innerHTML = `
     <div class="edit-modal-content">
-      <h3 class="edit-modal-title">添加到书签</h3>
+      <h3 class="edit-modal-title">${I18n.t('common.addToBookmark')}</h3>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">名称</label>
+        <label class="edit-modal-label">${I18n.t('common.name')}</label>
         <input type="text" class="edit-modal-input" id="add-bookmark-title" value="${item.title || ''}">
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">URL</label>
+        <label class="edit-modal-label">${I18n.t('common.url')}</label>
         <input type="text" class="edit-modal-input" id="add-bookmark-url" value="${item.url}" readonly>
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">文件夹</label>
+        <label class="edit-modal-label">${I18n.t('common.folder')}</label>
         <div class="folder-tree" id="folder-tree">
           <!-- 文件夹树将通过 JS 渲染 -->
         </div>
         <input type="hidden" id="add-bookmark-folder" value="">
       </div>
       <div class="edit-modal-buttons">
-        <button class="edit-modal-btn edit-modal-cancel">取消</button>
-        <button class="edit-modal-btn edit-modal-save">保存</button>
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
       </div>
     </div>
   `;
@@ -655,7 +655,7 @@ function createFolderTreeNode(node, level, selectedFolderId = null) {
   
   const title = document.createElement('span');
   title.className = 'folder-tree-title';
-  title.textContent = node.title || '新建文件夹';
+  title.textContent = node.title || I18n.t('common.newFolder');
   
   // 选择文件夹
   content.addEventListener('click', () => {
@@ -881,13 +881,13 @@ function showContextMenu(e, node, isFolder) {
     // 置顶选项
     let pinText = '';
     if (isPinned) {
-      pinText = '📌 取消置顶';
+      pinText = '📌 ' + I18n.t('common.unpin');
     } else if (isInFrequentlyUsed) {
-      pinText = '📌 置顶';
+      pinText = '📌 ' + I18n.t('common.pin');
     } else {
-      pinText = '📌 添加至常用并置顶';
+      pinText = '📌 ' + I18n.t('pinned.addToFrequent');
     }
-    
+
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';
     pinItem.textContent = pinText;
@@ -912,13 +912,13 @@ function showContextMenu(e, node, isFolder) {
   if (!isFolder) {
     const editItem = document.createElement('div');
     editItem.className = 'context-menu-item';
-    editItem.textContent = '✏️ 修改';
+    editItem.textContent = '✏️ ' + I18n.t('common.edit');
     editItem.addEventListener('click', () => {
       showEditModal(node);
       removeContextMenu();
     });
     menu.appendChild(editItem);
-    
+
     // 添加分隔线
     const separator2 = document.createElement('div');
     separator2.className = 'context-menu-separator';
@@ -928,7 +928,7 @@ function showContextMenu(e, node, isFolder) {
   // 删除选项
   const deleteItem = document.createElement('div');
   deleteItem.className = 'context-menu-item danger';
-  deleteItem.textContent = '🗑️ 删除';
+  deleteItem.textContent = '🗑️ ' + I18n.t('common.delete');
   deleteItem.addEventListener('click', () => {
     console.log('删除菜单点击:', { id: node.id, title: node.title, isFolder });
     deleteBookmarkOrFolder(node.id, node.title, isFolder);
@@ -963,25 +963,25 @@ async function showEditModal(node) {
   
   modal.innerHTML = `
     <div class="edit-modal-content">
-      <h3 class="edit-modal-title">修改书签</h3>
+      <h3 class="edit-modal-title">${I18n.t('common.editBookmark')}</h3>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">名称</label>
+        <label class="edit-modal-label">${I18n.t('common.name')}</label>
         <input type="text" class="edit-modal-input" id="edit-title-input" value="${node.title || ''}">
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">URL</label>
+        <label class="edit-modal-label">${I18n.t('common.url')}</label>
         <input type="text" class="edit-modal-input" id="edit-url-input" value="${node.url || ''}">
       </div>
       <div class="edit-modal-field">
-        <label class="edit-modal-label">文件夹</label>
+        <label class="edit-modal-label">${I18n.t('common.folder')}</label>
         <div class="folder-tree" id="edit-folder-tree">
           <!-- 文件夹树将通过 JS 渲染 -->
         </div>
         <input type="hidden" id="edit-folder-parentId" value="${node.parentId || '1'}">
       </div>
       <div class="edit-modal-buttons">
-        <button class="edit-modal-btn edit-modal-cancel">取消</button>
-        <button class="edit-modal-btn edit-modal-save">保存</button>
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
       </div>
     </div>
   `;
@@ -1489,7 +1489,7 @@ async function renderSearchResults() {
     container.innerHTML = '';
     
     if (allResults.length === 0) {
-      emptyState.querySelector('div:last-child').textContent = '未找到匹配的书签';
+      emptyState.querySelector('div:last-child').textContent = I18n.t('common.noResults');
       emptyState.style.display = 'flex';
       return;
     }
@@ -1511,7 +1511,7 @@ async function renderSearchResults() {
 
       const title = document.createElement('span');
       title.className = 'tree-title';
-      title.textContent = node.title || '无标题';
+      title.textContent = node.title || I18n.t('common.noTitle');
       title.title = `${node.title}\n${node.url}`;
 
       content.appendChild(spacer);
@@ -1724,7 +1724,7 @@ function toggleMenuPanel() {
   if (isMenuOpen) {
     menuBtn.textContent = '✕';
     menuBtn.classList.add('active');
-    menuBtn.title = '返回';
+    menuBtn.title = I18n.t('common.back');
     bookmarkPanel.classList.remove('active');
     historyPanel.classList.remove('active');
     menuPanel.classList.add('active');
@@ -1733,8 +1733,8 @@ function toggleMenuPanel() {
   } else {
     menuBtn.textContent = '⋮';
     menuBtn.classList.remove('active');
-    menuBtn.title = '菜单';
-    
+    menuBtn.title = I18n.t('common.menu');
+
     // 根据当前标签页恢复对应面板
     if (currentTab === 'bookmarks') {
       bookmarkPanel.classList.add('active');
@@ -1777,7 +1777,7 @@ async function performBackup() {
   // 检查是否配置了 WebDAV
   const result = await Storage.get('webdavConfig');
   if (!result.webdavConfig || !result.webdavConfig.enabled) {
-    status.textContent = '请先配置 WebDAV';
+    status.textContent = I18n.t('webdav.enableFirst');
     status.style.color = 'var(--error-color, #ef4444)';
     setTimeout(() => {
       status.textContent = '';
@@ -1787,21 +1787,21 @@ async function performBackup() {
   }
 
   btn.disabled = true;
-  status.textContent = '正在备份...';
+  status.textContent = I18n.t('backup.backingUp');
   status.style.color = 'var(--text-secondary, #64748b)';
 
   try {
     const response = await browser.runtime.sendMessage({ action: 'backup' });
 
     if (response.success) {
-      status.textContent = '备份成功!';
+      status.textContent = I18n.t('backup.backupSuccess');
       status.style.color = 'var(--success-color, #10b981)';
     } else {
-      status.textContent = '备份失败: ' + response.error;
+      status.textContent = I18n.t('backup.backupFailed') + ': ' + response.error;
       status.style.color = 'var(--error-color, #ef4444)';
     }
   } catch (error) {
-    status.textContent = '备份失败: ' + error.message;
+    status.textContent = I18n.t('backup.backupFailed') + ': ' + error.message;
     status.style.color = 'var(--error-color, #ef4444)';
   } finally {
     btn.disabled = false;

@@ -153,6 +153,22 @@ function setupEventListeners() {
   // 布局设置按钮
   document.getElementById('save-layout-btn').addEventListener('click', saveLayoutSettings);
   document.getElementById('reset-layout-btn').addEventListener('click', resetLayoutSettings);
+
+  // 语言设置按钮
+  document.getElementById('save-language-btn').addEventListener('click', async () => {
+    try {
+      const selectedLang = document.getElementById('language-select').value;
+      const success = await I18n.setLanguage(selectedLang);
+      if (success) {
+        showStatus('language-status', I18n.t('common.saveSuccess'), 'success');
+      } else {
+        showStatus('language-status', I18n.t('common.saveFailed'), 'error');
+      }
+    } catch (error) {
+      console.error('切换语言失败:', error);
+      showStatus('language-status', I18n.t('common.saveFailed') + ': ' + error.message, 'error');
+    }
+  });
 }
 
 function updateLayoutPreview(height, treeIndent, bookmarkIndent) {
@@ -1010,21 +1026,6 @@ async function loadLanguageSettings() {
     const result = await Storage.get(['language']);
     const currentLang = result.language || 'zh-CN';
     document.getElementById('language-select').value = currentLang;
-
-    document.getElementById('save-language-btn').addEventListener('click', async () => {
-      try {
-        const selectedLang = document.getElementById('language-select').value;
-        const success = await I18n.setLanguage(selectedLang);
-        if (success) {
-          showStatus('language-status', I18n.t('common.saveSuccess'), 'success');
-        } else {
-          showStatus('language-status', I18n.t('common.saveFailed'), 'error');
-        }
-      } catch (error) {
-        console.error('切换语言失败:', error);
-        showStatus('language-status', I18n.t('common.saveFailed') + ': ' + error.message, 'error');
-      }
-    });
   } catch (error) {
     console.error('加载语言设置失败:', error);
   }
@@ -1295,12 +1296,12 @@ async function loadTagsOverview() {
         groupsList.appendChild(groupCard);
       });
     } else {
-      groupsList.innerHTML = '<div class="empty-state">暂无分组，点击上方按钮创建</div>';
+      groupsList.innerHTML = `<div class="empty-state">${I18n.t('tagGroup.noGroups')}</div>`;
     }
-    
+
     // 获取未分组的标签
     const ungroupedTags = await TagGroups.getUngroupedTags(allTags);
-    
+
     if (ungroupedTags.length > 0) {
       ungroupedTags.forEach(tagName => {
         const tagEl = document.createElement('span');
@@ -1310,7 +1311,7 @@ async function loadTagsOverview() {
         ungroupedList.appendChild(tagEl);
       });
     } else {
-      ungroupedList.innerHTML = '<div class="empty-state">所有标签已分组</div>';
+      ungroupedList.innerHTML = `<div class="empty-state">${I18n.t('tagGroup.allGrouped')}</div>`;
     }
   } catch (error) {
     console.error('加载标签总览失败:', error);
@@ -1384,42 +1385,49 @@ function createTagGroupCard(group) {
 }
 
 async function createTagGroup() {
-  const name = prompt('请输入分组名称：');
+  const name = await Dialog.prompt(I18n.t('tagGroup.enterName'), '', {
+    title: I18n.t('tagGroup.newGroup')
+  });
   if (!name || !name.trim()) return;
-  
+
   try {
     await TagGroups.createGroup(name.trim());
     await loadTagsOverview();
   } catch (error) {
     console.error('创建分组失败:', error);
-    alert('创建分组失败');
+    await Dialog.alert(I18n.t('tags.createGroupFailed'));
   }
 }
 
 async function deleteGroup(groupId, groupName) {
-  if (!confirm(`确定要删除分组「${groupName}」吗？\n分组内的标签将变为未分组状态。`)) {
+  const confirmed = await Dialog.confirm(I18n.t('tagGroup.confirmDelete', { name: groupName }), {
+    title: I18n.t('common.confirmDeleteAction')
+  });
+  if (!confirmed) {
     return;
   }
-  
+
   try {
     await TagGroups.deleteGroup(groupId);
     await loadTagsOverview();
   } catch (error) {
     console.error('删除分组失败:', error);
-    alert('删除分组失败');
+    await Dialog.alert(I18n.t('tags.deleteGroupFailed'));
   }
 }
 
 async function renameGroup(groupId, currentName) {
-  const newName = prompt('请输入新的分组名称：', currentName);
+  const newName = await Dialog.prompt(I18n.t('tagGroup.enterNewName'), currentName, {
+    title: I18n.t('common.modify')
+  });
   if (!newName || !newName.trim() || newName.trim() === currentName) return;
-  
+
   try {
     await TagGroups.renameGroup(groupId, newName.trim());
     await loadTagsOverview();
   } catch (error) {
     console.error('重命名分组失败:', error);
-    alert('重命名分组失败');
+    await Dialog.alert(I18n.t('tags.renameGroupFailed'));
   }
 }
 

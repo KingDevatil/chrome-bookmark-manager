@@ -840,81 +840,81 @@
     <aside class="settings-sidebar">
       <div class="sidebar-header">
         <span>⚙️</span>
-        <span>设置</span>
+        <span data-i18n="common.settings">设置</span>
       </div>
       <ul class="settings-menu">
         <li class="settings-menu-item active" data-section="webdav">
           <span class="settings-menu-icon">☁️</span>
-          <span>WebDAV 同步</span>
+          <span data-i18n="menu.webdav">WebDAV 同步</span>
         </li>
         <li class="settings-menu-item" data-section="backup">
           <span class="settings-menu-icon">💾</span>
-          <span>备份与恢复</span>
+          <span data-i18n="menu.backup">备份与恢复</span>
         </li>
         <li class="settings-menu-item" data-section="tags">
           <span class="settings-menu-icon">🏷️</span>
-          <span>标签总览</span>
+          <span data-i18n="menu.tags">标签总览</span>
         </li>
         <li class="settings-menu-item" data-section="layout">
           <span class="settings-menu-icon">📐</span>
-          <span>布局</span>
+          <span data-i18n="menu.layout">布局</span>
         </li>
         <li class="settings-menu-item" data-section="frequently-used">
           <span class="settings-menu-icon">⭐</span>
-          <span>常用目录</span>
+          <span data-i18n="menu.frequentlyUsed">常用目录</span>
         </li>
         <li class="settings-menu-item" data-section="language">
           <span class="settings-menu-icon">🌐</span>
-          <span>语言</span>
+          <span data-i18n="menu.language">语言</span>
         </li>
         <li class="settings-menu-item" data-section="help">
           <span class="settings-menu-icon">📖</span>
-          <span>操作说明</span>
+          <span data-i18n="menu.help">操作说明</span>
         </li>
       </ul>
       <a href="manager.html" class="back-link">
         <span>←</span>
-        <span>返回管理器</span>
+        <span data-i18n="menu.backToManager">返回管理器</span>
       </a>
     </aside>
 
     <main class="settings-main">
       <section class="settings-section" id="webdav-section">
-        <h2 class="settings-section-title">WebDAV 同步设置</h2>
+        <h2 class="settings-section-title" data-i18n="webdav.title">WebDAV 同步设置</h2>
         
         <div class="settings-card">
           <div class="settings-field">
             <label class="toggle-switch">
               <input type="checkbox" class="toggle-input" id="webdav-enabled">
               <span class="toggle-slider"></span>
-              <span class="toggle-label">启用 WebDAV 同步</span>
+              <span class="toggle-label" data-i18n="webdav.enable">启用 WebDAV 同步</span>
             </label>
-            <p class="settings-description">开启后可以将书签备份到 WebDAV 服务器</p>
+            <p class="settings-description" data-i18n="webdav.enableDesc">开启后可以将书签备份到 WebDAV 服务器</p>
           </div>
 
           <div id="webdav-config" class="conditional-field">
             <div class="settings-field">
-              <label class="settings-label">服务器地址</label>
-              <p class="settings-description">WebDAV 服务器地址，例如：https://example.com/dav</p>
+              <label class="settings-label" data-i18n="webdav.serverUrl">服务器地址</label>
+              <p class="settings-description" data-i18n="webdav.urlPlaceholder">WebDAV 服务器地址，例如：https://example.com/dav</p>
               <input type="text" class="settings-input" id="webdav-url" placeholder="https://...">
             </div>
 
             <div class="settings-field">
-              <label class="settings-label">用户名</label>
-              <input type="text" class="settings-input" id="webdav-username" placeholder="用户名">
+              <label class="settings-label" data-i18n="webdav.username">用户名</label>
+              <input type="text" class="settings-input" id="webdav-username" data-i18n-placeholder="webdav.username" placeholder="用户名">
             </div>
 
             <div class="settings-field">
-              <label class="settings-label">密码</label>
-              <input type="password" class="settings-input" id="webdav-password" placeholder="密码">
+              <label class="settings-label" data-i18n="webdav.password">密码</label>
+              <input type="password" class="settings-input" id="webdav-password" data-i18n-placeholder="webdav.password" placeholder="密码">
             </div>
 
             <div class="button-group">
-              <button class="btn" id="test-connection-btn">测试连接</button>
-              <button class="btn btn-primary" id="save-webdav-btn">保存配置</button>
+              <button class="btn" id="test-connection-btn" data-i18n="webdav.testConnection">测试连接</button>
+              <button class="btn btn-primary" id="save-webdav-btn" data-i18n="webdav.saveConfig">保存配置</button>
             </div>
 
-            <p class="settings-description" style="margin-top: 12px; color: var(--text-tertiary, #94a3b8);">💡 提示：若备份存储目录创建失败，请自行在 WebDAV 根目录下创建 bookmarks 文件夹</p>
+            <p class="settings-description" style="margin-top: 12px; color: var(--text-tertiary, #94a3b8);" data-i18n="webdav.tip">💡 提示：若备份存储目录创建失败，请自行在 WebDAV 根目录下创建 bookmarks 文件夹</p>
 
             <div class="status-message" id="webdav-status"></div>
           </div>
@@ -922,30 +922,30 @@
       </section>
 
       <section class="settings-section" id="backup-section" style="display: none;">
-        <h2 class="settings-section-title">备份与恢复</h2>
+        <h2 class="settings-section-title" data-i18n="menu.backup">备份与恢复</h2>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">自动备份</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="backup.autoBackup">自动备份</h3>
 
           <div class="settings-field">
             <label class="toggle-switch">
               <input type="checkbox" class="toggle-input" id="auto-backup-enabled">
               <span class="toggle-slider"></span>
-              <span class="toggle-label">启用自动备份</span>
+              <span class="toggle-label" data-i18n="backup.enableAuto">启用自动备份</span>
             </label>
           </div>
 
           <div id="auto-backup-config" class="conditional-field">
             <div class="settings-field">
-              <label class="settings-label">备份间隔</label>
+              <label class="settings-label" data-i18n="backup.interval">备份间隔</label>
               <select class="settings-input" id="backup-interval" style="width: auto; min-width: 200px;">
-                <option value="15">每 15 分钟</option>
-                <option value="30">每 30 分钟</option>
-                <option value="60">每 1 小时</option>
-                <option value="180">每 3 小时</option>
-                <option value="360">每 6 小时</option>
-                <option value="720">每 12 小时</option>
-                <option value="1440">每天</option>
+                <option value="15" data-i18n="backup.every15min">每 15 分钟</option>
+                <option value="30" data-i18n="backup.every30min">每 30 分钟</option>
+                <option value="60" data-i18n="backup.every1hour">每 1 小时</option>
+                <option value="180" data-i18n="backup.every3hours">每 3 小时</option>
+                <option value="360" data-i18n="backup.every6hours">每 6 小时</option>
+                <option value="720" data-i18n="backup.every12hours">每 12 小时</option>
+                <option value="1440" data-i18n="backup.everyday">每天</option>
               </select>
             </div>
 
@@ -953,66 +953,66 @@
               <label class="toggle-switch">
                 <input type="checkbox" class="toggle-input" id="backup-on-startup">
                 <span class="toggle-slider"></span>
-                <span class="toggle-label">启动时备份</span>
+                <span class="toggle-label" data-i18n="backup.onStartup">启动时备份</span>
               </label>
-              <p class="settings-description">每次打开浏览器时自动备份书签</p>
+              <p class="settings-description" data-i18n="backup.onStartupDesc">每次打开浏览器时自动备份书签</p>
             </div>
           </div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="save-backup-settings-btn">保存设置</button>
+            <button class="btn btn-primary" id="save-backup-settings-btn" data-i18n="common.save">保存设置</button>
           </div>
 
           <div class="status-message" id="backup-settings-status"></div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">手动操作</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="backup.manual">手动操作</h3>
 
           <div style="display: flex; gap: 24px; flex-wrap: wrap;">
             <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">书签备份</label>
-              <p class="settings-description">将当前书签备份到 WebDAV 服务器</p>
-              <button class="btn btn-primary" id="backup-now-btn">备份书签</button>
+              <label class="settings-label" data-i18n="backup.bookmarkBackup">书签备份</label>
+              <p class="settings-description" data-i18n="backup.backupBookmarksDesc">将当前书签备份到 WebDAV 服务器</p>
+              <button class="btn btn-primary" id="backup-now-btn" data-i18n="backup.backupBookmarks">备份书签</button>
               <div class="status-message" id="backup-now-status"></div>
             </div>
 
             <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">书签恢复</label>
-              <p class="settings-description">从 WebDAV 服务器恢复书签备份</p>
+              <label class="settings-label" data-i18n="backup.bookmarkRestore">书签恢复</label>
+              <p class="settings-description" data-i18n="backup.restoreBookmarksDesc">从 WebDAV 服务器恢复书签备份</p>
               <div class="radio-group" style="margin-bottom: 8px;">
                 <label class="radio-item">
                   <input type="radio" name="restore-mode" value="merge" checked>
-                  <span>合并</span>
+                  <span data-i18n="backup.merge">合并</span>
                 </label>
                 <label class="radio-item">
                   <input type="radio" name="restore-mode" value="overwrite">
-                  <span>覆盖</span>
+                  <span data-i18n="backup.overwrite">覆盖</span>
                 </label>
               </div>
-              <button class="btn" id="restore-btn">恢复书签</button>
+              <button class="btn" id="restore-btn" data-i18n="backup.restoreBookmarks">恢复书签</button>
               <div class="status-message" id="restore-status"></div>
             </div>
 
             <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">布局备份</label>
-              <p class="settings-description">将布局设置备份到 WebDAV 服务器</p>
-              <button class="btn" id="backup-layout-btn">备份布局</button>
+              <label class="settings-label" data-i18n="backup.layoutBackup">布局备份</label>
+              <p class="settings-description" data-i18n="backup.backupLayoutDesc">将布局设置备份到 WebDAV 服务器</p>
+              <button class="btn" id="backup-layout-btn" data-i18n="backup.backupLayout">备份布局</button>
               <div class="status-message" id="backup-layout-status"></div>
             </div>
 
             <div class="settings-field" style="flex: 1; min-width: 200px;">
-              <label class="settings-label">布局恢复</label>
-              <p class="settings-description">从 WebDAV 服务器恢复布局设置</p>
-              <button class="btn" id="restore-layout-btn">恢复布局</button>
+              <label class="settings-label" data-i18n="backup.layoutRestore">布局恢复</label>
+              <p class="settings-description" data-i18n="backup.restoreLayoutDesc">从 WebDAV 服务器恢复布局设置</p>
+              <button class="btn" id="restore-layout-btn" data-i18n="backup.restoreLayout">恢复布局</button>
               <div class="status-message" id="restore-layout-status"></div>
             </div>
           </div>
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">统一导出/导入</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">导出或导入书签、布局、标签配置</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="backup.exportImport">统一导出/导入</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="backup.exportImportDesc">导出或导入书签、布局、标签配置</p>
 
           <div style="display: flex; gap: 24px; flex-wrap: wrap;">
             <div class="settings-field" style="flex: 1; min-width: 250px;">
@@ -1020,26 +1020,26 @@
               <div style="margin-bottom: 12px;">
                 <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <input type="checkbox" id="export-bookmarks" checked style="width: auto;">
-                  <span>书签</span>
+                  <span data-i18n="common.bookmarks">书签</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <input type="checkbox" id="export-layout" checked style="width: auto;">
-                  <span>布局设置</span>
+                  <span data-i18n="backup.layoutSettings">布局设置</span>
                 </label>
                 <label style="display: flex; align-items: center; gap: 8px;">
                   <input type="checkbox" id="export-tags" checked style="width: auto;">
-                  <span>标签</span>
+                  <span data-i18n="common.tags">标签</span>
                 </label>
               </div>
-              <button class="btn btn-primary" id="export-all-btn">导出</button>
+              <button class="btn btn-primary" id="export-all-btn" data-i18n="common.export">导出</button>
               <div class="status-message" id="export-all-status"></div>
             </div>
 
             <div class="settings-field" style="flex: 1; min-width: 250px;">
-              <label class="settings-label">导入配置</label>
-              <p class="settings-description">从 JSON 文件导入配置（自动识别内容类型）</p>
+              <label class="settings-label" data-i18n="backup.importConfig">导入配置</label>
+              <p class="settings-description" data-i18n="backup.importConfigDesc">从 JSON 文件导入配置（自动识别内容类型）</p>
               <input type="file" id="import-all-file" accept=".json" style="display: none;">
-              <button class="btn" id="import-all-btn">选择文件</button>
+              <button class="btn" id="import-all-btn" data-i18n="backup.selectFile">选择文件</button>
               <span id="import-all-filename" style="margin-left: 12px; color: var(--text-secondary, #64748b); font-size: 13px;"></span>
               <div class="status-message" id="import-all-status"></div>
             </div>
@@ -1047,43 +1047,43 @@
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">标签数据清理</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">检测并清理已删除书签的孤立标签数据</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="cleanup.title">标签数据清理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="cleanup.desc">检测并清理已删除书签的孤立标签数据</p>
 
           <div class="settings-field">
-            <label class="settings-label">检测孤立标签</label>
-            <p class="settings-description">检查标签数据中是否存在对应书签已被删除的孤立标签</p>
-            <button class="btn" id="detect-tags-btn">开始检测</button>
+            <label class="settings-label" data-i18n="cleanup.detectOrphan">检测孤立标签</label>
+            <p class="settings-description" data-i18n="cleanup.detectDesc">检查标签数据中是否存在对应书签已被删除的孤立标签</p>
+            <button class="btn" id="detect-tags-btn" data-i18n="cleanup.startDetection">开始检测</button>
             <div class="status-message" id="detect-tags-status"></div>
           </div>
 
           <div class="settings-field" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
-            <label class="settings-label">清理无效标签</label>
-            <p class="settings-description">删除所有孤立标签数据，释放存储空间</p>
-            <button class="btn btn-primary" id="clean-tags-btn">清理无效标签</button>
+            <label class="settings-label" data-i18n="cleanup.cleanInvalid">清理无效标签</label>
+            <p class="settings-description" data-i18n="cleanup.cleanDesc">删除所有孤立标签数据，释放存储空间</p>
+            <button class="btn btn-primary" id="clean-tags-btn" data-i18n="cleanup.cleanInvalid">清理无效标签</button>
             <div class="status-message" id="clean-tags-status"></div>
           </div>
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">书签查重</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">检测并删除重复的书签（相同URL的书签）</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="duplicate.title">书签查重</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="duplicate.desc">检测并删除重复的书签（相同URL的书签）</p>
 
           <div class="settings-field">
-            <label class="settings-label">开始检测</label>
-            <p class="settings-description">扫描所有书签，查找相同URL的重复书签</p>
-            <button class="btn" id="detect-duplicates-btn">开始检测</button>
+            <label class="settings-label" data-i18n="duplicate.startDetection">开始检测</label>
+            <p class="settings-description" data-i18n="duplicate.scanDesc">扫描所有书签，查找相同URL的重复书签</p>
+            <button class="btn" id="detect-duplicates-btn" data-i18n="duplicate.startDetection">开始检测</button>
             <div class="status-message" id="detect-duplicates-status"></div>
           </div>
 
           <div id="duplicates-result" style="display: none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
-            <label class="settings-label">检测结果</label>
+            <label class="settings-label" data-i18n="duplicate.result">检测结果</label>
             <div id="duplicates-list" class="duplicates-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 12px; margin: 12px 0;"></div>
             <div class="settings-field" style="display: flex; align-items: center; gap: 12px;">
-              <button class="btn btn-primary" id="delete-duplicates-btn">删除选中</button>
+              <button class="btn btn-primary" id="delete-duplicates-btn" data-i18n="duplicate.deleteSelected">删除选中</button>
               <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                 <input type="checkbox" id="select-all-duplicates" style="width: auto;">
-                <span>全选</span>
+                <span data-i18n="common.selectAll">全选</span>
               </label>
             </div>
           </div>
@@ -1091,28 +1091,28 @@
       </section>
 
       <section class="settings-section" id="tags-section" style="display: none;">
-        <h2 class="settings-section-title">标签总览</h2>
+        <h2 class="settings-section-title" data-i18n="menu.tags">标签总览</h2>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">标签分组</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">创建分组来组织管理标签，方便快速添加标签</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="tagGroup.title">标签分组</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="tagGroup.desc">创建分组来组织管理标签，方便快速添加标签</p>
 
           <div style="margin-bottom: 16px;">
-            <button class="btn btn-primary" id="create-tag-group-btn">+ 新建分组</button>
+            <button class="btn btn-primary" id="create-tag-group-btn" data-i18n="tagGroup.newGroup">+ 新建分组</button>
           </div>
 
           <div id="tag-groups-container">
             <div class="loading-spinner" id="tag-groups-loading">
               <div class="spinner"></div>
-              <p>加载中...</p>
+              <p data-i18n="common.loading">加载中...</p>
             </div>
             <div id="tag-groups-list"></div>
           </div>
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;">未分组标签</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">以下标签尚未归类到任何分组，点击可查看详情</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="tagGroup.ungroupedTags">未分组标签</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="tagGroup.ungroupedDesc">以下标签尚未归类到任何分组，点击可查看详情</p>
 
           <div id="ungrouped-tags-container">
             <div id="ungrouped-tags-list" class="tags-list"></div>
@@ -1122,7 +1122,7 @@
         <div class="settings-card" style="margin-top: 24px; display: none;" id="tag-detail-card">
           <h3 style="margin-bottom: 16px;">
             <span id="tag-detail-title"></span>
-            <button class="btn btn-sm" id="close-tag-detail" style="margin-left: 12px;">关闭</button>
+            <button class="btn btn-sm" id="close-tag-detail" style="margin-left: 12px;" data-i18n="common.close">关闭</button>
           </h3>
           <div id="tag-bookmarks-list" class="tag-bookmarks-list"></div>
         </div>
@@ -1140,24 +1140,24 @@
               <option value="en" data-i18n="lang.en">English</option>
             </select>
           </div>
-
+          
           <div class="button-group">
             <button class="btn btn-primary" id="save-language-btn" data-i18n="common.save">保存</button>
           </div>
-
+          
           <div class="status-message" id="language-status"></div>
         </div>
       </section>
 
       <section class="settings-section" id="layout-section" style="display: none;">
-        <h2 class="settings-section-title">布局设置</h2>
+        <h2 class="settings-section-title" data-i18n="layout.title">布局设置</h2>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">侧边栏外观</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="layout.sidebarAppearance">侧边栏外观</h3>
 
           <div class="settings-field">
-            <label class="settings-label">书签按钮高度</label>
-            <p class="settings-description">调整侧边栏中书签和文件夹按钮的高度</p>
+            <label class="settings-label" data-i18n="layout.bookmarkHeight">书签按钮高度</label>
+            <p class="settings-description" data-i18n="layout.bookmarkHeightDesc">调整侧边栏中书签和文件夹按钮的高度</p>
             <div class="slider-container">
               <input type="range" class="slider-input" id="bookmark-height-slider" min="24" max="48" value="30">
               <span class="slider-value" id="bookmark-height-value">30px</span>
@@ -1165,8 +1165,8 @@
           </div>
 
           <div class="settings-field">
-            <label class="settings-label">目录缩进宽度</label>
-            <p class="settings-description">调整树形目录中子文件夹的缩进宽度</p>
+            <label class="settings-label" data-i18n="layout.treeIndent">目录缩进宽度</label>
+            <p class="settings-description" data-i18n="layout.treeIndentDesc">调整树形目录中子文件夹的缩进宽度</p>
             <div class="slider-container">
               <input type="range" class="slider-input" id="tree-indent-slider" min="5" max="20" value="5">
               <span class="slider-value" id="tree-indent-value">5px</span>
@@ -1174,8 +1174,8 @@
           </div>
 
           <div class="settings-field">
-            <label class="settings-label">书签缩进宽度</label>
-            <p class="settings-description">调整书签相对于目录的缩进宽度</p>
+            <label class="settings-label" data-i18n="layout.bookmarkIndent">书签缩进宽度</label>
+            <p class="settings-description" data-i18n="layout.bookmarkIndentDesc">调整书签相对于目录的缩进宽度</p>
             <div class="slider-container">
               <input type="range" class="slider-input" id="bookmark-indent-slider" min="5" max="20" value="5">
               <span class="slider-value" id="bookmark-indent-value">5px</span>
@@ -1183,75 +1183,75 @@
           </div>
 
           <div class="button-group">
-            <button class="btn" id="reset-layout-btn">恢复默认</button>
-            <button class="btn btn-primary" id="save-layout-btn">保存设置</button>
+            <button class="btn" id="reset-layout-btn" data-i18n="common.reset">恢复默认</button>
+            <button class="btn btn-primary" id="save-layout-btn" data-i18n="common.save">保存设置</button>
           </div>
 
           <div class="status-message" id="layout-status"></div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">预览</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="common.preview">预览</h3>
           <div class="layout-preview" id="layout-preview">
             <div class="preview-item">
               <span class="preview-toggle">▶</span>
               <span class="preview-icon">📁</span>
-              <span class="preview-text">文件夹示例</span>
+              <span class="preview-text" data-i18n="layout.sampleFolder">文件夹示例</span>
             </div>
             <div class="preview-item preview-child">
               <span class="preview-toggle empty"></span>
               <span class="preview-icon">🔖</span>
-              <span class="preview-text">书签示例</span>
+              <span class="preview-text" data-i18n="layout.sampleBookmark">书签示例</span>
             </div>
           </div>
         </div>
       </section>
 
       <section class="settings-section" id="frequently-used-section" style="display: none;">
-        <h2 class="settings-section-title">常用目录设置</h2>
+        <h2 class="settings-section-title" data-i18n="freq.title">常用目录设置</h2>
 
         <div class="settings-card">
           <div class="settings-field">
             <label class="toggle-switch">
               <input type="checkbox" class="toggle-input" id="frequently-used-enabled">
               <span class="toggle-slider"></span>
-              <span class="toggle-label">启用常用目录</span>
+              <span class="toggle-label" data-i18n="freq.enable">启用常用目录</span>
             </label>
-            <p class="settings-description">在侧边栏顶部显示常用文件夹，展示最近访问最频繁的链接</p>
+            <p class="settings-description" data-i18n="freq.enableDesc">在侧边栏顶部显示常用文件夹，展示最近访问最频繁的链接</p>
           </div>
 
           <div id="frequently-used-config" class="conditional-field">
             <div class="settings-field">
-              <label class="settings-label">统计时间范围</label>
-              <p class="settings-description">统计最近多少天内的浏览记录</p>
+              <label class="settings-label" data-i18n="freq.timeRange">统计时间范围</label>
+              <p class="settings-description" data-i18n="freq.timeRangeDesc">统计最近多少天内的浏览记录</p>
               <div class="radio-group">
                 <label class="radio-item">
                   <input type="radio" name="days-range" value="3">
-                  <span>最近 3 天</span>
+                  <span data-i18n="freq.last3days">最近 3 天</span>
                 </label>
                 <label class="radio-item">
                   <input type="radio" name="days-range" value="7" checked>
-                  <span>最近 7 天</span>
+                  <span data-i18n="freq.last7days">最近 7 天</span>
                 </label>
                 <label class="radio-item">
                   <input type="radio" name="days-range" value="10">
-                  <span>最近 10 天</span>
+                  <span data-i18n="freq.last10days">最近 10 天</span>
                 </label>
               </div>
             </div>
 
             <div class="settings-field">
-              <label class="settings-label">显示数量</label>
-              <p class="settings-description">在常用文件夹中显示多少个链接（5-15 个）</p>
+              <label class="settings-label" data-i18n="freq.displayCount">显示数量</label>
+              <p class="settings-description" data-i18n="freq.displayCountDesc">在常用文件夹中显示多少个链接（5-15 个）</p>
               <div class="slider-container">
                 <input type="range" class="slider-input" id="display-count-slider" min="5" max="15" value="10">
-                <span class="slider-value" id="display-count-value">10 个</span>
+                <span class="slider-value" id="display-count-value">10 <span data-i18n="freq.countUnit">个</span></span>
               </div>
             </div>
 
             <div class="button-group">
-              <button class="btn" id="reset-frequently-used-btn">恢复默认</button>
-              <button class="btn btn-primary" id="save-frequently-used-btn">保存设置</button>
+              <button class="btn" id="reset-frequently-used-btn" data-i18n="common.reset">恢复默认</button>
+              <button class="btn btn-primary" id="save-frequently-used-btn" data-i18n="common.save">保存设置</button>
             </div>
 
             <div class="status-message" id="frequently-used-status"></div>
@@ -1259,197 +1259,197 @@
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">📋 黑名单管理</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">
+          <h3 style="margin-bottom: 16px;" data-i18n="blacklist.title">📋 黑名单管理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="blacklist.desc">
             被屏蔽的域名永远不会出现在常用列表中。在侧边栏常用文件夹中右键点击链接可选择屏蔽。
           </p>
 
           <div class="settings-field">
-            <label class="settings-label">已屏蔽的域名列表</label>
+            <label class="settings-label" data-i18n="blacklist.blockedDomains">已屏蔽的域名列表</label>
             <div id="blacklist-container" style="margin-top: 8px;">
-              <p class="settings-description" id="blacklist-empty">暂无屏蔽的域名</p>
+              <p class="settings-description" id="blacklist-empty" data-i18n="blacklist.noBlocked">暂无屏蔽的域名</p>
             </div>
           </div>
 
           <div class="settings-field" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
-            <label class="settings-label">手动添加屏蔽域名</label>
+            <label class="settings-label" data-i18n="blacklist.manualAdd">手动添加屏蔽域名</label>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
-              <input type="text" class="settings-input" id="blacklist-domain-input" placeholder="例如：google.com" style="flex: 1;">
-              <button class="btn btn-primary" id="add-blacklist-btn">添加</button>
+              <input type="text" class="settings-input" id="blacklist-domain-input" data-i18n-placeholder="blacklist.domainPlaceholder" placeholder="例如：google.com" style="flex: 1;">
+              <button class="btn btn-primary" id="add-blacklist-btn" data-i18n="common.add">添加</button>
             </div>
-            <p class="settings-description">输入域名（不需要协议和前缀），点击添加按钮</p>
+            <p class="settings-description" data-i18n="blacklist.addDesc">输入域名（不需要协议和前缀），点击添加按钮</p>
           </div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">📌 置顶管理</h3>
-          <p class="settings-description" style="margin-bottom: 16px;">
+          <h3 style="margin-bottom: 16px;" data-i18n="pinned.title">📌 置顶管理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="pinned.desc">
             置顶的链接会固定在常用文件夹顶部，不受热度值刷新影响。在侧边栏常用文件夹中右键点击链接可选择置顶。
           </p>
 
           <div class="settings-field">
-            <label class="settings-label">已置顶的链接</label>
+            <label class="settings-label" data-i18n="pinned.pinnedLinks">已置顶的链接</label>
             <div id="pinned-list-container" style="margin-top: 8px;">
-              <p class="settings-description" id="pinned-empty">暂无置顶的链接</p>
+              <p class="settings-description" id="pinned-empty" data-i18n="pinned.noPinned">暂无置顶的链接</p>
             </div>
             <div style="margin-top: 12px;">
-              <button class="btn" id="clear-all-pinned-btn" style="color: #dc2626; border-color: #dc2626;">清空所有置顶</button>
+              <button class="btn" id="clear-all-pinned-btn" style="color: #dc2626; border-color: #dc2626;" data-i18n="common.clearAll">清空所有置顶</button>
             </div>
           </div>
         </div>
       </section>
 
       <section class="settings-section" id="help-section" style="display: none;">
-        <h2 class="settings-section-title">操作说明</h2>
+        <h2 class="settings-section-title" data-i18n="menu.help">操作说明</h2>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">🚀 快速开始</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="help.quickStart">🚀 快速开始</h3>
           <div class="help-content">
-            <h4>侧边栏</h4>
+            <h4 data-i18n="help.sidebar">侧边栏</h4>
             <ul>
-              <li><strong>打开侧边栏</strong>：点击浏览器工具栏中的扩展图标</li>
-              <li><strong>打开书签</strong>：点击书签项即可在新标签页中打开</li>
-              <li><strong>展开/折叠文件夹</strong>：点击文件夹或左侧的展开箭头</li>
-              <li><strong>搜索书签</strong>：在搜索框中输入关键词进行搜索</li>
-              <li><strong>切换主题</strong>：点击菜单按钮 → 深色模式开关</li>
-              <li><strong>右键菜单</strong>：书签和文件夹支持右键删除、编辑操作</li>
-              <li><strong>拖拽排序</strong>：可拖拽书签调整顺序</li>
-              <li><strong>拖拽移动</strong>：可拖拽书签到文件夹中移动位置</li>
+              <li><strong data-i18n="help.openSidebar">打开侧边栏</strong>：<span data-i18n="help.openSidebarDesc">点击浏览器工具栏中的扩展图标</span></li>
+              <li><strong data-i18n="help.openBookmark">打开书签</strong>：<span data-i18n="help.openBookmarkDesc">点击书签项即可在新标签页中打开</span></li>
+              <li><strong data-i18n="help.expandCollapse">展开/折叠文件夹</strong>：<span data-i18n="help.expandCollapseDesc">点击文件夹或左侧的展开箭头</span></li>
+              <li><strong data-i18n="help.searchBookmarks">搜索书签</strong>：<span data-i18n="help.searchBookmarksDesc">在搜索框中输入关键词进行搜索</span></li>
+              <li><strong data-i18n="help.switchTheme">切换主题</strong>：<span data-i18n="help.switchThemeDesc">点击菜单按钮 → 深色模式开关</span></li>
+              <li><strong data-i18n="help.rightClickMenu">右键菜单</strong>：<span data-i18n="help.rightClickMenuDesc">书签和文件夹支持右键删除、编辑操作</span></li>
+              <li><strong data-i18n="help.dragSort">拖拽排序</strong>：<span data-i18n="help.dragSortDesc">可拖拽书签调整顺序</span></li>
+              <li><strong data-i18n="help.dragMove">拖拽移动</strong>：<span data-i18n="help.dragMoveDesc">可拖拽书签到文件夹中移动位置</span></li>
             </ul>
 
-            <h4>常用目录</h4>
+            <h4 data-i18n="help.freqUsed">常用目录</h4>
             <ul>
-              <li><strong>启用常用目录</strong>：点击菜单按钮 → 启用常用开关</li>
-              <li><strong>动态统计</strong>：自动统计最近访问最频繁的链接</li>
-              <li><strong>快速添加书签</strong>：右键点击常用链接可快速添加到书签</li>
-              <li><strong>黑名单功能</strong>：右键屏蔽特定域名，不再出现在常用列表中</li>
-              <li><strong>自动刷新</strong>：打开侧边栏时自动更新，每 5 分钟自动刷新</li>
+              <li><strong data-i18n="help.enableFreqUsed">启用常用目录</strong>：<span data-i18n="help.enableFreqUsedDesc">点击菜单按钮 → 启用常用开关</span></li>
+              <li><strong data-i18n="help.dynamicStats">动态统计</strong>：<span data-i18n="help.dynamicStatsDesc">自动统计最近访问最频繁的链接</span></li>
+              <li><strong data-i18n="help.quickAdd">快速添加书签</strong>：<span data-i18n="help.quickAddDesc">右键点击常用链接可快速添加到书签</span></li>
+              <li><strong data-i18n="help.blacklist">黑名单功能</strong>：<span data-i18n="help.blacklistDesc">右键屏蔽特定域名，不再出现在常用列表中</span></li>
+              <li><strong data-i18n="help.autoRefresh">自动刷新</strong>：<span data-i18n="help.autoRefreshDesc">打开侧边栏时自动更新，每 5 分钟自动刷新</span></li>
             </ul>
           </div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">📚 管理器</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="help.manager">📚 管理器</h3>
           <div class="help-content">
-            <h4>导航</h4>
+            <h4 data-i18n="help.navigation">导航</h4>
             <ul>
-              <li><strong>浏览文件夹</strong>：点击左侧文件夹树中的文件夹</li>
-              <li><strong>折叠文件夹</strong>：点击文件夹前的 ▶ 箭头图标</li>
-              <li><strong>面包屑导航</strong>：点击顶部路径可快速跳转</li>
+              <li><strong data-i18n="help.browseFolders">浏览文件夹</strong>：<span data-i18n="help.browseFoldersDesc">点击左侧文件夹树中的文件夹</span></li>
+              <li><strong data-i18n="help.collapseFolder">折叠文件夹</strong>：<span data-i18n="help.collapseFolderDesc">点击文件夹前的 ▶ 箭头图标</span></li>
+              <li><strong data-i18n="help.breadcrumb">面包屑导航</strong>：<span data-i18n="help.breadcrumbDesc">点击顶部路径可快速跳转</span></li>
             </ul>
 
-            <h4>书签操作</h4>
+            <h4 data-i18n="help.bookmarkOps">书签操作</h4>
             <ul>
-              <li><strong>添加书签</strong>：点击「+ 添加书签」按钮</li>
-              <li><strong>新建文件夹</strong>：点击「+ 新建文件夹」按钮，可选择存放位置</li>
-              <li><strong>打开书签</strong>：双击书签项可在新标签页中打开链接</li>
-              <li><strong>选择书签</strong>：单击书签项（不需要点击复选框）</li>
-              <li><strong>批量选择</strong>：按住 Shift 键点击可选择范围内的所有书签</li>
-              <li><strong>全选</strong>：按 Ctrl+A (Mac: Cmd+A)</li>
-              <li><strong>取消选择</strong>：按 Esc 键</li>
-              <li><strong>删除书签</strong>：点击书签右侧的删除按钮，或选中后按 Delete 键</li>
-              <li><strong>编辑书签</strong>：点击书签右侧的编辑按钮，可修改名称、URL 和移动文件夹</li>
+              <li><strong data-i18n="help.addBookmark">添加书签</strong>：<span data-i18n="help.addBookmarkDesc">点击「+ 添加书签」按钮</span></li>
+              <li><strong data-i18n="help.newFolder">新建文件夹</strong>：<span data-i18n="help.newFolderDesc">点击「+ 新建文件夹」按钮，可选择存放位置</span></li>
+              <li><strong data-i18n="help.openLink">打开书签</strong>：<span data-i18n="help.openLinkDesc">双击书签项可在新标签页中打开链接</span></li>
+              <li><strong data-i18n="help.selectBookmark">选择书签</strong>：<span data-i18n="help.selectBookmarkDesc">单击书签项（不需要点击复选框）</span></li>
+              <li><strong data-i18n="help.batchSelect">批量选择</strong>：<span data-i18n="help.batchSelectDesc">按住 Shift 键点击可选择范围内的所有书签</span></li>
+              <li><strong data-i18n="help.selectAll">全选</strong>：<span data-i18n="help.selectAllDesc">按 Ctrl+A (Mac: Cmd+A)</span></li>
+              <li><strong data-i18n="help.deselect">取消选择</strong>：<span data-i18n="help.deselectDesc">按 Esc 键</span></li>
+              <li><strong data-i18n="help.deleteBookmark">删除书签</strong>：<span data-i18n="help.deleteBookmarkDesc">点击书签右侧的删除按钮，或选中后按 Delete 键</span></li>
+              <li><strong data-i18n="help.editBookmark">编辑书签</strong>：<span data-i18n="help.editBookmarkDesc">点击书签右侧的编辑按钮，可修改名称、URL 和移动文件夹</span></li>
             </ul>
 
-            <h4>拖拽操作</h4>
+            <h4 data-i18n="help.dragOps">拖拽操作</h4>
             <ul>
-              <li><strong>排序书签</strong>：拖拽书签行可调整顺序</li>
-              <li><strong>移动到文件夹</strong>：将书签拖拽到左侧文件夹树上</li>
+              <li><strong data-i18n="help.sortBookmarks">排序书签</strong>：<span data-i18n="help.sortBookmarksDesc">拖拽书签行可调整顺序</span></li>
+              <li><strong data-i18n="help.moveToFolder">移动到文件夹</strong>：<span data-i18n="help.moveToFolderDesc">将书签拖拽到左侧文件夹树上</span></li>
             </ul>
 
-            <h4>视图切换</h4>
+            <h4 data-i18n="help.viewSwitch">视图切换</h4>
             <ul>
-              <li><strong>列表视图</strong>：显示详细信息，适合管理</li>
-              <li><strong>网格视图</strong>：卡片式布局，适合浏览</li>
+              <li><strong data-i18n="help.listView">列表视图</strong>：<span data-i18n="help.listViewDesc">显示详细信息，适合管理</span></li>
+              <li><strong data-i18n="help.gridView">网格视图</strong>：<span data-i18n="help.gridViewDesc">卡片式布局，适合浏览</span></li>
             </ul>
           </div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">🏷️ 标签管理</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="help.tagManagement">🏷️ 标签管理</h3>
           <div class="help-content">
-            <h4>书签标签</h4>
+            <h4 data-i18n="help.bookmarkTags">书签标签</h4>
             <ul>
-              <li><strong>添加标签</strong>：在书签详情面板输入标签名后按回车</li>
-              <li><strong>批量添加标签</strong>：选中多个书签后点击「添加标签」按钮</li>
-              <li><strong>删除标签</strong>：点击标签上的 × 按钮即可删除</li>
-              <li><strong>标签显示</strong>：书签列表和详情页都会显示标签</li>
-              <li><strong>标签搜索</strong>：在搜索框输入 #标签名 可搜索包含该标签的所有书签</li>
+              <li><strong data-i18n="help.addTag">添加标签</strong>：<span data-i18n="help.addTagDesc">在书签详情面板输入标签名后按回车</span></li>
+              <li><strong data-i18n="help.batchAddTags">批量添加标签</strong>：<span data-i18n="help.batchAddTagsDesc">选中多个书签后点击「添加标签」按钮</span></li>
+              <li><strong data-i18n="help.deleteTag">删除标签</strong>：<span data-i18n="help.deleteTagDesc">点击标签上的 × 按钮即可删除</span></li>
+              <li><strong data-i18n="help.tagDisplay">标签显示</strong>：<span data-i18n="help.tagDisplayDesc">书签列表和详情页都会显示标签</span></li>
+              <li><strong data-i18n="help.tagSearch">标签搜索</strong>：<span data-i18n="help.tagSearchDesc">在搜索框输入 #标签名 可搜索包含该标签的所有书签</span></li>
             </ul>
 
-            <h4>标签总览</h4>
+            <h4 data-i18n="help.tagOverview">标签总览</h4>
             <ul>
-              <li><strong>查看所有标签</strong>：设置 → 标签总览，显示所有标签及书签数量</li>
-              <li><strong>查看标签详情</strong>：点击标签卡片可查看该标签下的所有书签</li>
-              <li><strong>打开书签</strong>：点击书签列表中的书签可在新窗口打开</li>
+              <li><strong data-i18n="help.viewAllTags">查看所有标签</strong>：<span data-i18n="help.viewAllTagsDesc">设置 → 标签总览，显示所有标签及书签数量</span></li>
+              <li><strong data-i18n="help.viewTagDetail">查看标签详情</strong>：<span data-i18n="help.viewTagDetailDesc">点击标签卡片可查看该标签下的所有书签</span></li>
+              <li><strong data-i18n="help.openInWindow">打开书签</strong>：<span data-i18n="help.openInWindowDesc">点击书签列表中的书签可在新窗口打开</span></li>
             </ul>
 
-            <h4>标签备份</h4>
+            <h4 data-i18n="help.tagBackup">标签备份</h4>
             <ul>
-              <li><strong>WebDAV 备份</strong>：使用 WebDAV 备份时自动包含标签数据</li>
-              <li><strong>独立导出</strong>：设置 → 备份与恢复 → 导出标签，导出为 JSON 文件</li>
-              <li><strong>独立导入</strong>：从 JSON 文件导入标签数据（合并到现有数据）</li>
-              <li><strong>数据清理</strong>：检测并清理已删除书签的孤立标签</li>
+              <li><strong data-i18n="help.webdavBackup">WebDAV 备份</strong>：<span data-i18n="help.webdavBackupDesc">使用 WebDAV 备份时自动包含标签数据</span></li>
+              <li><strong data-i18n="help.exportAlone">独立导出</strong>：<span data-i18n="help.exportAloneDesc">设置 → 备份与恢复 → 导出标签，导出为 JSON 文件</span></li>
+              <li><strong data-i18n="help.importAlone">独立导入</strong>：<span data-i18n="help.importAloneDesc">从 JSON 文件导入标签数据（合并到现有数据）</span></li>
+              <li><strong data-i18n="help.dataCleanup">数据清理</strong>：<span data-i18n="help.dataCleanupDesc">检测并清理已删除书签的孤立标签</span></li>
             </ul>
           </div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">⚙️ 设置</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="help.settings">⚙️ 设置</h3>
           <div class="help-content">
-            <h4>WebDAV 同步</h4>
+            <h4 data-i18n="help.webdavSync">WebDAV 同步</h4>
             <ul>
-              <li>配置 WebDAV 服务器地址和认证信息</li>
-              <li>支持自动定时备份</li>
-              <li>支持启动时自动备份</li>
-              <li>备份数据包含书签和标签</li>
+              <li data-i18n="help.webdavConfig">配置 WebDAV 服务器地址和认证信息</li>
+              <li data-i18n="help.autoBackup">支持自动定时备份</li>
+              <li data-i18n="help.autoStartup">支持启动时自动备份</li>
+              <li data-i18n="help.includeTags">备份数据包含书签和标签</li>
             </ul>
 
-            <h4>备份与恢复</h4>
+            <h4 data-i18n="help.backupRestore">备份与恢复</h4>
             <ul>
-              <li><strong>合并模式</strong>：将备份与现有书签合并，保留现有书签</li>
-              <li><strong>覆盖模式</strong>：删除所有现有书签，用备份替换（谨慎使用）</li>
-              <li><strong>标签备份</strong>：独立导出或导入标签数据</li>
-              <li><strong>数据清理</strong>：检测并清理孤立标签</li>
+              <li><strong data-i18n="help.mergeMode">合并模式</strong>：<span data-i18n="help.mergeModeDesc">将备份与现有书签合并，保留现有书签</span></li>
+              <li><strong data-i18n="help.overwriteMode">覆盖模式</strong>：<span data-i18n="help.overwriteModeDesc">删除所有现有书签，用备份替换（谨慎使用）</span></li>
+              <li><strong data-i18n="help.tagBackup">标签备份</strong>：<span data-i18n="help.exportImportTags">独立导出或导入标签数据</span></li>
+              <li><strong data-i18n="help.dataCleanup">数据清理</strong>：<span data-i18n="help.detectCleanOrphan">检测并清理孤立标签</span></li>
             </ul>
 
-            <h4>常用目录设置</h4>
+            <h4 data-i18n="help.freqSettings">常用目录设置</h4>
             <ul>
-              <li><strong>启用/禁用</strong>：开启或关闭常用目录功能</li>
-              <li><strong>时间范围</strong>：选择统计周期（3/7/10 天）</li>
-              <li><strong>显示数量</strong>：设置显示的常用链接数量（5-15 个）</li>
-              <li><strong>黑名单管理</strong>：查看和管理已屏蔽的域名列表</li>
-              <li><strong>置顶管理</strong>：查看和管理已置顶的链接，置顶链接固定在常用文件夹顶部</li>
+              <li><strong data-i18n="help.enableDisable">启用/禁用</strong>：<span data-i18n="help.enableDisableDesc">开启或关闭常用目录功能</span></li>
+              <li><strong data-i18n="help.timePeriod">时间范围</strong>：<span data-i18n="help.timePeriodDesc">选择统计周期（3/7/10 天）</span></li>
+              <li><strong data-i18n="help.setCount">显示数量</strong>：<span data-i18n="help.setCountDesc">设置显示的常用链接数量（5-15 个）</span></li>
+              <li><strong data-i18n="help.blacklistMgmt">黑名单管理</strong>：<span data-i18n="help.blacklistMgmtDesc">查看和管理已屏蔽的域名列表</span></li>
+              <li><strong data-i18n="help.pinnedMgmt">置顶管理</strong>：<span data-i18n="help.pinnedMgmtDesc">查看和管理已置顶的链接，置顶链接固定在常用文件夹顶部</span></li>
             </ul>
 
-            <h4>布局设置</h4>
+            <h4 data-i18n="help.layoutSettings">布局设置</h4>
             <ul>
-              <li><strong>书签按钮高度</strong>：调整侧边栏中书签项的高度 (24-48px)</li>
-              <li><strong>目录缩进宽度</strong>：调整树形目录中子文件夹的缩进 (5-20px)</li>
-              <li><strong>书签缩进宽度</strong>：调整书签相对于目录的缩进 (5-20px)</li>
+              <li><strong data-i18n="help.bookmarkHeight">书签按钮高度</strong>：<span data-i18n="help.bookmarkHeightHelp">调整侧边栏中书签项的高度 (24-48px)</span></li>
+              <li><strong data-i18n="help.treeIndent">目录缩进宽度</strong>：<span data-i18n="help.treeIndentHelp">调整树形目录中子文件夹的缩进 (5-20px)</span></li>
+              <li><strong data-i18n="help.bookmarkIndent">书签缩进宽度</strong>：<span data-i18n="help.bookmarkIndentHelp">调整书签相对于目录的缩进 (5-20px)</span></li>
             </ul>
           </div>
         </div>
 
         <div class="settings-card">
-          <h3 style="margin-bottom: 16px;">⌨️ 快捷键</h3>
+          <h3 style="margin-bottom: 16px;" data-i18n="help.shortcuts">⌨️ 快捷键</h3>
           <div class="help-content">
             <table class="shortcut-table">
               <tr>
                 <td><kbd>Ctrl+A</kbd> / <kbd>Cmd+A</kbd></td>
-                <td>全选当前文件夹下的所有书签</td>
+                <td data-i18n="help.selectAllShortcut">全选当前文件夹下的所有书签</td>
               </tr>
               <tr>
                 <td><kbd>Delete</kbd></td>
-                <td>删除选中的书签</td>
+                <td data-i18n="help.deleteSelected">删除选中的书签</td>
               </tr>
               <tr>
                 <td><kbd>Esc</kbd></td>
-                <td>取消选择</td>
+                <td data-i18n="help.deselect">取消选择</td>
               </tr>
               <tr>
                 <td><kbd>Shift+点击</kbd></td>
-                <td>批量选择范围内的书签</td>
+                <td data-i18n="help.batchSelectShortcut">批量选择范围内的书签</td>
               </tr>
             </table>
           </div>
@@ -1462,19 +1462,34 @@
 
   <!-- 选择标签弹窗 -->
   <div class="modal-overlay" id="select-tags-modal">
-    <div class="modal" style="max-width: 500px;">
-      <div class="modal-header">选择标签添加到分组</div>
+    <div class="modal" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+      <div class="modal-header" data-i18n="dialog.selectTagToGroup">选择标签添加到分组</div>
       <div class="modal-field">
-        <label class="modal-label">从其他分组或未分组中选择标签</label>
+        <label class="modal-label" data-i18n="dialog.selectFromOther">从其他分组或未分组中选择标签</label>
         <div id="select-tags-container" class="select-tags-container"></div>
       </div>
       <div class="modal-field">
-        <label class="modal-label">已选择 <span id="selected-tags-count">0</span> 个标签</label>
+        <label class="modal-label"><span data-i18n="common.selected">已选择</span> <span id="selected-tags-count">0</span> <span data-i18n="dialog.tagsSelected">个标签</span></label>
         <div id="selected-tags-preview" class="selected-tags-preview"></div>
       </div>
       <div class="modal-actions">
-        <button class="btn" id="cancel-select-tags-btn">取消</button>
-        <button class="btn btn-primary" id="confirm-select-tags-btn">确定</button>
+        <button class="btn" id="cancel-select-tags-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-select-tags-btn" data-i18n="common.ok">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新建分组弹窗 -->
+  <div class="modal-overlay" id="new-group-modal">
+    <div class="modal">
+      <div class="modal-header" data-i18n="tagGroup.newGroup">新建分组</div>
+      <div class="modal-field">
+        <label class="modal-label" data-i18n="common.name">名称</label>
+        <input type="text" class="modal-input" id="new-group-name-input" data-i18n-placeholder="common.enterGroupName" placeholder="输入分组名称">
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="cancel-group-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-group-btn" data-i18n="common.create">创建</button>
       </div>
     </div>
   </div>

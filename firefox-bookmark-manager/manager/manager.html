@@ -938,7 +938,7 @@
   <div class="app-container">
     <!-- 左侧文件夹树 -->
     <aside class="sidebar-left">
-      <div class="sidebar-header">📁 文件夹</div>
+      <div class="sidebar-header" data-i18n="common.folders">📁 文件夹</div>
       <div class="folder-tree" id="folder-tree">
         <div style="padding: 20px; text-align: center;">
           <div class="loading"></div>
@@ -946,7 +946,7 @@
       </div>
       <a href="settings.html" class="settings-link">
         <span>⚙️</span>
-        <span>设置</span>
+        <span data-i18n="common.settings">设置</span>
       </a>
     </aside>
 
@@ -954,32 +954,32 @@
     <main class="main-content">
       <div class="toolbar">
         <div class="breadcrumb" id="breadcrumb">
-          <span class="breadcrumb-item" data-id="0">全部书签</span>
+          <span class="breadcrumb-item" data-id="0" data-i18n="common.allBookmarks">全部书签</span>
         </div>
         <div class="toolbar-spacer"></div>
         <div class="search-box">
-          <input type="text" id="search-input" placeholder="搜索书签（标题、网址、标签）">
+          <input type="text" id="search-input" data-i18n-placeholder="common.searchPlaceholder" placeholder="搜索书签（标题、网址、标签）">
         </div>
         <div class="view-toggle">
-          <button class="view-btn active" id="list-view-btn" title="列表视图">☰</button>
-          <button class="view-btn" id="grid-view-btn" title="网格视图">⊞</button>
+          <button class="view-btn active" id="list-view-btn" data-i18n-title="help.listView" title="列表视图">☰</button>
+          <button class="view-btn" id="grid-view-btn" data-i18n-title="help.gridView" title="网格视图">⊞</button>
         </div>
-        <button class="btn btn-secondary" id="new-folder-btn">+ 新建文件夹</button>
-        <button class="btn btn-primary" id="add-bookmark-btn">+ 添加书签</button>
+        <button class="btn btn-secondary" id="new-folder-btn" data-i18n="manager.newFolder">+ 新建文件夹</button>
+        <button class="btn btn-primary" id="add-bookmark-btn" data-i18n="manager.addBookmark">+ 添加书签</button>
       </div>
 
       <div class="batch-toolbar" id="batch-toolbar">
-        <div class="batch-info">已选择 <span id="selected-count">0</span> 项</div>
-        <button class="btn btn-sm" id="select-all-btn">全选</button>
-        <button class="btn btn-sm" id="add-tags-btn">添加标签</button>
-        <button class="btn btn-danger btn-sm" id="batch-delete-btn">批量删除</button>
-        <button class="btn btn-sm" id="cancel-selection-btn">取消</button>
+        <div class="batch-info"><span data-i18n="common.selected">已选择</span> <span id="selected-count">0</span> <span data-i18n="common.items">项</span></div>
+        <button class="btn btn-sm" id="select-all-btn" data-i18n="common.selectAll">全选</button>
+        <button class="btn btn-sm" id="add-tags-btn" data-i18n="common.addTags">添加标签</button>
+        <button class="btn btn-danger btn-sm" id="batch-delete-btn" data-i18n="common.batchDelete">批量删除</button>
+        <button class="btn btn-sm" id="cancel-selection-btn" data-i18n="common.cancel">取消</button>
       </div>
 
       <div class="bookmark-container" id="bookmark-container">
         <div class="empty-state" id="empty-state">
           <div class="empty-state-icon">📂</div>
-          <div>该文件夹为空</div>
+          <div data-i18n="common.noFolders">该文件夹为空</div>
         </div>
         <ul class="bookmark-list" id="bookmark-list"></ul>
         <div class="bookmark-grid" id="bookmark-grid" style="display: none;"></div>
@@ -990,7 +990,7 @@
     <aside class="sidebar-right" id="detail-panel">
       <div class="empty-detail">
         <div class="empty-detail-icon">📌</div>
-        <div>选择一个书签查看详情</div>
+        <div data-i18n="common.selectBookmark">选择一个书签查看详情</div>
       </div>
     </aside>
   </div>
@@ -998,18 +998,18 @@
   <!-- 添加书签弹窗 -->
   <div class="modal-overlay" id="add-modal">
     <div class="modal">
-      <div class="modal-header">添加新书签</div>
+      <div class="modal-header" data-i18n="common.newBookmark">添加新书签</div>
       <div class="modal-field">
-        <label class="modal-label">标题</label>
-        <input type="text" class="modal-input" id="new-bookmark-title" placeholder="输入书签标题">
+        <label class="modal-label" data-i18n="common.title">标题</label>
+        <input type="text" class="modal-input" id="new-bookmark-title" data-i18n-placeholder="common.enterBookmarkTitle" placeholder="输入书签标题">
       </div>
       <div class="modal-field">
-        <label class="modal-label">网址</label>
+        <label class="modal-label" data-i18n="common.url">网址</label>
         <input type="text" class="modal-input" id="new-bookmark-url" placeholder="https://...">
       </div>
       <div class="modal-actions">
-        <button class="btn" id="cancel-add-btn">取消</button>
-        <button class="btn btn-primary" id="confirm-add-btn">添加</button>
+        <button class="btn" id="cancel-add-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-add-btn" data-i18n="common.add">添加</button>
       </div>
     </div>
   </div>
@@ -1017,25 +1017,25 @@
   <!-- 添加标签弹窗 -->
   <div class="modal-overlay" id="add-tags-modal">
     <div class="modal" style="max-width: 500px;">
-      <div class="modal-header">添加标签</div>
+      <div class="modal-header" data-i18n="common.addTags">添加标签</div>
       <div class="modal-field">
-        <label class="modal-label">输入标签</label>
-        <input type="text" class="modal-input" id="new-tags-input" placeholder="输入标签，逗号分隔多个标签">
+        <label class="modal-label" data-i18n="common.enterTags">输入标签</label>
+        <input type="text" class="modal-input" id="new-tags-input" data-i18n-placeholder="common.enterTags" placeholder="输入标签，逗号分隔多个标签">
       </div>
       <div class="modal-field">
-        <label class="modal-label">从分组中选择标签</label>
+        <label class="modal-label" data-i18n="common.selectFromGroups">从分组中选择标签</label>
         <div id="batch-tag-selector-container" class="batch-tag-selector-container"></div>
       </div>
       <div class="modal-field">
-        <label class="modal-label">已选择的标签</label>
+        <label class="modal-label" data-i18n="common.selectedTags">已选择的标签</label>
         <div class="tag-cloud" id="tag-cloud"></div>
       </div>
       <div class="modal-field">
-        <label class="modal-label">将应用到 <span id="apply-count">0</span> 个书签</label>
+        <label class="modal-label"><span data-i18n="common.willApply">将应用到</span> <span id="apply-count">0</span> <span data-i18n="common.tagUnit">个书签</span></label>
       </div>
       <div class="modal-actions">
-        <button class="btn" id="cancel-tags-btn">取消</button>
-        <button class="btn btn-primary" id="confirm-tags-btn">添加</button>
+        <button class="btn" id="cancel-tags-btn" data-i18n="common.cancel">取消</button>
+        <button class="btn btn-primary" id="confirm-tags-btn" data-i18n="common.add">添加</button>
       </div>
     </div>
   </div>
