@@ -122,6 +122,7 @@ const i18nData = {
   'common.bookmarkManager': { 'zh-CN': '书签管理器', 'en': 'Bookmark Manager' },
   'common.allBookmarks': { 'zh-CN': '全部书签', 'en': 'All Bookmarks' },
   'common.searchPlaceholder': { 'zh-CN': '搜索书签（标题、网址、标签）', 'en': 'Search by title, URL, or tag' },
+  'common.searchHistoryPlaceholder': { 'zh-CN': '搜索历史记录', 'en': 'Search history' },
   'common.noBookmark': { 'zh-CN': '暂无书签', 'en': 'No bookmarks' },
   'common.history': { 'zh-CN': '历史', 'en': 'History' },
   'common.noHistory': { 'zh-CN': '暂无历史记录', 'en': 'No history' },

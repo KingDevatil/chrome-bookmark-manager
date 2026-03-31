@@ -11,6 +11,7 @@ let refreshTimer = null;
 let frequentlyUsedCollapsed = false;
 let currentTab = 'bookmarks';
 let historyData = [];
+let historySearchQuery = '';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await ThemeManager.init();
@@ -1607,14 +1608,25 @@ function renderHistoryPanel() {
 
   historyList.innerHTML = '';
 
-  if (historyData.length === 0) {
+  // 过滤历史记录
+  let filteredData = historyData;
+  if (historySearchQuery) {
+    const query = historySearchQuery.toLowerCase();
+    filteredData = historyData.filter(item => {
+      const title = (item.title || '').toLowerCase();
+      const url = (item.url || '').toLowerCase();
+      return title.includes(query) || url.includes(query);
+    });
+  }
+
+  if (filteredData.length === 0) {
     emptyState.style.display = 'flex';
     return;
   }
 
   emptyState.style.display = 'none';
 
-  historyData.forEach((item) => {
+  filteredData.forEach((item) => {
     const li = document.createElement('li');
     li.className = 'history-item';
 
@@ -1848,6 +1860,13 @@ function setupEventListeners() {
   searchInput.addEventListener('input', Utils.debounce(async (e) => {
     currentSearchQuery = e.target.value.trim();
     renderBookmarkTree();
+  }, 300));
+
+  // 历史记录搜索框
+  const historySearchInput = document.getElementById('history-search-input');
+  historySearchInput.addEventListener('input', Utils.debounce((e) => {
+    historySearchQuery = e.target.value.trim();
+    renderHistoryPanel();
   }, 300));
 
   document.getElementById('btn-open-manager').addEventListener('click', () => {
