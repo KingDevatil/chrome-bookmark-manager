@@ -136,6 +136,12 @@ function renderBookmarkTree() {
   const container = document.getElementById('bookmark-tree');
   const emptyState = document.getElementById('empty-state');
 
+  console.log('renderBookmarkTree:', {
+    bookmarkTreeLength: bookmarkTree?.length,
+    frequentlyUsedConfig: window.frequentlyUsedConfig,
+    frequentlyUsedDataLength: frequentlyUsedData.length
+  });
+
   if (!bookmarkTree || bookmarkTree.length === 0) {
     container.innerHTML = '';
     emptyState.style.display = 'flex';
@@ -152,8 +158,14 @@ function renderBookmarkTree() {
   const rootChildren = bookmarkTree[0]?.children || [];
   
   if (window.frequentlyUsedConfig && window.frequentlyUsedConfig.enabled && frequentlyUsedData.length > 0) {
+    console.log('渲染常用文件夹，数据:', frequentlyUsedData);
     const frequentlyUsedNode = createFrequentlyUsedNode();
     container.appendChild(frequentlyUsedNode);
+  } else {
+    console.log('不渲染常用文件夹:', {
+      enabled: window.frequentlyUsedConfig?.enabled,
+      dataLength: frequentlyUsedData.length
+    });
   }
 
   rootChildren.forEach(node => {
@@ -1617,8 +1629,18 @@ async function loadHistoryData() {
       return;
     }
     
-    // 尝试使用 Firefox API
-    historyData = await browser.history.search(params);
+    // Firefox 可能需要使用回调方式
+    historyData = await new Promise((resolve, reject) => {
+      browser.history.search(params)
+        .then(results => {
+          console.log('Promise 方式成功:', results.length);
+          resolve(results);
+        })
+        .catch(error => {
+          console.error('Promise 方式失败:', error);
+          reject(error);
+        });
+    });
     
     console.log('历史记录加载成功，数量:', historyData.length);
     if (historyData.length > 0) {
