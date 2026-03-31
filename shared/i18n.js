@@ -260,7 +260,7 @@ const i18nData = {
   'freq.last7days': { 'zh-CN': '最近 7 天', 'en': 'Last 7 days' },
   'freq.last10days': { 'zh-CN': '最近 10 天', 'en': 'Last 10 days' },
   'freq.displayCount': { 'zh-CN': '显示数量', 'en': 'Display Count' },
-  'freq.displayCountDesc': { 'zh-CN': '在常用文件夹中显示多少个链接（5-15 个）', 'en': 'Number of links to show (5-15)' },
+  'freq.displayCountDesc': { 'zh-CN': '在常用文件夹中显示多少个链接（0-15 个）', 'en': 'Number of links to show (0-15)' },
   'freq.countUnit': { 'zh-CN': '个', 'en': '' },
 
   'blacklist.title': { 'zh-CN': '📋 黑名单管理', 'en': '📋 Blacklist Management' },
