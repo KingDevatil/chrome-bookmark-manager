@@ -13,22 +13,6 @@ let currentTab = 'bookmarks';
 let historyData = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 检查 browser 对象是否可用
-  console.log('=== Sidebar 启动诊断 ===');
-  console.log('browser 对象:', typeof browser);
-  
-  // 如果 browser 对象不存在，尝试使用 chrome 对象（Firefox 原生支持 browser API）
-  if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-    console.log('browser 未定义，使用 chrome 对象');
-    window.browser = chrome;
-  }
-  
-  console.log('browser.history:', browser?.history);
-  console.log('browser.history.search:', browser?.history?.search);
-  console.log('chrome 对象:', typeof chrome);
-  console.log('chrome.history:', chrome?.history);
-  console.log('chrome.history.search:', chrome?.history?.search);
-  
   await ThemeManager.init();
   await I18n.init();
   await loadLayoutSettings();
@@ -47,10 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'cleanBookmarkTags' && message.bookmarkId) {
       BookmarkTags.removeTags(message.bookmarkId);
-      console.log('Tags cleaned for bookmark:', message.bookmarkId);
     }
     if (message.action === 'refreshBookmarks') {
-      console.log('Refreshing bookmarks in sidebar...');
       loadBookmarkTree();
     }
   });
@@ -58,12 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadBookmarkTree() {
   try {
-    console.log('loadBookmarkTree 开始');
     const tree = await BookmarkUtils.getTree();
     bookmarkTree = tree;
-    console.log('书签树加载完成，等待加载常用数据');
     await loadFrequentlyUsedData();
-    console.log('常用数据加载完成，准备渲染');
     renderBookmarkTree();
   } catch (error) {
     console.error('加载书签失败:', error);
@@ -93,22 +72,18 @@ async function loadFrequentlyUsedConfig() {
 
 async function loadFrequentlyUsedData() {
   try {
-    console.log('loadFrequentlyUsedData 开始');
     if (!window.frequentlyUsedConfig || !window.frequentlyUsedConfig.enabled) {
-      console.log('常用文件夹未启用');
       frequentlyUsedData = [];
       return;
     }
 
     const config = window.frequentlyUsedConfig;
-    console.log('常用文件夹配置:', config);
     frequentlyUsedData = await FrequentlyUsed.getFrequentlyUsed(
       config.daysRange,
       config.displayCount,
       config.blacklist,
       config.pinned || []
     );
-    console.log('loadFrequentlyUsedData 完成，数据:', frequentlyUsedData);
   } catch (error) {
     console.error('加载常用数据失败:', error);
     frequentlyUsedData = [];
@@ -143,12 +118,6 @@ function renderBookmarkTree() {
   const container = document.getElementById('bookmark-tree');
   const emptyState = document.getElementById('empty-state');
 
-  console.log('renderBookmarkTree:', {
-    bookmarkTreeLength: bookmarkTree?.length,
-    frequentlyUsedConfig: window.frequentlyUsedConfig,
-    frequentlyUsedDataLength: frequentlyUsedData.length
-  });
-
   if (!bookmarkTree || bookmarkTree.length === 0) {
     container.innerHTML = '';
     emptyState.style.display = 'flex';
@@ -165,14 +134,8 @@ function renderBookmarkTree() {
   const rootChildren = bookmarkTree[0]?.children || [];
   
   if (window.frequentlyUsedConfig && window.frequentlyUsedConfig.enabled && frequentlyUsedData.length > 0) {
-    console.log('渲染常用文件夹，数据:', frequentlyUsedData);
     const frequentlyUsedNode = createFrequentlyUsedNode();
     container.appendChild(frequentlyUsedNode);
-  } else {
-    console.log('不渲染常用文件夹:', {
-      enabled: window.frequentlyUsedConfig?.enabled,
-      dataLength: frequentlyUsedData.length
-    });
   }
 
   rootChildren.forEach(node => {
@@ -1619,61 +1582,15 @@ function switchTab(tabName) {
 
 async function loadHistoryData() {
   try {
-    console.log('开始加载历史记录...');
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const params = {
+    historyData = await browser.history.search({
       text: '',
       startTime: oneWeekAgo,
       maxResults: 100
-    };
-    console.log('搜索参数:', params);
-    console.log('startTime 日期:', new Date(oneWeekAgo));
-    
-    // 检查 browser.history API 是否可用
-    if (!browser.history || !browser.history.search) {
-      console.error('browser.history.search API 不可用');
-      console.log('browser.history:', browser.history);
-      return;
-    }
-    
-    // Firefox 可能需要使用回调方式
-    historyData = await new Promise((resolve, reject) => {
-      browser.history.search(params)
-        .then(results => {
-          console.log('Promise 方式成功:', results.length);
-          resolve(results);
-        })
-        .catch(error => {
-          console.error('Promise 方式失败:', error);
-          reject(error);
-        });
     });
-    
-    console.log('历史记录加载成功，数量:', historyData.length);
-    if (historyData.length > 0) {
-      console.log('第一条历史记录:', historyData[0]);
-    } else {
-      console.log('没有历史记录，尝试不使用 startTime 参数...');
-      // 尝试不使用 startTime 参数
-      const allHistory = await browser.history.search({
-        text: '',
-        maxResults: 100
-      });
-      console.log('所有历史记录数量:', allHistory.length);
-      if (allHistory.length > 0) {
-        console.log('第一条记录:', allHistory[0]);
-        // 过滤最近一周的记录
-        historyData = allHistory.filter(item => {
-          return item.lastVisitTime >= oneWeekAgo;
-        });
-        console.log('过滤后的数量:', historyData.length);
-      }
-    }
-    
     renderHistoryPanel();
   } catch (error) {
     console.error('加载历史记录失败:', error);
-    console.error('错误堆栈:', error.stack);
   }
 }
 

@@ -66,10 +66,6 @@ const Storage = {
    * @returns {Promise<Object>}
    */
   async get(keys) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.storage.local.get(keys);
   },
   
@@ -79,10 +75,6 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async set(items) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     await browser.storage.local.set(items);
   },
   
@@ -92,10 +84,6 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async remove(keys) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     await browser.storage.local.remove(keys);
   },
   
@@ -104,10 +92,6 @@ const Storage = {
    * @returns {Promise<void>}
    */
   async clear() {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     await browser.storage.local.clear();
   }
 };
@@ -263,10 +247,6 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async getTree() {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.getTree();
   },
   
@@ -276,10 +256,6 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async getChildren(parentId) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.getChildren(parentId);
   },
   
@@ -289,10 +265,6 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async search(query) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.search(query);
   },
   
@@ -302,10 +274,6 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   async create(bookmark) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.create(bookmark);
   },
   
@@ -316,10 +284,6 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   async update(id, changes) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.update(id, changes);
   },
   
@@ -330,10 +294,6 @@ const BookmarkUtils = {
    * @returns {Promise<Object>}
    */
   async move(id, destination) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     return await browser.bookmarks.move(id, destination);
   },
   
@@ -343,10 +303,6 @@ const BookmarkUtils = {
    * @returns {Promise<void>}
    */
   async remove(id) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     await browser.bookmarks.remove(id);
   },
   
@@ -356,10 +312,6 @@ const BookmarkUtils = {
    * @returns {Promise<void>}
    */
   async removeTree(id) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
     await browser.bookmarks.removeTree(id);
   },
   
@@ -399,11 +351,6 @@ const BookmarkUtils = {
    * @returns {Promise<Array>}
    */
   async getPath(id) {
-    // 确保 browser 对象存在
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      window.browser = chrome;
-    }
-    
     const path = [];
     let currentId = id;
     

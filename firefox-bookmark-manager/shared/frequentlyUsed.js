@@ -24,14 +24,6 @@ const FrequentlyUsed = {
   async getFrequentlyUsed(daysRange = 7, displayCount = 10, blacklist = [], pinned = []) {
     const now = Date.now();
     
-    console.log('getFrequentlyUsed 调用，参数:', { daysRange, displayCount, blacklist, pinned });
-    console.log('缓存状态:', { 
-      hasData: !!this.cache.data, 
-      dataLength: this.cache.data?.length,
-      timestamp: this.cache.timestamp,
-      age: this.cache.timestamp ? now - this.cache.timestamp : 'N/A'
-    });
-    
     // 检查缓存是否有效
     if (this.cache.data && (now - this.cache.timestamp) < this.CACHE_DURATION) {
       // 验证缓存配置是否匹配
@@ -42,29 +34,18 @@ const FrequentlyUsed = {
         JSON.stringify(cacheConfig.blacklist) === JSON.stringify(blacklist) &&
         JSON.stringify(cacheConfig.pinned) === JSON.stringify(pinned);
       
-      console.log('缓存配置匹配:', isConfigMatch);
-      
       if (isConfigMatch) {
-        console.log('使用缓存数据，长度:', this.cache.data.length);
         return this.cache.data;
       }
     }
     
     // 重新计算
-    console.log('重新计算常用数据...');
     const data = await this.calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned);
-    
-    console.log('计算完成，数据长度:', data.length);
-    if (data.length > 0) {
-      console.log('数据示例:', data[0]);
-    }
     
     // 更新缓存（包括配置）
     this.cache.data = data;
     this.cache.timestamp = now;
     this.cache.config = { daysRange, displayCount, blacklist, pinned };
-    
-    console.log('缓存已更新');
     
     return data;
   },
@@ -72,26 +53,10 @@ const FrequentlyUsed = {
   /**
    * 计算常用链接（核心算法）
    */
-  async calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned = []) {
+  async calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned) {
     // 将 pinned 转换为 URL 字符串数组
     const pinnedUrls = pinned.map(p => typeof p === 'string' ? p : p.url);
     const pinnedSet = new Set(pinnedUrls);
-    
-    // 诊断信息
-    console.log('=== FrequentlyUsed 诊断 ===');
-    console.log('browser 对象:', typeof browser);
-    
-    // 如果 browser 对象不存在，尝试使用 chrome 对象
-    if (typeof browser === 'undefined' && typeof chrome !== 'undefined') {
-      console.log('browser 未定义，使用 chrome 对象');
-      window.browser = chrome;
-    }
-    
-    console.log('browser.history:', browser?.history);
-    console.log('browser.history.search:', browser?.history?.search);
-    console.log('chrome 对象:', typeof chrome);
-    console.log('chrome.history:', chrome?.history);
-    console.log('chrome.history.search:', chrome?.history?.search);
     
     // 1. 获取置顶链接的信息（不查询历史记录）
     const pinnedItems = [];
@@ -111,43 +76,15 @@ const FrequentlyUsed = {
       const now = Date.now();
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
       
-      console.log('常用文件夹：开始加载历史数据，参数:', { daysRange, startTime });
-      console.log('常用文件夹：startTime 日期:', new Date(startTime));
-      
-      // 检查 browser.history API 是否可用
-      if (!browser.history || !browser.history.search) {
-        console.error('常用文件夹：browser.history.search API 不可用');
-        console.log('browser.history:', browser.history);
-        return pinnedItems;
-      }
-      
       // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）
-      let history = await browser.history.search({
+      const history = await browser.history.search({
         text: '', // 必须参数，空字符串表示匹配所有 URL
         startTime: startTime,
         maxResults: 10000 // 最多获取 10000 条记录
       });
       
-      console.log('常用文件夹：历史记录加载成功，数量:', history.length);
-      
-      // 如果没有返回数据，尝试不使用 startTime 参数
-      if (!history || history.length === 0) {
-        console.log('常用文件夹：带 startTime 参数没有数据，尝试不使用 startTime...');
-        const allHistory = await browser.history.search({
-          text: '',
-          maxResults: 10000
-        });
-        console.log('常用文件夹：所有历史记录数量:', allHistory.length);
-        if (allHistory.length > 0) {
-          // 手动过滤
-          history = allHistory.filter(item => item.lastVisitTime >= startTime);
-          console.log('常用文件夹：过滤后的数量:', history.length);
-        }
-      }
-      
       if (!history || history.length === 0) {
         // 即使没有历史记录，也要返回置顶链接
-        console.log('常用文件夹：没有历史记录，返回置顶链接');
         const bookmarkedSet = await this.checkBookmarkedUrls(pinnedUrls);
         pinnedItems.forEach(item => {
           item.isBookmarked = bookmarkedSet.has(item.url);
@@ -163,17 +100,8 @@ const FrequentlyUsed = {
           return false;
         }
         const domain = this.extractDomain(item.url);
-        const isBlacklisted = domain && blacklistSet.has(domain.toLowerCase());
-        if (isBlacklisted) {
-          console.log('被黑名单过滤:', item.url, '域名:', domain);
-        }
-        return domain && !isBlacklisted;
+        return domain && !blacklistSet.has(domain.toLowerCase());
       });
-      console.log('过滤后的历史记录数量:', filtered.length, '原始:', history.length);
-      
-      if (filtered.length === 0 && history.length > 0) {
-        console.log('所有记录都被过滤了！');
-      }
       
       // 3. 统计每个 URL 在最近 N 天内的实际访问次数（只统计用户主动访问）
       const countMap = {};
@@ -182,7 +110,6 @@ const FrequentlyUsed = {
         const visits = await browser.history.getVisits({ url: item.url });
         
         if (!visits || visits.length === 0) {
-          console.log('没有访问记录:', item.url);
           continue;
         }
         
@@ -196,12 +123,6 @@ const FrequentlyUsed = {
         visits.forEach(visit => {
           const visitTime = visit.visitTime;
           const transition = visit.transition;
-          
-          console.log('访问记录:', {
-            visitTime: new Date(visitTime),
-            transition: transition,
-            transitionType: typeof transition
-          });
           
           // 只统计用户主动访问：link, typed, form_submit, keyword, keyword_generated
           const isUserInitiated = [
@@ -217,16 +138,8 @@ const FrequentlyUsed = {
               visitTime: visitTime,
               transition: transition
             });
-          } else {
-            console.log('排除访问记录:', {
-              reason: !isUserInitiated ? '非用户主动访问' : '时间不在范围内',
-              transition: transition,
-              visitTime: new Date(visitTime)
-            });
           }
         });
-        
-        console.log('URL:', item.url, '总访问:', visits.length, '有效访问:', validVisits.length);
         
         // 按时间排序
         validVisits.sort((a, b) => a.visitTime - b.visitTime);
@@ -244,8 +157,6 @@ const FrequentlyUsed = {
           }
         });
         
-        console.log('URL:', item.url, '最终计数:', visitCount);
-        
         // 只有在指定时间范围内有访问记录才计入
         if (visitCount > 0) {
           countMap[item.url] = {
@@ -254,12 +165,8 @@ const FrequentlyUsed = {
             visitCount: visitCount, // 最近 N 天内的实际访问次数（已合并短时间重复）
             lastVisit: lastVisitTime
           };
-        } else {
-          console.log('visitCount 为 0，不计入:', item.url);
         }
       }
-      
-      console.log('countMap 中的 URL 数量:', Object.keys(countMap).length);
       
       // 4. 转换为数组并排序
       const items = Object.values(countMap);
@@ -288,14 +195,9 @@ const FrequentlyUsed = {
       
       // 6. 取前 N 个（不包括置顶链接）
       const normalItems = items.slice(0, displayCount);
-      console.log('普通链接数量:', normalItems.length);
       
       // 7. 合并置顶链接和普通链接（置顶在前）
       const allItems = [...pinnedItems, ...normalItems];
-      console.log('最终返回数据，总数量:', allItems.length, '置顶:', pinnedItems.length, '普通:', normalItems.length);
-      if (allItems.length > 0) {
-        console.log('返回数据示例:', allItems[0]);
-      }
       
       return allItems;
       
