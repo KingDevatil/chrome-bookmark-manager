@@ -163,8 +163,17 @@ const FrequentlyUsed = {
           return false;
         }
         const domain = this.extractDomain(item.url);
-        return domain && !blacklistSet.has(domain.toLowerCase());
+        const isBlacklisted = domain && blacklistSet.has(domain.toLowerCase());
+        if (isBlacklisted) {
+          console.log('被黑名单过滤:', item.url, '域名:', domain);
+        }
+        return domain && !isBlacklisted;
       });
+      console.log('过滤后的历史记录数量:', filtered.length, '原始:', history.length);
+      
+      if (filtered.length === 0 && history.length > 0) {
+        console.log('所有记录都被过滤了！');
+      }
       
       // 3. 统计每个 URL 在最近 N 天内的实际访问次数（只统计用户主动访问）
       const countMap = {};
@@ -173,6 +182,7 @@ const FrequentlyUsed = {
         const visits = await browser.history.getVisits({ url: item.url });
         
         if (!visits || visits.length === 0) {
+          console.log('没有访问记录:', item.url);
           continue;
         }
         
@@ -204,6 +214,8 @@ const FrequentlyUsed = {
           }
         });
         
+        console.log('URL:', item.url, '总访问:', visits.length, '有效访问:', validVisits.length);
+        
         // 按时间排序
         validVisits.sort((a, b) => a.visitTime - b.visitTime);
         
@@ -220,6 +232,8 @@ const FrequentlyUsed = {
           }
         });
         
+        console.log('URL:', item.url, '最终计数:', visitCount);
+        
         // 只有在指定时间范围内有访问记录才计入
         if (visitCount > 0) {
           countMap[item.url] = {
@@ -228,8 +242,12 @@ const FrequentlyUsed = {
             visitCount: visitCount, // 最近 N 天内的实际访问次数（已合并短时间重复）
             lastVisit: lastVisitTime
           };
+        } else {
+          console.log('visitCount 为 0，不计入:', item.url);
         }
       }
+      
+      console.log('countMap 中的 URL 数量:', Object.keys(countMap).length);
       
       // 4. 转换为数组并排序
       const items = Object.values(countMap);
