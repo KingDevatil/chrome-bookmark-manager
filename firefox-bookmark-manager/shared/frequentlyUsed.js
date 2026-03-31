@@ -24,6 +24,14 @@ const FrequentlyUsed = {
   async getFrequentlyUsed(daysRange = 7, displayCount = 10, blacklist = [], pinned = []) {
     const now = Date.now();
     
+    console.log('getFrequentlyUsed 调用，参数:', { daysRange, displayCount, blacklist, pinned });
+    console.log('缓存状态:', { 
+      hasData: !!this.cache.data, 
+      dataLength: this.cache.data?.length,
+      timestamp: this.cache.timestamp,
+      age: this.cache.timestamp ? now - this.cache.timestamp : 'N/A'
+    });
+    
     // 检查缓存是否有效
     if (this.cache.data && (now - this.cache.timestamp) < this.CACHE_DURATION) {
       // 验证缓存配置是否匹配
@@ -34,18 +42,29 @@ const FrequentlyUsed = {
         JSON.stringify(cacheConfig.blacklist) === JSON.stringify(blacklist) &&
         JSON.stringify(cacheConfig.pinned) === JSON.stringify(pinned);
       
+      console.log('缓存配置匹配:', isConfigMatch);
+      
       if (isConfigMatch) {
+        console.log('使用缓存数据，长度:', this.cache.data.length);
         return this.cache.data;
       }
     }
     
     // 重新计算
+    console.log('重新计算常用数据...');
     const data = await this.calculateFrequentlyUsed(daysRange, displayCount, blacklist, pinned);
+    
+    console.log('计算完成，数据长度:', data.length);
+    if (data.length > 0) {
+      console.log('数据示例:', data[0]);
+    }
     
     // 更新缓存（包括配置）
     this.cache.data = data;
     this.cache.timestamp = now;
     this.cache.config = { daysRange, displayCount, blacklist, pinned };
+    
+    console.log('缓存已更新');
     
     return data;
   },
@@ -239,9 +258,14 @@ const FrequentlyUsed = {
       
       // 6. 取前 N 个（不包括置顶链接）
       const normalItems = items.slice(0, displayCount);
+      console.log('普通链接数量:', normalItems.length);
       
       // 7. 合并置顶链接和普通链接（置顶在前）
       const allItems = [...pinnedItems, ...normalItems];
+      console.log('最终返回数据，总数量:', allItems.length, '置顶:', pinnedItems.length, '普通:', normalItems.length);
+      if (allItems.length > 0) {
+        console.log('返回数据示例:', allItems[0]);
+      }
       
       return allItems;
       
