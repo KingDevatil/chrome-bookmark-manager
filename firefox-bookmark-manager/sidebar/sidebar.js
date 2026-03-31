@@ -1602,11 +1602,13 @@ async function loadHistoryData() {
   try {
     console.log('开始加载历史记录...');
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    console.log('搜索参数:', {
+    const params = {
       text: '',
       startTime: oneWeekAgo,
       maxResults: 100
-    });
+    };
+    console.log('搜索参数:', params);
+    console.log('startTime 日期:', new Date(oneWeekAgo));
     
     // 检查 browser.history API 是否可用
     if (!browser.history || !browser.history.search) {
@@ -1615,13 +1617,30 @@ async function loadHistoryData() {
       return;
     }
     
-    historyData = await browser.history.search({
-      text: '',
-      startTime: oneWeekAgo,
-      maxResults: 100
-    });
+    // 尝试使用 Firefox API
+    historyData = await browser.history.search(params);
     
     console.log('历史记录加载成功，数量:', historyData.length);
+    if (historyData.length > 0) {
+      console.log('第一条历史记录:', historyData[0]);
+    } else {
+      console.log('没有历史记录，尝试不使用 startTime 参数...');
+      // 尝试不使用 startTime 参数
+      const allHistory = await browser.history.search({
+        text: '',
+        maxResults: 100
+      });
+      console.log('所有历史记录数量:', allHistory.length);
+      if (allHistory.length > 0) {
+        console.log('第一条记录:', allHistory[0]);
+        // 过滤最近一周的记录
+        historyData = allHistory.filter(item => {
+          return item.lastVisitTime >= oneWeekAgo;
+        });
+        console.log('过滤后的数量:', historyData.length);
+      }
+    }
+    
     renderHistoryPanel();
   } catch (error) {
     console.error('加载历史记录失败:', error);

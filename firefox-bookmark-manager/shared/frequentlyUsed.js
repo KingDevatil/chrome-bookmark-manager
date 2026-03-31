@@ -93,6 +93,7 @@ const FrequentlyUsed = {
       const startTime = now - (daysRange * 24 * 60 * 60 * 1000);
       
       console.log('常用文件夹：开始加载历史数据，参数:', { daysRange, startTime });
+      console.log('常用文件夹：startTime 日期:', new Date(startTime));
       
       // 检查 browser.history API 是否可用
       if (!browser.history || !browser.history.search) {
@@ -102,13 +103,28 @@ const FrequentlyUsed = {
       }
       
       // 2. 获取最近 N 天的浏览记录（去重后的 URL 列表）
-      const history = await browser.history.search({
+      let history = await browser.history.search({
         text: '', // 必须参数，空字符串表示匹配所有 URL
         startTime: startTime,
         maxResults: 10000 // 最多获取 10000 条记录
       });
       
       console.log('常用文件夹：历史记录加载成功，数量:', history.length);
+      
+      // 如果没有返回数据，尝试不使用 startTime 参数
+      if (!history || history.length === 0) {
+        console.log('常用文件夹：带 startTime 参数没有数据，尝试不使用 startTime...');
+        const allHistory = await browser.history.search({
+          text: '',
+          maxResults: 10000
+        });
+        console.log('常用文件夹：所有历史记录数量:', allHistory.length);
+        if (allHistory.length > 0) {
+          // 手动过滤
+          history = allHistory.filter(item => item.lastVisitTime >= startTime);
+          console.log('常用文件夹：过滤后的数量:', history.length);
+        }
+      }
       
       if (!history || history.length === 0) {
         // 即使没有历史记录，也要返回置顶链接
