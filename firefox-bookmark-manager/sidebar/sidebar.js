@@ -58,9 +58,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadBookmarkTree() {
   try {
+    console.log('loadBookmarkTree 开始');
     const tree = await BookmarkUtils.getTree();
     bookmarkTree = tree;
+    console.log('书签树加载完成，等待加载常用数据');
     await loadFrequentlyUsedData();
+    console.log('常用数据加载完成，准备渲染');
     renderBookmarkTree();
   } catch (error) {
     console.error('加载书签失败:', error);
@@ -90,18 +93,22 @@ async function loadFrequentlyUsedConfig() {
 
 async function loadFrequentlyUsedData() {
   try {
+    console.log('loadFrequentlyUsedData 开始');
     if (!window.frequentlyUsedConfig || !window.frequentlyUsedConfig.enabled) {
+      console.log('常用文件夹未启用');
       frequentlyUsedData = [];
       return;
     }
 
     const config = window.frequentlyUsedConfig;
+    console.log('常用文件夹配置:', config);
     frequentlyUsedData = await FrequentlyUsed.getFrequentlyUsed(
       config.daysRange,
       config.displayCount,
       config.blacklist,
       config.pinned || []
     );
+    console.log('loadFrequentlyUsedData 完成，数据:', frequentlyUsedData);
   } catch (error) {
     console.error('加载常用数据失败:', error);
     frequentlyUsedData = [];
