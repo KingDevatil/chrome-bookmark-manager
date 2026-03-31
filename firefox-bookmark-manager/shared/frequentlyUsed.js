@@ -197,6 +197,12 @@ const FrequentlyUsed = {
           const visitTime = visit.visitTime;
           const transition = visit.transition;
           
+          console.log('访问记录:', {
+            visitTime: new Date(visitTime),
+            transition: transition,
+            transitionType: typeof transition
+          });
+          
           // 只统计用户主动访问：link, typed, form_submit, keyword, keyword_generated
           const isUserInitiated = [
             'link',           // 点击链接
@@ -210,6 +216,12 @@ const FrequentlyUsed = {
             validVisits.push({
               visitTime: visitTime,
               transition: transition
+            });
+          } else {
+            console.log('排除访问记录:', {
+              reason: !isUserInitiated ? '非用户主动访问' : '时间不在范围内',
+              transition: transition,
+              visitTime: new Date(visitTime)
             });
           }
         });
