@@ -113,6 +113,8 @@ const i18nData = {
   'common.willApply': { 'zh-CN': '将应用到', 'en': 'Will apply to' },
   'common.tagUnit': { 'zh-CN': '个书签', 'en': 'bookmarks' },
   'common.newFolder': { 'zh-CN': '新建文件夹', 'en': 'New Folder' },
+  'common.addBookmark': { 'zh-CN': '添加书签', 'en': 'Add Bookmark' },
+  'common.bookmarkAdded': { 'zh-CN': '书签已添加', 'en': 'Bookmark added' },
   'common.backupNow': { 'zh-CN': '立即备份', 'en': 'Backup Now' },
   'common.appearance': { 'zh-CN': '外观', 'en': 'Appearance' },
   'common.darkMode': { 'zh-CN': '深色模式', 'en': 'Dark Mode' },

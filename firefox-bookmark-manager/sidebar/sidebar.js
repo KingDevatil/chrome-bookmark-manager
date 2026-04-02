@@ -741,6 +741,115 @@ function removeEditModal() {
   }
 }
 
+async function showAddBookmarkModal() {
+  removeEditModal();
+
+  let currentTabInfo = null;
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs && tabs.length > 0) {
+      currentTabInfo = tabs[0];
+    }
+  } catch (error) {
+    console.error('获取当前标签页失败:', error);
+  }
+
+  const bookmarkTree = await BookmarkUtils.getTree();
+
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal';
+
+  modal.innerHTML = `
+    <div class="edit-modal-content">
+      <h3 class="edit-modal-title">${I18n.t('common.addBookmark')}</h3>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.name')}</label>
+        <input type="text" class="edit-modal-input" id="add-title-input" value="${currentTabInfo?.title || ''}">
+      </div>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">URL</label>
+        <input type="text" class="edit-modal-input" id="add-url-input" value="${currentTabInfo?.url || ''}">
+      </div>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.folder')}</label>
+        <div class="folder-tree" id="add-folder-tree"></div>
+        <input type="hidden" id="add-folder-parentId" value="1">
+      </div>
+      <div class="edit-modal-buttons">
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const folderTreeContainer = document.getElementById('add-folder-tree');
+  if (bookmarkTree && bookmarkTree.length > 0 && bookmarkTree[0].children) {
+    const treeUl = document.createElement('ul');
+    treeUl.className = 'folder-tree-list';
+
+    for (const root of bookmarkTree[0].children) {
+      const isFolder = !root.url;
+      if (isFolder) {
+        const li = createFolderTreeNode(root, 0, '1');
+        treeUl.appendChild(li);
+      }
+    }
+
+    folderTreeContainer.appendChild(treeUl);
+  }
+
+  const titleInput = document.getElementById('add-title-input');
+  titleInput.focus();
+  titleInput.select();
+
+  modal.querySelector('.edit-modal-cancel').addEventListener('click', () => {
+    removeEditModal();
+  });
+
+  modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
+    const title = document.getElementById('add-title-input').value.trim();
+    const url = document.getElementById('add-url-input').value.trim();
+    const parentId = document.getElementById('add-folder-parentId').value;
+
+    if (!title) {
+      alert(I18n.t('common.enterTitle'));
+      return;
+    }
+
+    if (!url) {
+      alert(I18n.t('common.enterUrl'));
+      return;
+    }
+
+    try {
+      await BookmarkUtils.create({
+        parentId: parentId,
+        title: title,
+        url: url
+      });
+      await loadBookmarkTree();
+      removeEditModal();
+    } catch (error) {
+      console.error('添加书签失败:', error);
+      alert(I18n.t('common.addFailedRetry'));
+    }
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      modal.querySelector('.edit-modal-save').click();
+    }
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      removeEditModal();
+    }
+  });
+}
+
 async function showCreateFolderModal() {
   removeEditModal();
   
@@ -1873,6 +1982,10 @@ function setupEventListeners() {
 
   document.getElementById('btn-new-folder').addEventListener('click', async () => {
     showCreateFolderModal();
+  });
+
+  document.getElementById('btn-add-bookmark').addEventListener('click', async () => {
+    showAddBookmarkModal();
   });
 
   // 备份按钮
