@@ -3,6 +3,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('Settings page loaded');
   ThemeManager.init();
   await I18n.init();
   await loadSettings();
@@ -41,6 +42,8 @@ async function loadSettings() {
   document.getElementById('tree-indent-value').textContent = `${layoutSettings.treeIndent || 5}px`;
   document.getElementById('bookmark-indent-slider').value = layoutSettings.bookmarkIndent || 5;
   document.getElementById('bookmark-indent-value').textContent = `${layoutSettings.bookmarkIndent || 5}px`;
+  document.getElementById('shortcut-icon-size-slider').value = layoutSettings.shortcutIconSize || 60;
+  document.getElementById('shortcut-icon-size-value').textContent = `${layoutSettings.shortcutIconSize || 60}px`;
 
   // 更新预览
   updateLayoutPreview(
@@ -77,6 +80,18 @@ function setupEventListeners() {
   document.getElementById('auto-backup-enabled').addEventListener('change', (e) => {
     document.getElementById('auto-backup-config').classList.toggle('visible', e.target.checked);
   });
+
+  // 自动清理开关 - 自动保存
+  document.getElementById('auto-cleanup-enabled').addEventListener('change', async (e) => {
+    try {
+      const result = await Storage.get('backupSettings');
+      const settings = result.backupSettings || {};
+      settings.autoCleanup = e.target.checked;
+      await Storage.set({ backupSettings: settings });
+    } catch (error) {
+      console.error('Failed to save auto cleanup setting:', error);
+    }
+  });
   
   // WebDAV 按钮
   document.getElementById('test-connection-btn').addEventListener('click', testWebDAVConnection);
@@ -104,7 +119,10 @@ function setupEventListeners() {
   
   // 书签查重功能
   initDuplicateDetection();
-  
+
+  // 云端备份管理
+  initCloudBackupManagement();
+
   // 标签分组管理
   document.getElementById('create-tag-group-btn').addEventListener('click', showNewGroupModal);
   document.getElementById('cancel-group-btn').addEventListener('click', hideNewGroupModal);
@@ -158,6 +176,15 @@ function setupEventListeners() {
     updateLayoutPreview(parseInt(heightSlider.value), parseInt(treeIndentSlider.value), value);
   });
 
+  const shortcutIconSizeSlider = document.getElementById('shortcut-icon-size-slider');
+  const shortcutIconSizeValue = document.getElementById('shortcut-icon-size-value');
+
+  shortcutIconSizeSlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    shortcutIconSizeValue.textContent = `${value}px`;
+    document.documentElement.style.setProperty('--shortcut-icon-size', `${value}px`);
+  });
+
   // 布局设置按钮
   document.getElementById('save-layout-btn').addEventListener('click', saveLayoutSettings);
   document.getElementById('reset-layout-btn').addEventListener('click', resetLayoutSettings);
@@ -176,7 +203,8 @@ async function saveLayoutSettings() {
   const settings = {
     bookmarkHeight: parseInt(document.getElementById('bookmark-height-slider').value),
     treeIndent: parseInt(document.getElementById('tree-indent-slider').value),
-    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value)
+    bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value),
+    shortcutIconSize: parseInt(document.getElementById('shortcut-icon-size-slider').value)
   };
 
   await Storage.set({ layoutSettings: settings });
@@ -187,7 +215,8 @@ async function resetLayoutSettings() {
   const defaultSettings = {
     bookmarkHeight: 30,
     treeIndent: 5,
-    bookmarkIndent: 5
+    bookmarkIndent: 5,
+    shortcutIconSize: 60
   };
 
   document.getElementById('bookmark-height-slider').value = defaultSettings.bookmarkHeight;
@@ -196,8 +225,11 @@ async function resetLayoutSettings() {
   document.getElementById('tree-indent-value').textContent = `${defaultSettings.treeIndent}px`;
   document.getElementById('bookmark-indent-slider').value = defaultSettings.bookmarkIndent;
   document.getElementById('bookmark-indent-value').textContent = `${defaultSettings.bookmarkIndent}px`;
+  document.getElementById('shortcut-icon-size-slider').value = defaultSettings.shortcutIconSize;
+  document.getElementById('shortcut-icon-size-value').textContent = `${defaultSettings.shortcutIconSize}px`;
 
   updateLayoutPreview(defaultSettings.bookmarkHeight, defaultSettings.treeIndent, defaultSettings.bookmarkIndent);
+  document.documentElement.style.setProperty('--shortcut-icon-size', `${defaultSettings.shortcutIconSize}px`);
 
   await Storage.set({ layoutSettings: defaultSettings });
   showStatus('layout-status', I18n.t('common.resetSuccess'), 'success');
@@ -276,10 +308,15 @@ async function saveBackupSettings() {
   const settings = {
     autoBackup: document.getElementById('auto-backup-enabled').checked,
     backupInterval: parseInt(document.getElementById('backup-interval').value),
-    backupOnStartup: document.getElementById('backup-on-startup').checked
+    backupOnStartup: document.getElementById('backup-on-startup').checked,
+    autoCleanup: document.getElementById('auto-cleanup-enabled') ? document.getElementById('auto-cleanup-enabled').checked : false
   };
 
+  console.log('Saving backup settings:', settings);
   await Storage.set({ backupSettings: settings });
+  console.log('Backup settings saved, checking...');
+  const check = await Storage.get('backupSettings');
+  console.log('Verification read:', check);
   await chrome.runtime.sendMessage({ action: 'init' });
 
   showStatus('backup-settings-status', I18n.t('backup.settingsSaved'), 'success');
@@ -443,9 +480,10 @@ async function restoreLayoutFromWebDAV() {
 
 function showStatus(elementId, message, type) {
   const element = document.getElementById(elementId);
+  if (!element) return;
   element.textContent = message;
   element.className = `status-message ${type} visible`;
-  
+
   setTimeout(() => {
     element.classList.remove('visible');
   }, 5000);
@@ -494,7 +532,7 @@ async function exportAllConfig() {
     const exportTags = document.getElementById('export-tags').checked;
     
     const exportData = {
-      version: '1.0',
+      version: '1.5',
       exportedAt: new Date().toISOString(),
       type: 'unified-export'
     };
@@ -518,6 +556,10 @@ async function exportAllConfig() {
       const tagGroupsData = await TagGroups.getAll();
       exportData.tagGroups = tagGroupsData;
     }
+
+    // 导出捷径
+    const shortcutsResult = await Storage.get('shortcuts');
+    exportData.shortcuts = shortcutsResult.shortcuts || [];
     
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -590,6 +632,11 @@ async function handleImportAllConfig(event) {
       }
       
       await TagGroups.save(existingGroups);
+    }
+
+    // 导入捷径
+    if (data.shortcuts && Array.isArray(data.shortcuts)) {
+      await Storage.set({ shortcuts: data.shortcuts });
     }
     
     showStatus('import-all-status', I18n.t('config.importSuccess'), 'success');
@@ -1007,6 +1054,144 @@ function setupDuplicateCheckboxes() {
       cb.checked = e.target.checked;
     });
   });
+}
+
+// 云端备份管理功能
+// ============================================
+
+async function loadBackupSettings() {
+  const result = await Storage.get('backupSettings');
+  const settings = result.backupSettings || {};
+  document.getElementById('auto-cleanup-enabled').checked = settings.autoCleanup || false;
+}
+
+async function refreshBackupList() {
+  const container = document.getElementById('backup-files-container');
+  const loading = document.getElementById('backups-loading');
+
+  container.innerHTML = '';
+  container.style.visibility = 'hidden';
+  loading.style.visibility = 'visible';
+
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'listBackups' });
+
+    loading.style.visibility = 'hidden';
+    container.style.visibility = 'visible';
+
+    if (!response || response.success === false) {
+      container.innerHTML = '<div class="backup-empty">' + I18n.t('backup.loadFailed') + ': ' + (response?.error || 'Unknown error') + '</div>';
+      return;
+    }
+
+    if (!Array.isArray(response) || response.length === 0) {
+      container.innerHTML = '<div class="backup-empty">' + I18n.t('backup.noBackups') + '</div>';
+      return;
+    }
+
+    response.forEach(backup => {
+      const item = document.createElement('div');
+      item.className = 'backup-file-item';
+
+      const date = new Date(backup.lastModified);
+      const dateStr = date.toLocaleString();
+      const sizeStr = formatFileSize(backup.size);
+
+      item.innerHTML = `
+        <div class="backup-file-info">
+          <div class="backup-file-name">${escapeHtml(backup.filename)}</div>
+          <div class="backup-file-meta">${dateStr} · ${sizeStr}</div>
+        </div>
+        <div class="backup-file-actions">
+          <button class="btn btn-sm restore-backup-btn" data-filename="${escapeHtml(backup.filename)}">${I18n.t('backup.restore')}</button>
+          <button class="btn btn-sm btn-danger delete-backup-btn" data-filename="${escapeHtml(backup.filename)}">${I18n.t('backup.delete')}</button>
+        </div>
+      `;
+
+      container.appendChild(item);
+    });
+
+    document.querySelectorAll('.restore-backup-btn').forEach(btn => {
+      btn.addEventListener('click', () => restoreFromBackup(btn.dataset.filename));
+    });
+
+    document.querySelectorAll('.delete-backup-btn').forEach(btn => {
+      btn.addEventListener('click', () => deleteBackup(btn.dataset.filename));
+    });
+
+  } catch (error) {
+    loading.style.display = 'none';
+    container.innerHTML = '<div class="backup-empty">' + I18n.t('backup.loadFailed') + ': ' + escapeHtml(error.message) + '</div>';
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function restoreFromBackup(filename) {
+  const confirmed = await showConfirm(I18n.t('backup.confirmRestore', { filename: filename }));
+  if (!confirmed) return;
+
+  const result = await Storage.get('webdavConfig');
+  if (!result.webdavConfig || !result.webdavConfig.enabled) {
+    showStatus('restore-backup-status', I18n.t('webdav.enableFirst'), 'error');
+    return;
+  }
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'restoreBackup',
+      filename: filename,
+      merge: false
+    });
+
+    if (response.success) {
+      showStatus('restore-backup-status', I18n.t('backup.restoreSuccess'), 'success');
+    } else {
+      showStatus('restore-backup-status', I18n.t('backup.restoreFailed') + ': ' + response.error, 'error');
+    }
+  } catch (error) {
+    showStatus('restore-backup-status', I18n.t('backup.restoreFailed') + ': ' + error.message, 'error');
+  }
+}
+
+async function deleteBackup(filename) {
+  const confirmed = await showConfirm(I18n.t('backup.confirmDelete', { filename: filename }));
+  if (!confirmed) return;
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'deleteBackup',
+      filename: filename
+    });
+
+    if (response.success) {
+      showStatus('backup-files-status', I18n.t('backup.deleteSuccess'), 'success');
+      refreshBackupList();
+    } else {
+      showStatus('backup-files-status', I18n.t('backup.deleteFailed') + ': ' + response.error, 'error');
+    }
+  } catch (error) {
+    showStatus('backup-files-status', I18n.t('backup.deleteFailed') + ': ' + error.message, 'error');
+  }
+}
+
+function initCloudBackupManagement() {
+  loadBackupSettings();
+  refreshBackupList();
+
+  document.getElementById('refresh-backups-btn').addEventListener('click', refreshBackupList);
 }
 
 // 初始化书签查重功能

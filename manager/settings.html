@@ -268,12 +268,16 @@
     .status-message {
       padding: 12px;
       border-radius: 6px;
-      margin-top: 16px;
-      display: none;
+      min-height: 44px;
+      box-sizing: border-box;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
 
     .status-message.visible {
-      display: block;
+      visibility: visible;
+      opacity: 1;
     }
 
     .status-message.success {
@@ -833,6 +837,71 @@
     [data-theme="dark"] .tag-bookmark-item:hover {
       background: var(--bg-hover, #475569);
     }
+
+    .backup-files-list {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 6px;
+      padding: 10px;
+      background-color: var(--bg-tertiary, #f1f5f9);
+    }
+
+    .backup-file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: var(--bg-secondary, #f8fafc);
+    }
+
+    .backup-file-item:hover {
+      background: var(--bg-hover, #e2e8f0);
+    }
+
+    .backup-file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .backup-file-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .backup-file-meta {
+      font-size: 12px;
+      color: var(--text-secondary, #64748b);
+    }
+
+    .backup-file-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .backup-empty {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-secondary, #64748b);
+    }
+
+    [data-theme="dark"] .backup-file-item {
+      background: var(--bg-secondary, #1e293b);
+    }
+
+    [data-theme="dark"] .backup-file-item:hover {
+      background: var(--bg-hover, #334155);
+    }
+
+    [data-theme="dark"] .settings-menu-item.active {
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -1047,22 +1116,31 @@
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
-          <h3 style="margin-bottom: 16px;" data-i18n="cleanup.title">标签数据清理</h3>
-          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="cleanup.desc">检测并清理已删除书签的孤立标签数据</p>
+          <h3 style="margin-bottom: 16px;" data-i18n="backup.cloudManage">云端备份管理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="backup.cloudManageDesc">查看、恢复和删除云端备份文件</p>
 
           <div class="settings-field">
-            <label class="settings-label" data-i18n="cleanup.detectOrphan">检测孤立标签</label>
-            <p class="settings-description" data-i18n="cleanup.detectDesc">检查标签数据中是否存在对应书签已被删除的孤立标签</p>
-            <button class="btn" id="detect-tags-btn" data-i18n="cleanup.startDetection">开始检测</button>
-            <div class="status-message" id="detect-tags-status"></div>
+            <label class="toggle-switch">
+              <input type="checkbox" class="toggle-input" id="auto-cleanup-enabled">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label" data-i18n="backup.autoCleanup">自动清理旧备份</span>
+            </label>
+            <p class="settings-description" data-i18n="backup.autoCleanupDesc">自动清理比最近3个备份更早的备份文件</p>
           </div>
 
-          <div class="settings-field" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
-            <label class="settings-label" data-i18n="cleanup.cleanInvalid">清理无效标签</label>
-            <p class="settings-description" data-i18n="cleanup.cleanDesc">删除所有孤立标签数据，释放存储空间</p>
-            <button class="btn btn-primary" id="clean-tags-btn" data-i18n="cleanup.cleanInvalid">清理无效标签</button>
-            <div class="status-message" id="clean-tags-status"></div>
+          <div class="settings-field" style="margin-bottom: 12px;">
+            <button class="btn" id="refresh-backups-btn" data-i18n="backup.refreshList">刷新列表</button>
+            <div class="status-message" id="backup-files-status" style="margin-top: 8px;"></div>
           </div>
+
+          <div id="backup-files-list" class="backup-files-list">
+            <div class="loading-spinner" id="backups-loading" style="visibility: hidden;">
+              <div class="spinner"></div>
+              <p data-i18n="common.loading">加载中...</p>
+            </div>
+            <div id="backup-files-container"></div>
+          </div>
+          <div class="status-message" id="restore-backup-status"></div>
         </div>
 
         <div class="settings-card" style="margin-top: 24px;">
@@ -1116,6 +1194,25 @@
 
           <div id="ungrouped-tags-container">
             <div id="ungrouped-tags-list" class="tags-list"></div>
+          </div>
+        </div>
+
+        <div class="settings-card" style="margin-top: 24px;">
+          <h3 style="margin-bottom: 16px;" data-i18n="cleanup.title">标签数据清理</h3>
+          <p class="settings-description" style="margin-bottom: 16px;" data-i18n="cleanup.desc">检测并清理已删除书签的孤立标签数据</p>
+
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="cleanup.detectOrphan">检测孤立标签</label>
+            <p class="settings-description" data-i18n="cleanup.detectDesc">检查标签数据中是否存在对应书签已被删除的孤立标签</p>
+            <button class="btn" id="detect-tags-btn" data-i18n="cleanup.startDetection">开始检测</button>
+            <div class="status-message" id="detect-tags-status"></div>
+          </div>
+
+          <div class="settings-field" style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color, #e2e8f0);">
+            <label class="settings-label" data-i18n="cleanup.cleanInvalid">清理无效标签</label>
+            <p class="settings-description" data-i18n="cleanup.cleanDesc">删除所有孤立标签数据，释放存储空间</p>
+            <button class="btn btn-primary" id="clean-tags-btn" data-i18n="cleanup.cleanInvalid">清理无效标签</button>
+            <div class="status-message" id="clean-tags-status"></div>
           </div>
         </div>
 
@@ -1179,6 +1276,15 @@
             <div class="slider-container">
               <input type="range" class="slider-input" id="bookmark-indent-slider" min="5" max="20" value="5">
               <span class="slider-value" id="bookmark-indent-value">5px</span>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="layout.shortcutIconSize">捷径图标大小</label>
+            <p class="settings-description" data-i18n="layout.shortcutIconSizeDesc">调整侧边栏捷径图标的尺寸</p>
+            <div class="slider-container">
+              <input type="range" class="slider-input" id="shortcut-icon-size-slider" min="40" max="120" value="60">
+              <span class="slider-value" id="shortcut-icon-size-value">60px</span>
             </div>
           </div>
 

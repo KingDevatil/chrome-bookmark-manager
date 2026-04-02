@@ -8,6 +8,36 @@ const log = DEBUG ? console.log.bind(console) : () => {};
 const error = console.error.bind(console);
 
 // ============================================
+// Storage 工具
+// ============================================
+
+const Storage = {
+  get(keys) {
+    return new Promise((resolve, reject) => {
+      browser.storage.local.get(keys, (result) => {
+        if (browser.runtime.lastError) {
+          reject(browser.runtime.lastError);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  },
+
+  set(items) {
+    return new Promise((resolve, reject) => {
+      browser.storage.local.set(items, () => {
+        if (browser.runtime.lastError) {
+          reject(browser.runtime.lastError);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+};
+
+// ============================================
 // WebDAV 备份功能
 // ============================================
 
@@ -91,6 +121,83 @@ class WebDAVClient {
       return response.json();
     } catch (err) {
       error('Download bookmarks failed:', err);
+      throw err;
+    }
+  }
+
+  async listBackups() {
+    try {
+      await this.ensureBookmarksFolder();
+      const response = await this.request('PROPFIND', 'bookmarks/');
+      const text = await response.text();
+      return this.parsePropfindResponse(text);
+    } catch (err) {
+      error('List backups failed:', err);
+      throw err;
+    }
+  }
+
+  parsePropfindResponse(xmlText) {
+    const backups = [];
+    const responseRegex = /<D:response[\s\S]*?<\/D:response>/gi;
+    const matches = xmlText.match(responseRegex) || [];
+
+    matches.forEach(responseXml => {
+      const hrefMatch = responseXml.match(/<D:href>([^<]+)<\/D:href>/i);
+      const displayNameMatch = responseXml.match(/<D:displayname>([^<]+)<\/D:displayname>/i);
+      const lastModifiedMatch = responseXml.match(/<D:getlastmodified>([^<]+)<\/D:getlastmodified>/i);
+      const contentLengthMatch = responseXml.match(/<D:getcontentlength>([^<]+)<\/D:getcontentlength>/i);
+
+      const href = hrefMatch ? hrefMatch[1] : '';
+      const displayName = displayNameMatch ? displayNameMatch[1] : '';
+
+      if (href && displayName && displayName.startsWith('bookmarks_backup_') && displayName.endsWith('.json')) {
+        backups.push({
+          filename: displayName,
+          href: href,
+          lastModified: lastModifiedMatch ? lastModifiedMatch[1] : '',
+          size: contentLengthMatch ? parseInt(contentLengthMatch[1]) : 0
+        });
+      }
+    });
+
+    backups.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    return backups;
+  }
+
+  async deleteBackup(filename) {
+    try {
+      await this.request('DELETE', `bookmarks/${filename}`);
+      log('Backup deleted:', filename);
+      return { success: true };
+    } catch (err) {
+      error('Delete backup failed:', err);
+      throw err;
+    }
+  }
+
+  async cleanupOldBackups(keepCount = 3) {
+    try {
+      const backups = await this.listBackups();
+      if (backups.length <= keepCount) {
+        return { cleaned: 0 };
+      }
+
+      const toDelete = backups.slice(keepCount);
+      let cleaned = 0;
+
+      for (const backup of toDelete) {
+        try {
+          await this.deleteBackup(backup.filename);
+          cleaned++;
+        } catch (e) {
+          log('Failed to delete backup:', backup.filename, e);
+        }
+      }
+
+      return { cleaned };
+    } catch (err) {
+      error('Cleanup old backups failed:', err);
       throw err;
     }
   }
@@ -331,6 +438,30 @@ class SyncManager {
     return result.tagGroups || { groups: [] };
   }
 
+  async listBackups() {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.listBackups();
+  }
+
+  async deleteBackup(filename) {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.deleteBackup(filename);
+  }
+
+  async cleanupOldBackups(keepCount = 3) {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.cleanupOldBackups(keepCount);
+  }
+
   async restoreTagGroups(tagGroups, merge = false) {
     if (!tagGroups || !tagGroups.groups) return;
     
@@ -470,17 +601,73 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   switch (message.action) {
     case 'backup':
-      syncManager.backupBookmarks().then((result) => {
+      syncManager.backupBookmarks().then(async (result) => {
+        if (result.success) {
+          log('Backup successful, checking autoCleanup setting...');
+          const settings = await Storage.get('backupSettings');
+          log('Backup settings:', settings);
+          const autoCleanup = settings?.backupSettings?.autoCleanup || settings?.autoCleanup || false;
+          log('autoCleanup value:', autoCleanup);
+          if (autoCleanup) {
+            log('Starting auto cleanup...');
+            try {
+              const cleanupResult = await syncManager.cleanupOldBackups(3);
+              log('Auto cleanup completed:', cleanupResult);
+            } catch (cleanupError) {
+              log('Auto cleanup error:', cleanupError);
+            }
+          } else {
+            log('Auto cleanup is disabled');
+          }
+        }
         sendResponse(result);
       });
       return true;
-      
+
     case 'restore':
-      syncManager.restoreBookmarks(message.filename, message.merge).then((result) => {
+      syncManager.restoreBookmarks(message.filename, message.merge).then(async (result) => {
+        if (result.success) {
+          const settings = await Storage.get('backupSettings');
+          const autoCleanup = settings?.backupSettings?.autoCleanup || settings?.autoCleanup || false;
+          if (autoCleanup) {
+            const cleanupResult = await syncManager.cleanupOldBackups(3);
+            log('Auto cleanup result:', cleanupResult);
+          }
+        }
         sendResponse(result);
       });
       return true;
-      
+
+    case 'restoreBackup':
+      syncManager.restoreBookmarks(message.filename, message.merge).then(async (result) => {
+        if (result.success) {
+          const settings = await Storage.get('backupSettings');
+          const autoCleanup = settings?.backupSettings?.autoCleanup || settings?.autoCleanup || false;
+          if (autoCleanup) {
+            const cleanupResult = await syncManager.cleanupOldBackups(3);
+            log('Auto cleanup result:', cleanupResult);
+          }
+        }
+        sendResponse(result);
+      });
+      return true;
+
+    case 'listBackups':
+      syncManager.listBackups().then((result) => {
+        sendResponse(result);
+      }).catch((error) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true;
+
+    case 'deleteBackup':
+      syncManager.deleteBackup(message.filename).then((result) => {
+        sendResponse(result);
+      }).catch((error) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true;
+
     case 'init':
       syncManager.init().then(() => {
         sendResponse({ success: true });

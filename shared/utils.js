@@ -769,6 +769,84 @@ const FrequentlyUsedConfig = {
 };
 
 // ============================================
+// 捷径管理工具
+// ============================================
+
+const ShortcutUtils = {
+  STORAGE_KEY: 'shortcuts',
+
+  async getAll() {
+    const result = await Storage.get(this.STORAGE_KEY);
+    return result[this.STORAGE_KEY] || [];
+  },
+
+  async getById(id) {
+    const shortcuts = await this.getAll();
+    return shortcuts.find(s => s.id === id);
+  },
+
+  async exists(url) {
+    const shortcuts = await this.getAll();
+    return shortcuts.some(s => s.url === url);
+  },
+
+  async add(title, url) {
+    const shortcuts = await this.getAll();
+    
+    if (shortcuts.some(s => s.url === url)) {
+      throw new Error('URL already exists');
+    }
+
+    const id = 'shortcut_' + Date.now();
+    const maxOrder = shortcuts.length > 0 ? Math.max(...shortcuts.map(s => s.order || 0)) : -1;
+    
+    shortcuts.push({
+      id,
+      title,
+      url,
+      order: maxOrder + 1
+    });
+
+    await Storage.set({ [this.STORAGE_KEY]: shortcuts });
+    return { id, title, url };
+  },
+
+  async remove(id) {
+    const shortcuts = await this.getAll();
+    const filtered = shortcuts.filter(s => s.id !== id);
+    await Storage.set({ [this.STORAGE_KEY]: filtered });
+  },
+
+  async update(id, updates) {
+    const shortcuts = await this.getAll();
+    const index = shortcuts.findIndex(s => s.id === id);
+    if (index !== -1) {
+      shortcuts[index] = { ...shortcuts[index], ...updates };
+      await Storage.set({ [this.STORAGE_KEY]: shortcuts });
+    }
+  },
+
+  async reorder(orderedIds) {
+    const shortcuts = await this.getAll();
+    orderedIds.forEach((id, index) => {
+      const shortcut = shortcuts.find(s => s.id === id);
+      if (shortcut) {
+        shortcut.order = index;
+      }
+    });
+    await Storage.set({ [this.STORAGE_KEY]: shortcuts });
+  },
+
+  async clear() {
+    await Storage.set({ [this.STORAGE_KEY]: [] });
+  },
+
+  async import(shortcuts) {
+    await Storage.set({ [this.STORAGE_KEY]: shortcuts || [] });
+  }
+};
+
+// ============================================
 // 导出模块（如果在模块环境中）
 // ============================================
 
@@ -932,7 +1010,8 @@ if (typeof module !== 'undefined' && module.exports) {
     Utils,
     FrequentlyUsedConfig,
     BookmarkTags,
-    TagGroups
+    TagGroups,
+    ShortcutUtils
   };
 }
 

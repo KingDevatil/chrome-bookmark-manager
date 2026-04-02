@@ -92,11 +92,27 @@ const FrequentlyUsed = {
         return pinnedItems;
       }
       
-      // 3. 过滤黑名单域名和已置顶的链接
+      // 3. 过滤黑名单域名、非常规链接和已置顶的链接
       const blacklistSet = new Set(blacklist.map(d => d.toLowerCase()));
       const filtered = history.filter(item => {
         // 排除已置顶的链接
         if (pinnedSet.has(item.url)) {
+          return false;
+        }
+        // 排除 chrome-extension:// 链接（扩展页面）
+        if (item.url && item.url.startsWith('chrome-extension://')) {
+          return false;
+        }
+        // 排除 file:// 链接（本地文件）
+        if (item.url && item.url.startsWith('file://')) {
+          return false;
+        }
+        // 排除 chrome:// 链接（浏览器内部页面）
+        if (item.url && item.url.startsWith('chrome://')) {
+          return false;
+        }
+        // 排除 about:// 链接（浏览器关于页面）
+        if (item.url && item.url.startsWith('about://')) {
           return false;
         }
         const domain = this.extractDomain(item.url);

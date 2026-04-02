@@ -46,6 +46,12 @@
       overflow-y: auto;
       overflow-x: hidden;
       min-height: 0;
+      position: relative;
+    }
+
+    /* 当显示捷径面板时，sidebar-content 不滚动，由捷径面板内部处理 */
+    .sidebar-content:has(.shortcuts-panel.active) {
+      overflow-y: hidden;
     }
     
     .sidebar-footer {
@@ -139,6 +145,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-right: 10px;
     }
 
     .history-item .tree-icon img {
@@ -171,8 +178,120 @@
 
     .bookmark-panel.hidden,
     .history-panel.hidden,
+    .shortcuts-panel.hidden,
     .menu-panel.hidden {
       display: none;
+    }
+
+    /* 捷径面板样式 */
+    .shortcuts-panel {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .shortcuts-panel.active {
+      display: flex;
+    }
+
+    .shortcuts-content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--shortcut-icon-size, 60px), 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .shortcuts-panel .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-secondary, #64748b);
+    }
+
+    .shortcuts-footer {
+      display: flex;
+      flex-shrink: 0;
+      padding: 12px;
+      border-top: 1px solid var(--border-color, #e2e8f0);
+      background-color: var(--bg-primary, #ffffff);
+    }
+
+    .shortcuts-footer .btn {
+      flex: 1;
+    }
+
+    .shortcut-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      user-select: none;
+    }
+
+    .shortcut-item:hover {
+      background-color: var(--bg-hover, #e2e8f0);
+    }
+
+    .shortcut-item.dragging {
+      opacity: 0.5;
+      background-color: var(--bg-hover, #e2e8f0);
+    }
+
+    .shortcut-item.drag-over {
+      background-color: var(--primary-light, #e0e7ff);
+    }
+
+    .shortcut-icon {
+      width: var(--shortcut-icon-size, 60px);
+      height: var(--shortcut-icon-size, 60px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(var(--shortcut-icon-size, 60px) * 0.4);
+      background-color: var(--bg-secondary, #f8fafc);
+      border-radius: 12px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+    }
+
+    .shortcut-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .shortcut-title {
+      font-size: 11px;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+      color: var(--text-primary, #1e293b);
+    }
+
+    [data-theme="dark"] .shortcut-icon {
+      background-color: #94a3b8;
+      border-color: #64748b;
+    }
+
+    [data-theme="dark"] .shortcut-title {
+      color: var(--text-primary, #f8fafc);
     }
 
     .search-box {
@@ -470,8 +589,20 @@
       display: none;
     }
 
-    .panel.active {
+    /* 书签面板和历史面板使用 block 布局 */
+    .bookmark-panel.active,
+    .history-panel.active {
       display: block;
+    }
+
+    /* 菜单面板使用 block 布局 */
+    .menu-panel.active {
+      display: block;
+    }
+
+    /* 捷径面板使用 flex 布局 - 必须放在其他 .panel.active 规则之后以覆盖 */
+    .shortcuts-panel.active {
+      display: flex !important;
     }
 
     /* 菜单面板样式 */
@@ -742,6 +873,18 @@
 
     [data-theme="dark"] .frequently-used-link.bookmarked:hover {
       background-color: rgba(99, 102, 241, 0.15);
+    }
+
+    [data-theme="dark"] .frequently-used-title {
+      color: #ffffff;
+    }
+
+    [data-theme="dark"] .menu-btn {
+      color: var(--text-primary, #f8fafc);
+    }
+
+    [data-theme="dark"] .menu-btn.active {
+      color: #ffffff;
     }
 
     /* 右键菜单样式 */
@@ -1027,6 +1170,15 @@
       background-color: var(--bg-hover, #475569);
     }
 
+    [data-theme="dark"] .folder-tree-item.selected {
+      background-color: var(--primary-color, #6366f1);
+      color: #ffffff;
+    }
+
+    [data-theme="dark"] .folder-tree-item.selected .folder-tree-toggle {
+      color: rgba(255, 255, 255, 0.8);
+    }
+
     /* 关于信息 */
     .about-section {
       margin-top: 24px;
@@ -1073,15 +1225,77 @@
       background-color: #334155;
       border-color: #334155;
     }
+
+    #toast-container {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10002;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      animation: toast-fade-in 0.3s ease;
+      pointer-events: auto;
+    }
+
+    .toast.toast-success {
+      background: rgba(34, 197, 94, 0.9);
+    }
+
+    .toast.toast-error {
+      background: rgba(239, 68, 68, 0.9);
+    }
+
+    .toast.toast-warning {
+      background: rgba(251, 191, 36, 0.9);
+      color: #1f2937;
+    }
+
+    @keyframes toast-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes toast-fade-out {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    .toast.toast-hide {
+      animation: toast-fade-out 0.3s ease forwards;
+    }
   </style>
 </head>
 <body>
+  <div id="toast-container"></div>
   <div class="sidebar-container" id="sidebar-container">
     <div class="sidebar-header">
       <div class="header-row">
         <div class="tab-switcher">
           <button class="tab-btn active" id="tab-bookmarks" data-i18n="common.bookmarks">书签</button>
           <button class="tab-btn" id="tab-history" data-i18n="common.history">历史</button>
+          <button class="tab-btn" id="tab-shortcuts" data-i18n="common.shortcuts">捷径</button>
         </div>
         <button class="menu-btn" id="menu-btn" data-i18n-title="common.menu" title="菜单">⋮</button>
       </div>
@@ -1095,7 +1309,7 @@
 
     <div class="sidebar-content" id="bookmark-tree-container">
       <!-- 书签列表面板 -->
-      <div class="panel active" id="bookmark-panel">
+      <div class="panel bookmark-panel active" id="bookmark-panel">
         <ul class="bookmark-tree" id="bookmark-tree"></ul>
         <div class="empty-state" id="empty-state" style="display: none;">
           <div class="empty-state-icon">📭</div>
@@ -1109,6 +1323,23 @@
         <div class="empty-state" id="history-empty-state" style="display: none;">
           <div class="empty-state-icon">📭</div>
           <div data-i18n="common.noHistory">暂无历史记录</div>
+        </div>
+      </div>
+
+      <!-- 捷径面板 -->
+      <div class="panel shortcuts-panel" id="shortcuts-panel">
+        <div class="shortcuts-content" id="shortcuts-content">
+          <div class="shortcuts-grid" id="shortcuts-grid"></div>
+          <div class="empty-state" id="shortcuts-empty-state" style="display: none;">
+            <div class="empty-state-icon">⚡</div>
+            <div data-i18n="common.noShortcuts">暂无捷径</div>
+          </div>
+        </div>
+        <div class="shortcuts-footer">
+          <button class="btn btn-primary" id="btn-add-shortcut">
+            <span>➕</span>
+            <span data-i18n="common.addShortcut">添加捷径</span>
+          </button>
         </div>
       </div>
 

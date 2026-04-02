@@ -476,6 +476,23 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
     menu.appendChild(separator2);
   }
 
+  const existsInShortcuts = await ShortcutUtils.exists(item.url);
+  if (!existsInShortcuts) {
+    const addToShortcutsItem = document.createElement('div');
+    addToShortcutsItem.className = 'context-menu-item';
+    addToShortcutsItem.textContent = '⚡ ' + I18n.t('common.addToShortcuts');
+    addToShortcutsItem.addEventListener('click', async () => {
+      try {
+        await ShortcutUtils.add(item.title, item.url);
+      } catch (error) {
+        showToast('该网址已存在', 'warning');
+        return;
+      }
+      removeContextMenu();
+    });
+    menu.appendChild(addToShortcutsItem);
+  }
+
   const domain = FrequentlyUsed.extractDomain(item.url);
   const blockItem = document.createElement('div');
   blockItem.className = 'context-menu-item';
@@ -739,6 +756,22 @@ function removeEditModal() {
   if (existingModal) {
     existingModal.remove();
   }
+}
+
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('toast-hide');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
 
 async function showAddBookmarkModal() {
@@ -1653,41 +1686,54 @@ function setupTabSwitcher() {
 
   tabBookmarks.addEventListener('click', () => switchTab('bookmarks'));
   tabHistory.addEventListener('click', () => switchTab('history'));
+  document.getElementById('tab-shortcuts').addEventListener('click', () => switchTab('shortcuts'));
 }
 
 function switchTab(tabName) {
   currentTab = tabName;
 
+  // 如果菜单是打开的，先关闭菜单
+  if (isMenuOpen) {
+    closeMenuPanel();
+  }
+
   const tabBookmarks = document.getElementById('tab-bookmarks');
   const tabHistory = document.getElementById('tab-history');
+  const tabShortcuts = document.getElementById('tab-shortcuts');
   const bookmarkPanel = document.getElementById('bookmark-panel');
   const historyPanel = document.getElementById('history-panel');
+  const shortcutsPanel = document.getElementById('shortcuts-panel');
   const searchBox = document.getElementById('search-box');
   const historySearchBox = document.getElementById('history-search-box');
   const sidebarFooter = document.getElementById('sidebar-footer');
 
+  tabBookmarks.classList.remove('active');
+  tabHistory.classList.remove('active');
+  tabShortcuts.classList.remove('active');
+  bookmarkPanel.classList.remove('active');
+  historyPanel.classList.remove('active');
+  shortcutsPanel.classList.remove('active');
+
   if (tabName === 'bookmarks') {
     tabBookmarks.classList.add('active');
-    tabHistory.classList.remove('active');
     bookmarkPanel.classList.add('active');
-    bookmarkPanel.classList.remove('hidden');
-    historyPanel.classList.remove('active');
-    historyPanel.classList.add('hidden');
     searchBox.style.display = 'block';
     historySearchBox.style.display = 'none';
     sidebarFooter.style.display = 'flex';
-  } else {
-    tabBookmarks.classList.remove('active');
+  } else if (tabName === 'history') {
     tabHistory.classList.add('active');
-    bookmarkPanel.classList.remove('active');
-    bookmarkPanel.classList.add('hidden');
     historyPanel.classList.add('active');
-    historyPanel.classList.remove('hidden');
     searchBox.style.display = 'none';
     historySearchBox.style.display = 'block';
     sidebarFooter.style.display = 'none';
-
     loadHistoryData();
+  } else if (tabName === 'shortcuts') {
+    tabShortcuts.classList.add('active');
+    shortcutsPanel.classList.add('active');
+    searchBox.style.display = 'none';
+    historySearchBox.style.display = 'none';
+    sidebarFooter.style.display = 'none';
+    renderShortcutsPanel();
   }
 }
 
@@ -1756,7 +1802,387 @@ function renderHistoryPanel() {
       browser.tabs.create({ url: item.url });
     });
 
+    li.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showHistoryContextMenu(e, item);
+    });
+
     historyList.appendChild(li);
+  });
+}
+
+async function showHistoryContextMenu(e, item) {
+  removeContextMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.style.position = 'fixed';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+
+  const addToBookmarkItem = document.createElement('div');
+  addToBookmarkItem.className = 'context-menu-item';
+  addToBookmarkItem.textContent = I18n.t('common.addToBookmark');
+  addToBookmarkItem.addEventListener('click', async () => {
+    const bookmarkTree = await BookmarkUtils.getTree();
+    const folders = getAllFolders(bookmarkTree);
+    let parentId = '1';
+    if (folders.length > 0) {
+      parentId = folders[0].id;
+    }
+    await BookmarkUtils.create({
+      parentId,
+      title: item.title,
+      url: item.url
+    });
+    removeContextMenu();
+  });
+
+  const existsInShortcuts = await ShortcutUtils.exists(item.url);
+  if (!existsInShortcuts) {
+    const addToShortcutsItem = document.createElement('div');
+    addToShortcutsItem.className = 'context-menu-item';
+    addToShortcutsItem.textContent = I18n.t('common.addToShortcuts');
+    addToShortcutsItem.addEventListener('click', async () => {
+      try {
+        await ShortcutUtils.add(item.title, item.url);
+      } catch (error) {
+        showToast('该网址已存在', 'warning');
+        return;
+      }
+      removeContextMenu();
+    });
+    menu.appendChild(addToShortcutsItem);
+  }
+
+  menu.appendChild(addToBookmarkItem);
+
+  document.body.appendChild(menu);
+
+  setTimeout(() => {
+    document.addEventListener('click', removeContextMenu);
+  }, 0);
+}
+
+function removeContextMenu() {
+  const menu = document.querySelector('.context-menu');
+  if (menu) {
+    menu.remove();
+  }
+  document.removeEventListener('click', removeContextMenu);
+}
+
+function getAllFolders(nodes, folders = []) {
+  nodes.forEach(node => {
+    if (!node.url) {
+      folders.push(node);
+      if (node.children) {
+        getAllFolders(node.children, folders);
+      }
+    }
+  });
+  return folders;
+}
+
+async function renderShortcutsPanel() {
+  const shortcutsGrid = document.getElementById('shortcuts-grid');
+  const emptyState = document.getElementById('shortcuts-empty-state');
+
+  shortcutsGrid.innerHTML = '';
+
+  const shortcuts = await ShortcutUtils.getAll();
+  shortcuts.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  if (shortcuts.length === 0) {
+    emptyState.style.display = 'flex';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  shortcuts.forEach((shortcut, index) => {
+    const item = document.createElement('div');
+    item.className = 'shortcut-item';
+    item.draggable = true;
+    item.dataset.id = shortcut.id;
+    item.dataset.url = shortcut.url;
+    item.dataset.title = shortcut.title;
+
+    const icon = document.createElement('div');
+    icon.className = 'shortcut-icon';
+    const faviconElement = FaviconService.createIconElement(shortcut.url, false, false);
+    faviconElement.style.width = '100%';
+    faviconElement.style.height = '100%';
+    icon.appendChild(faviconElement);
+
+    const title = document.createElement('div');
+    title.className = 'shortcut-title';
+    title.textContent = shortcut.title;
+
+    item.appendChild(icon);
+    item.appendChild(title);
+
+    item.addEventListener('click', () => {
+      browser.tabs.create({ url: shortcut.url });
+    });
+
+    item.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      showShortcutContextMenu(e, shortcut);
+    });
+
+    item.addEventListener('dragstart', (e) => {
+      item.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', shortcut.id);
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      document.querySelectorAll('.shortcut-item').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      item.classList.add('drag-over');
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (draggedId && draggedId !== shortcut.id) {
+        const allItems = Array.from(shortcutsGrid.querySelectorAll('.shortcut-item'));
+        const fromIndex = allItems.findIndex(el => el.dataset.id === draggedId);
+        const toIndex = allItems.findIndex(el => el === item);
+        
+        if (fromIndex !== -1 && toIndex !== -1) {
+          const orderedIds = allItems.map(el => el.dataset.id);
+          orderedIds.splice(fromIndex, 1);
+          orderedIds.splice(toIndex, 0, draggedId);
+          await ShortcutUtils.reorder(orderedIds);
+          renderShortcutsPanel();
+        }
+      }
+    });
+
+    shortcutsGrid.appendChild(item);
+  });
+}
+
+function showShortcutContextMenu(e, shortcut) {
+  removeContextMenu();
+
+  const menu = document.createElement('div');
+  menu.className = 'context-menu';
+  menu.style.position = 'fixed';
+  menu.style.left = e.clientX + 'px';
+  menu.style.top = e.clientY + 'px';
+
+  const addBookmarkItem = document.createElement('div');
+  addBookmarkItem.className = 'context-menu-item';
+  addBookmarkItem.textContent = I18n.t('common.addToBookmark');
+  addBookmarkItem.addEventListener('click', async () => {
+    const bookmarkTree = await BookmarkUtils.getTree();
+    const folders = getAllFolders(bookmarkTree);
+    
+    let parentId = '1';
+    if (folders.length > 0) {
+      parentId = folders[0].id;
+    }
+
+    await BookmarkUtils.create({
+      parentId,
+      title: shortcut.title,
+      url: shortcut.url
+    });
+    removeContextMenu();
+  });
+
+  const editItem = document.createElement('div');
+  editItem.className = 'context-menu-item';
+  editItem.textContent = '✏️ ' + I18n.t('common.modify');
+  editItem.addEventListener('click', () => {
+    showEditShortcutModal(shortcut);
+    removeContextMenu();
+  });
+
+  const deleteItem = document.createElement('div');
+  deleteItem.className = 'context-menu-item danger';
+  deleteItem.textContent = '🗑️ ' + I18n.t('common.delete');
+  deleteItem.addEventListener('click', async () => {
+    await ShortcutUtils.remove(shortcut.id);
+    renderShortcutsPanel();
+    removeContextMenu();
+  });
+
+  menu.appendChild(addBookmarkItem);
+  menu.appendChild(editItem);
+  menu.appendChild(deleteItem);
+
+  document.body.appendChild(menu);
+
+  setTimeout(() => {
+    document.addEventListener('click', removeContextMenu);
+  }, 0);
+}
+
+async function showAddShortcutModal() {
+  removeEditModal();
+
+  let currentTabInfo = null;
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs && tabs.length > 0) {
+      currentTabInfo = tabs[0];
+    }
+  } catch (error) {
+    console.error('获取当前标签页失败:', error);
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal';
+
+  modal.innerHTML = `
+    <div class="edit-modal-content">
+      <h3 class="edit-modal-title">${I18n.t('common.addShortcut')}</h3>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.shortcutTitle')}</label>
+        <input type="text" class="edit-modal-input" id="add-shortcut-title" value="${currentTabInfo?.title || ''}">
+      </div>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.shortcutUrl')}</label>
+        <input type="text" class="edit-modal-input" id="add-shortcut-url" value="${currentTabInfo?.url || ''}">
+      </div>
+      <div class="edit-modal-buttons">
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const titleInput = document.getElementById('add-shortcut-title');
+  titleInput.focus();
+  titleInput.select();
+
+  modal.querySelector('.edit-modal-cancel').addEventListener('click', () => {
+    removeEditModal();
+  });
+
+  modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
+    const title = document.getElementById('add-shortcut-title').value.trim();
+    const url = document.getElementById('add-shortcut-url').value.trim();
+
+    if (!title) {
+      alert(I18n.t('common.enterTitle'));
+      return;
+    }
+
+    if (!url) {
+      alert(I18n.t('common.enterUrl'));
+      return;
+    }
+
+    const exists = await ShortcutUtils.exists(url);
+    if (exists) {
+      showToast('该网址已存在', 'warning');
+      return;
+    }
+
+    try {
+      await ShortcutUtils.add(title, url);
+      removeEditModal();
+      if (currentTab === 'shortcuts') {
+        renderShortcutsPanel();
+      }
+    } catch (error) {
+      console.error('添加捷径失败:', error);
+      showToast('添加失败: ' + error.message, 'error');
+      return;
+    }
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      modal.querySelector('.edit-modal-save').click();
+    }
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      removeEditModal();
+    }
+  });
+}
+
+async function showEditShortcutModal(shortcut) {
+  removeEditModal();
+
+  const modal = document.createElement('div');
+  modal.className = 'edit-modal';
+
+  modal.innerHTML = `
+    <div class="edit-modal-content">
+      <h3 class="edit-modal-title">${I18n.t('common.modifyShortcut') || '修改捷径'}</h3>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.shortcutTitle')}</label>
+        <input type="text" class="edit-modal-input" id="edit-shortcut-title" value="${shortcut.title}">
+      </div>
+      <div class="edit-modal-field">
+        <label class="edit-modal-label">${I18n.t('common.shortcutUrl')}</label>
+        <input type="text" class="edit-modal-input" id="edit-shortcut-url" value="${shortcut.url}">
+      </div>
+      <div class="edit-modal-buttons">
+        <button class="edit-modal-btn edit-modal-cancel">${I18n.t('common.cancel')}</button>
+        <button class="edit-modal-btn edit-modal-save">${I18n.t('common.save')}</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const titleInput = document.getElementById('edit-shortcut-title');
+  titleInput.focus();
+  titleInput.select();
+
+  modal.querySelector('.edit-modal-cancel').addEventListener('click', () => {
+    removeEditModal();
+  });
+
+  modal.querySelector('.edit-modal-save').addEventListener('click', async () => {
+    const title = document.getElementById('edit-shortcut-title').value.trim();
+    const url = document.getElementById('edit-shortcut-url').value.trim();
+
+    if (!title) {
+      alert(I18n.t('common.enterTitle'));
+      return;
+    }
+
+    if (!url) {
+      alert(I18n.t('common.enterUrl'));
+      return;
+    }
+
+    await ShortcutUtils.update(shortcut.id, { title, url });
+    removeEditModal();
+    renderShortcutsPanel();
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      modal.querySelector('.edit-modal-save').click();
+    }
+  });
+
+  modal.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      removeEditModal();
+    }
   });
 }
 
@@ -1842,8 +2268,10 @@ function toggleMenuPanel() {
   const menuBtn = document.getElementById('menu-btn');
   const bookmarkPanel = document.getElementById('bookmark-panel');
   const historyPanel = document.getElementById('history-panel');
+  const shortcutsPanel = document.getElementById('shortcuts-panel');
   const menuPanel = document.getElementById('menu-panel');
   const searchBox = document.getElementById('search-box');
+  const historySearchBox = document.getElementById('history-search-box');
   const sidebarFooter = document.getElementById('sidebar-footer');
 
   if (isMenuOpen) {
@@ -1852,8 +2280,10 @@ function toggleMenuPanel() {
     menuBtn.title = I18n.t('common.back');
     bookmarkPanel.classList.remove('active');
     historyPanel.classList.remove('active');
+    shortcutsPanel.classList.remove('active');
     menuPanel.classList.add('active');
     searchBox.style.display = 'none';
+    historySearchBox.style.display = 'none';
     sidebarFooter.style.display = 'none';
   } else {
     menuBtn.textContent = '⋮';
@@ -1865,9 +2295,13 @@ function toggleMenuPanel() {
       bookmarkPanel.classList.add('active');
       searchBox.style.display = 'block';
       sidebarFooter.style.display = 'flex';
-    } else {
+    } else if (currentTab === 'history') {
       historyPanel.classList.add('active');
-      searchBox.style.display = 'none';
+      historySearchBox.style.display = 'block';
+      sidebarFooter.style.display = 'none';
+    } else if (currentTab === 'shortcuts') {
+      shortcutsPanel.classList.add('active');
+      historySearchBox.style.display = 'none';
       sidebarFooter.style.display = 'none';
     }
     
@@ -1989,6 +2423,11 @@ function setupEventListeners() {
 
   document.getElementById('btn-add-bookmark').addEventListener('click', async () => {
     showAddBookmarkModal();
+  });
+
+  // 添加捷径按钮
+  document.getElementById('btn-add-shortcut').addEventListener('click', async () => {
+    showAddShortcutModal();
   });
 
   // 备份按钮

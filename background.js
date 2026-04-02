@@ -8,6 +8,36 @@ const log = DEBUG ? console.log.bind(console) : () => {};
 const error = console.error.bind(console);
 
 // ============================================
+// Storage 工具
+// ============================================
+
+const Storage = {
+  get(keys) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.get(keys, (result) => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve(result);
+        }
+      });
+    });
+  },
+
+  set(items) {
+    return new Promise((resolve, reject) => {
+      chrome.storage.local.set(items, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+};
+
+// ============================================
 // WebDAV 备份功能
 // ============================================
 
@@ -94,6 +124,83 @@ class WebDAVClient {
       throw err;
     }
   }
+
+  async listBackups() {
+    try {
+      await this.ensureBookmarksFolder();
+      const response = await this.request('PROPFIND', 'bookmarks/');
+      const text = await response.text();
+      return this.parsePropfindResponse(text);
+    } catch (err) {
+      error('List backups failed:', err);
+      throw err;
+    }
+  }
+
+  parsePropfindResponse(xmlText) {
+    const backups = [];
+    const responseRegex = /<D:response[\s\S]*?<\/D:response>/gi;
+    const matches = xmlText.match(responseRegex) || [];
+
+    matches.forEach(responseXml => {
+      const hrefMatch = responseXml.match(/<D:href>([^<]+)<\/D:href>/i);
+      const displayNameMatch = responseXml.match(/<D:displayname>([^<]+)<\/D:displayname>/i);
+      const lastModifiedMatch = responseXml.match(/<D:getlastmodified>([^<]+)<\/D:getlastmodified>/i);
+      const contentLengthMatch = responseXml.match(/<D:getcontentlength>([^<]+)<\/D:getcontentlength>/i);
+
+      const href = hrefMatch ? hrefMatch[1] : '';
+      const displayName = displayNameMatch ? displayNameMatch[1] : '';
+
+      if (href && displayName && displayName.startsWith('bookmarks_backup_') && displayName.endsWith('.json')) {
+        backups.push({
+          filename: displayName,
+          href: href,
+          lastModified: lastModifiedMatch ? lastModifiedMatch[1] : '',
+          size: contentLengthMatch ? parseInt(contentLengthMatch[1]) : 0
+        });
+      }
+    });
+
+    backups.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    return backups;
+  }
+
+  async deleteBackup(filename) {
+    try {
+      await this.request('DELETE', `bookmarks/${filename}`);
+      log('Backup deleted:', filename);
+      return { success: true };
+    } catch (err) {
+      error('Delete backup failed:', err);
+      throw err;
+    }
+  }
+
+  async cleanupOldBackups(keepCount = 3) {
+    try {
+      const backups = await this.listBackups();
+      if (backups.length <= keepCount) {
+        return { cleaned: 0 };
+      }
+
+      const toDelete = backups.slice(keepCount);
+      let cleaned = 0;
+
+      for (const backup of toDelete) {
+        try {
+          await this.deleteBackup(backup.filename);
+          cleaned++;
+        } catch (e) {
+          log('Failed to delete backup:', backup.filename, e);
+        }
+      }
+
+      return { cleaned };
+    } catch (err) {
+      error('Cleanup old backups failed:', err);
+      throw err;
+    }
+  }
 }
 
 class BookmarkManager {
@@ -105,45 +212,113 @@ class BookmarkManager {
     });
   }
 
+  static async deleteNodeWithTrashCheck(nodeId, isFolder = false) {
+    const deleteMethod = isFolder ? 'removeTree' : 'remove';
+    
+    return new Promise((resolve) => {
+      chrome.bookmarks[deleteMethod](nodeId, () => {
+        resolve();
+      });
+    });
+  }
+
   static async clearAllBookmarks() {
-    // 获取书签栏和其他书签的子节点
+    // 获取完整的书签树（包括回收站）
+    const fullTree = await this.getAllBookmarks();
+    const rootNode = fullTree[0];
+
+    if (!rootNode || !rootNode.children) {
+      log('No bookmarks to clear');
+      return;
+    }
+
+    // 系统根节点：0 是根，1 是书签栏，2 是其他书签
+    const systemNodeIds = ['0', '1', '2'];
+
+    // 收集所有书签节点
+    const allBookmarkNodes = [];
+
+    const collectNodes = (node) => {
+      if (!node) return;
+      if (!systemNodeIds.includes(node.id)) {
+        allBookmarkNodes.push(node);
+      }
+      if (node.children) {
+        node.children.forEach(collectNodes);
+      }
+    };
+
+    rootNode.children.forEach(collectNodes);
+
+    // 第一轮：尝试直接删除书签栏和其他书签的内容
     const toolbarChildren = await new Promise((resolve) => {
       chrome.bookmarks.getChildren('1', resolve);
     });
     const otherChildren = await new Promise((resolve) => {
       chrome.bookmarks.getChildren('2', resolve);
     });
-    
-    // 删除书签栏的所有内容
-    for (const child of toolbarChildren) {
-      try {
-        if (child.url) {
-          await new Promise((resolve) => {
-            chrome.bookmarks.remove(child.id, () => resolve());
-          });
-        } else {
+
+    const deleteChildren = async (children) => {
+      for (const child of children) {
+        try {
+          // 使用 removeTree 来尝试直接删除（某些浏览器会绕过回收站）
           await new Promise((resolve) => {
             chrome.bookmarks.removeTree(child.id, () => resolve());
           });
-        }
-      } catch (e) {}
-    }
+        } catch (e) {}
+      }
+    };
+
+    await deleteChildren(toolbarChildren);
+    await deleteChildren(otherChildren);
+
+    // 等待一段时间让浏览器处理删除操作
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 第二轮：检查并清空回收站
+    // 尝试查找回收站节点（ID 可能是 '3'，或者通过标题查找）
+    const findTrashNode = (nodes) => {
+      return nodes?.find(n => 
+        n.id === '3' || 
+        n.title === '回收站' || 
+        n.title === 'Trash' ||
+        n.title === '垃圾桶'
+      );
+    };
+
+    const trashNode = findTrashNode(rootNode.children);
     
-    // 删除其他书签的所有内容
-    for (const child of otherChildren) {
-      try {
-        if (child.url) {
-          await new Promise((resolve) => {
-            chrome.bookmarks.remove(child.id, () => resolve());
-          });
-        } else {
-          await new Promise((resolve) => {
-            chrome.bookmarks.removeTree(child.id, () => resolve());
-          });
+    if (trashNode) {
+      log('Found trash node, attempting to clear it:', trashNode.id);
+      
+      // 循环删除回收站内容，直到清空为止
+      let trashCleared = false;
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (!trashCleared && attempts < maxAttempts) {
+        const trashChildren = await new Promise((resolve) => {
+          chrome.bookmarks.getChildren(trashNode.id, resolve);
+        });
+
+        if (trashChildren.length === 0) {
+          trashCleared = true;
+          break;
         }
-      } catch (e) {}
+
+        for (const child of trashChildren) {
+          try {
+            await new Promise((resolve) => {
+              chrome.bookmarks.removeTree(child.id, () => resolve());
+            });
+          } catch (e) {}
+        }
+
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
     }
-    
+
     log('clearAllBookmarks completed');
   }
 
@@ -323,13 +498,18 @@ class SyncManager {
       
       // 获取标签分组数据
       const tagGroups = await this.getTagGroups();
+
+      // 获取捷径数据
+      const shortcutsResult = await Storage.get('shortcuts');
+      const shortcuts = shortcutsResult.shortcuts || [];
       
       const data = {
-        version: '1.3',
+        version: '1.5',
         timestamp: new Date().toISOString(),
         bookmarks,
         tagsByUrl: tagsByUrl || {},
-        tagGroups: tagGroups || { groups: [] }
+        tagGroups: tagGroups || { groups: [] },
+        shortcuts: shortcuts
       };
       const filename = await this.client.uploadBookmarks(data);
       log('Bookmarks backed up successfully:', filename);
@@ -372,6 +552,14 @@ class SyncManager {
       } else {
         log('No tag groups found in backup, skipping');
       }
+
+      // 恢复捷径数据（如果存在）
+      if (backupData.shortcuts && Array.isArray(backupData.shortcuts)) {
+        log('Restoring shortcuts from backup');
+        await Storage.set({ shortcuts: backupData.shortcuts });
+      } else {
+        log('No shortcuts found in backup, skipping');
+      }
       
       log('Bookmarks restored successfully');
       
@@ -404,6 +592,30 @@ class SyncManager {
         resolve(result.tagGroups || { groups: [] });
       });
     });
+  }
+
+  async listBackups() {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.listBackups();
+  }
+
+  async deleteBackup(filename) {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.deleteBackup(filename);
+  }
+
+  async cleanupOldBackups(keepCount = 3) {
+    if (!this.client) {
+      error('WebDAV client not initialized');
+      throw new Error('WebDAV not configured');
+    }
+    return await this.client.cleanupOldBackups(keepCount);
   }
 
   async restoreTagGroups(tagGroups, merge = false) {
@@ -548,7 +760,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   
   switch (message.action) {
     case 'backup':
-      syncManager.backupBookmarks().then((result) => {
+      syncManager.backupBookmarks().then(async (result) => {
+        if (result.success) {
+          log('Backup successful, checking autoCleanup setting...');
+          const settings = await Storage.get('backupSettings');
+          log('Backup settings:', settings);
+          const autoCleanup = settings?.backupSettings?.autoCleanup || settings?.autoCleanup || false;
+          log('autoCleanup value:', autoCleanup);
+          if (autoCleanup) {
+            log('Starting auto cleanup...');
+            try {
+              const cleanupResult = await syncManager.cleanupOldBackups(3);
+              log('Auto cleanup completed:', cleanupResult);
+            } catch (cleanupError) {
+              log('Auto cleanup error:', cleanupError);
+            }
+          } else {
+            log('Auto cleanup is disabled');
+          }
+        }
         sendResponse(result);
       });
       return true;
@@ -558,7 +788,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(result);
       });
       return true;
-      
+
+    case 'restoreBackup':
+      syncManager.restoreBookmarks(message.filename, message.merge).then(async (result) => {
+        if (result.success) {
+          const settings = await Storage.get('backupSettings');
+          const autoCleanup = settings?.backupSettings?.autoCleanup || settings?.autoCleanup || false;
+          if (autoCleanup) {
+            const cleanupResult = await syncManager.cleanupOldBackups(3);
+            log('Auto cleanup result:', cleanupResult);
+          }
+        }
+        sendResponse(result);
+      });
+      return true;
+
+    case 'listBackups':
+      syncManager.listBackups().then((result) => {
+        sendResponse(result);
+      }).catch((error) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true;
+
+    case 'deleteBackup':
+      syncManager.deleteBackup(message.filename).then((result) => {
+        sendResponse(result);
+      }).catch((error) => {
+        sendResponse({ success: false, error: error.message });
+      });
+      return true;
+
     case 'init':
       syncManager.init().then(() => {
         sendResponse({ success: true });
