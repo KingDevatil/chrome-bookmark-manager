@@ -1718,11 +1718,16 @@ function renderHistoryPanel() {
 
   historyList.innerHTML = '';
 
-  // 过滤历史记录
   let filteredData = historyData;
+
+  filteredData = filteredData.filter(item => {
+    const url = item.url || '';
+    return !url.startsWith('chrome-extension://');
+  });
+
   if (historySearchQuery) {
     const query = historySearchQuery.toLowerCase();
-    filteredData = historyData.filter(item => {
+    filteredData = filteredData.filter(item => {
       const title = (item.title || '').toLowerCase();
       const url = (item.url || '').toLowerCase();
       return title.includes(query) || url.includes(query);
