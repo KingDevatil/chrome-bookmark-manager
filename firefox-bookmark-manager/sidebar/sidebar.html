@@ -416,6 +416,21 @@
       border-color: var(--border-color, #e2e8f0);
     }
 
+    #btn-backup {
+      background-color: var(--success-color, #10b981);
+      color: white;
+    }
+
+    #btn-backup:hover {
+      background-color: #059669;
+    }
+
+    #btn-backup:disabled {
+      background-color: var(--bg-tertiary, #f1f5f9);
+      color: var(--text-tertiary, #94a3b8);
+      cursor: not-allowed;
+    }
+
     /* 菜单按钮 */
     .header-row {
       display: flex;
@@ -1130,13 +1145,13 @@
 
     <div class="sidebar-footer" id="sidebar-footer">
       <div class="footer-row">
+        <button class="btn btn-secondary" id="btn-add-bookmark">
+          <span>⭐</span>
+          <span data-i18n="common.addBookmark">添加书签</span>
+        </button>
         <button class="btn btn-secondary" id="btn-new-folder">
           <span>📁</span>
           <span data-i18n="common.newFolder">新建文件夹</span>
-        </button>
-        <button class="btn btn-primary" id="btn-add-bookmark">
-          <span>⭐</span>
-          <span data-i18n="common.addBookmark">添加书签</span>
         </button>
       </div>
       <div class="footer-row">
@@ -1144,7 +1159,7 @@
           <span>📂</span>
           <span data-i18n="common.manager">管理器</span>
         </button>
-        <button class="btn btn-backup" id="btn-backup">
+        <button class="btn btn-secondary" id="btn-backup">
           <span>💾</span>
           <span data-i18n="common.backupNow">立即备份</span>
         </button>
