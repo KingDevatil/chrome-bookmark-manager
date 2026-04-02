@@ -1690,9 +1690,7 @@ function switchTab(tabName) {
     historySearchBox.style.display = 'block';
     sidebarFooter.style.display = 'none';
 
-    if (historyData.length === 0) {
-      loadHistoryData();
-    }
+    loadHistoryData();
   }
 }
 
