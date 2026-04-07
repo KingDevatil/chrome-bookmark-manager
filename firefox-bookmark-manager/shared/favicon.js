@@ -28,12 +28,12 @@ const FaviconService = {
       }
 
       return [
-        // 方案1: DuckDuckGo Favicon Service（隐私友好）
+        // 方案1: Google Favicon Service（最稳定）
+        `https://www.google.com/s2/favicons?domain=${domain}&sz=32`,
+        // 方案2: DuckDuckGo Favicon Service（隐私友好）
         `https://icons.duckduckgo.com/ip3/${domain}.ico`,
-        // 方案2: 直接访问网站的 favicon
-        `${origin}/favicon.ico`,
-        // 方案3: Google Favicon Service
-        `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+        // 方案3: 直接访问网站的 favicon
+        `${origin}/favicon.ico`
       ];
     } catch (error) {
       console.error('Invalid URL:', url);
