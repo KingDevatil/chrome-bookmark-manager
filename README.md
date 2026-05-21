@@ -7,7 +7,7 @@ firefox应用商店：https://addons.mozilla.org/zh-CN/firefox/addon/sidebar-boo
 
 功能强大的 Chrome 浏览器收藏夹管理插件，提供侧边栏快速访问、批量管理和 WebDAV 自动备份等功能。
 
-![Version](https://img.shields.io/badge/version-1.4.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)
 ![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)
 
 ## ✨ 功能特性
@@ -21,7 +21,7 @@ firefox应用商店：https://addons.mozilla.org/zh-CN/firefox/addon/sidebar-boo
 - **批量操作** - 支持 Shift 多选、全选、批量删除等功能
 - **拖拽排序** - 支持拖拽书签调整顺序或移动到其他文件夹
 - **常用目录** - 自动统计最近访问最频繁的链接，支持自定义时间范围、显示数量、置顶和黑名单
-- **捷径功能** - 自定义常用网站捷径，支持添加、删除、拖拽排序，可调整图标大小
+- **捷径功能** - 自定义常用网站捷径，支持添加、删除、拖拽排序，可调整图标大小和缩放比例，无图标时自动显示网站前两个字符
 
 ### 🎨 界面优化
 
@@ -128,6 +128,8 @@ chrome应用商店：https://chromewebstore.google.com/detail/ppikochebijmmaffag
 4. 调整目录缩进宽度（5-20px）
 5. 调整书签缩进宽度（5-20px）
 6. 调整捷径图标大小（40-120px）
+7. 调整书签图标大小（12-24px）
+8. 调整捷径图标缩放比例（40%-100%）
 
 ### 标签管理
 
@@ -234,6 +236,14 @@ A: 本扩展使用 Chrome 本地书签 API，书签会自动与 Chrome 账户同
 MIT License
 
 ## 📋 更新日志
+
+### v1.4.3 (2025-05-21)
+
+**图标自定义**
+- 新增书签图标大小设置（12-24px），支持书签树和管理器中的网站图标缩放
+- 新增捷径图标缩放比例设置（40%-100%），自由控制捷径内图标边距
+- 无图标的捷径改为显示网站名称前两个字符（汉字或字母），更直观
+- 设置保存后侧边栏实时同步，无需手动刷新
 
 ### v1.4.2 (2025-04-02)
 
