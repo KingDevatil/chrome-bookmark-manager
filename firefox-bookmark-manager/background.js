@@ -315,8 +315,8 @@ class SyncManager {
   }
 
   setupAlarms() {
-    browser.storage.local.get('settings').then((result) => {
-      const settings = result.settings || {};
+    browser.storage.local.get('backupSettings').then((result) => {
+      const settings = result.backupSettings || {};
       if (settings.autoBackup && settings.backupInterval) {
         browser.alarms.create('backup', {
           periodInMinutes: settings.backupInterval
@@ -570,12 +570,15 @@ const syncManager = new SyncManager();
 browser.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     log('Bookmark Manager 已安装');
-    
+
     browser.storage.local.set({
       theme: 'light',
-      autoBackup: false,
-      backupInterval: 60,
-      backupOnStartup: false
+      backupSettings: {
+        autoBackup: false,
+        backupInterval: 60,
+        backupOnStartup: false,
+        autoCleanup: false
+      }
     });
   }
 });
@@ -589,8 +592,9 @@ browser.alarms.onAlarm.addListener((alarm) => {
 
 // 监听启动事件
 browser.runtime.onStartup.addListener(async () => {
-  const settings = await syncManager.loadConfig();
-  if (settings && settings.autoBackupOnStartup) {
+  const result = await browser.storage.local.get('backupSettings');
+  const backupSettings = result.backupSettings || {};
+  if (backupSettings.backupOnStartup) {
     syncManager.backupBookmarks();
   }
 });
@@ -602,7 +606,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.action) {
     case 'backup':
       syncManager.backupBookmarks().then(async (result) => {
-        if (result.success) {
+        if (result && result.success) {
           log('Backup successful, checking autoCleanup setting...');
           const settings = await Storage.get('backupSettings');
           log('Backup settings:', settings);

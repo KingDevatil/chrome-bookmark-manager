@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化主题和语言
   ThemeManager.init();
   await I18n.init();
+  await FaviconService.initSize();
 
   await loadFolderTree();
   await loadBookmarks('1');
@@ -436,7 +437,11 @@ function createBookmarkCard(bookmark, index) {
 
   const url = document.createElement('div');
   url.className = 'bookmark-url';
-  url.textContent = new URL(bookmark.url).hostname;
+  try {
+    url.textContent = new URL(bookmark.url).hostname;
+  } catch (e) {
+    url.textContent = bookmark.url || '';
+  }
 
   card.appendChild(checkbox);
   card.appendChild(deleteBtn);
@@ -699,7 +704,7 @@ function renderFolderDetailPanel(folder) {
     <div class="detail-content">
       <div class="detail-field">
         <div class="detail-label" data-i18n="common.name">名称</div>
-        <input type="text" class="detail-input" id="detail-title" value="${folder.title || ''}">
+        <input type="text" class="detail-input" id="detail-title" value="${Utils.escapeHtml(folder.title || '')}">
       </div>
       <div class="detail-field">
         <div class="detail-label" data-i18n="common.contains">包含内容</div>
@@ -775,11 +780,11 @@ async function renderDetailPanel(bookmark) {
     <div class="detail-content">
       <div class="detail-field">
         <div class="detail-label" data-i18n="common.title">标题</div>
-        <input type="text" class="detail-input" id="detail-title" value="${bookmark.title || ''}">
+        <input type="text" class="detail-input" id="detail-title" value="${Utils.escapeHtml(bookmark.title || '')}">
       </div>
       <div class="detail-field">
         <div class="detail-label" data-i18n="common.url">网址</div>
-        <input type="text" class="detail-input" id="detail-url" value="${bookmark.url}">
+        <input type="text" class="detail-input" id="detail-url" value="${Utils.escapeHtml(bookmark.url || '')}">
       </div>
       <div class="detail-field">
         <div class="detail-label" data-i18n="common.tags">标签</div>

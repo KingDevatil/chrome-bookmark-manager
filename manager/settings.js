@@ -44,6 +44,10 @@ async function loadSettings() {
   document.getElementById('bookmark-indent-value').textContent = `${layoutSettings.bookmarkIndent || 5}px`;
   document.getElementById('shortcut-icon-size-slider').value = layoutSettings.shortcutIconSize || 60;
   document.getElementById('shortcut-icon-size-value').textContent = `${layoutSettings.shortcutIconSize || 60}px`;
+  document.getElementById('favicon-size-slider').value = layoutSettings.faviconSize || 16;
+  document.getElementById('favicon-size-value').textContent = `${layoutSettings.faviconSize || 16}px`;
+  document.getElementById('shortcut-icon-scale-slider').value = layoutSettings.shortcutIconScale || 70;
+  document.getElementById('shortcut-icon-scale-value').textContent = `${layoutSettings.shortcutIconScale || 70}%`;
 
   // 更新预览
   updateLayoutPreview(
@@ -81,17 +85,7 @@ function setupEventListeners() {
     document.getElementById('auto-backup-config').classList.toggle('visible', e.target.checked);
   });
 
-  // 自动清理开关 - 自动保存
-  document.getElementById('auto-cleanup-enabled').addEventListener('change', async (e) => {
-    try {
-      const result = await Storage.get('backupSettings');
-      const settings = result.backupSettings || {};
-      settings.autoCleanup = e.target.checked;
-      await Storage.set({ backupSettings: settings });
-    } catch (error) {
-      console.error('Failed to save auto cleanup setting:', error);
-    }
-  });
+  // 自动清理开关由 saveBackupSettings 统一保存，此处不再单独监听，避免竞态条件覆盖其他备份设置
   
   // WebDAV 按钮
   document.getElementById('test-connection-btn').addEventListener('click', testWebDAVConnection);
@@ -141,14 +135,6 @@ function setupEventListeners() {
       document.getElementById('tag-detail-card').style.display = 'none';
     });
   }
-  
-  // 关闭标签详情卡片（新版）
-  const closeDetailBtn = document.getElementById('close-tag-detail');
-  if (closeDetailBtn) {
-    closeDetailBtn.addEventListener('click', () => {
-      document.getElementById('tag-detail-card').style.display = 'none';
-    });
-  }
 
   // 布局设置滑块
   const heightSlider = document.getElementById('bookmark-height-slider');
@@ -185,6 +171,22 @@ function setupEventListeners() {
     document.documentElement.style.setProperty('--shortcut-icon-size', `${value}px`);
   });
 
+  const faviconSizeSlider = document.getElementById('favicon-size-slider');
+  const faviconSizeValue = document.getElementById('favicon-size-value');
+
+  faviconSizeSlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    faviconSizeValue.textContent = `${value}px`;
+  });
+
+  const shortcutIconScaleSlider = document.getElementById('shortcut-icon-scale-slider');
+  const shortcutIconScaleValue = document.getElementById('shortcut-icon-scale-value');
+
+  shortcutIconScaleSlider.addEventListener('input', (e) => {
+    const value = parseInt(e.target.value);
+    shortcutIconScaleValue.textContent = `${value}%`;
+  });
+
   // 布局设置按钮
   document.getElementById('save-layout-btn').addEventListener('click', saveLayoutSettings);
   document.getElementById('reset-layout-btn').addEventListener('click', resetLayoutSettings);
@@ -204,7 +206,9 @@ async function saveLayoutSettings() {
     bookmarkHeight: parseInt(document.getElementById('bookmark-height-slider').value),
     treeIndent: parseInt(document.getElementById('tree-indent-slider').value),
     bookmarkIndent: parseInt(document.getElementById('bookmark-indent-slider').value),
-    shortcutIconSize: parseInt(document.getElementById('shortcut-icon-size-slider').value)
+    shortcutIconSize: parseInt(document.getElementById('shortcut-icon-size-slider').value),
+    faviconSize: parseInt(document.getElementById('favicon-size-slider').value),
+    shortcutIconScale: parseInt(document.getElementById('shortcut-icon-scale-slider').value)
   };
 
   await Storage.set({ layoutSettings: settings });
@@ -216,7 +220,9 @@ async function resetLayoutSettings() {
     bookmarkHeight: 30,
     treeIndent: 5,
     bookmarkIndent: 5,
-    shortcutIconSize: 60
+    shortcutIconSize: 60,
+    faviconSize: 16,
+    shortcutIconScale: 70
   };
 
   document.getElementById('bookmark-height-slider').value = defaultSettings.bookmarkHeight;
@@ -227,6 +233,10 @@ async function resetLayoutSettings() {
   document.getElementById('bookmark-indent-value').textContent = `${defaultSettings.bookmarkIndent}px`;
   document.getElementById('shortcut-icon-size-slider').value = defaultSettings.shortcutIconSize;
   document.getElementById('shortcut-icon-size-value').textContent = `${defaultSettings.shortcutIconSize}px`;
+  document.getElementById('favicon-size-slider').value = defaultSettings.faviconSize;
+  document.getElementById('favicon-size-value').textContent = `${defaultSettings.faviconSize}px`;
+  document.getElementById('shortcut-icon-scale-slider').value = defaultSettings.shortcutIconScale;
+  document.getElementById('shortcut-icon-scale-value').textContent = `${defaultSettings.shortcutIconScale}%`;
 
   updateLayoutPreview(defaultSettings.bookmarkHeight, defaultSettings.treeIndent, defaultSettings.bookmarkIndent);
   document.documentElement.style.setProperty('--shortcut-icon-size', `${defaultSettings.shortcutIconSize}px`);

@@ -1288,6 +1288,24 @@
             </div>
           </div>
 
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="layout.faviconSize">书签图标大小</label>
+            <p class="settings-description" data-i18n="layout.faviconSizeDesc">调整书签和侧边栏中网站图标的尺寸</p>
+            <div class="slider-container">
+              <input type="range" class="slider-input" id="favicon-size-slider" min="12" max="24" value="16">
+              <span class="slider-value" id="favicon-size-value">16px</span>
+            </div>
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" data-i18n="layout.shortcutIconScale">捷径图标缩放</label>
+            <p class="settings-description" data-i18n="layout.shortcutIconScaleDesc">调整捷径内图标相对于容器的缩放比例</p>
+            <div class="slider-container">
+              <input type="range" class="slider-input" id="shortcut-icon-scale-slider" min="40" max="100" value="70">
+              <span class="slider-value" id="shortcut-icon-scale-value">70%</span>
+            </div>
+          </div>
+
           <div class="button-group">
             <button class="btn" id="reset-layout-btn" data-i18n="common.reset">恢复默认</button>
             <button class="btn btn-primary" id="save-layout-btn" data-i18n="common.save">保存设置</button>

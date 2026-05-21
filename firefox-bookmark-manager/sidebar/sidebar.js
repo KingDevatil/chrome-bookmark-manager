@@ -12,6 +12,7 @@ let frequentlyUsedCollapsed = false;
 let currentTab = 'bookmarks';
 let historyData = [];
 let historySearchQuery = '';
+let shortcutIconScale = 70;
 
 document.addEventListener('DOMContentLoaded', async () => {
   await ThemeManager.init();
@@ -1452,8 +1453,15 @@ async function handleDrop(e) {
       
       console.log('findParent 结果:', parent);
       
-      // 如果找不到父节点，说明目标是根节点，需要从根节点查找
-      if (!parent) {
+      // 如果目标是根节点，直接移入根节点内部
+      if (!parent && (targetNode.id === '1' || targetNode.id === '2')) {
+        console.log('目标是根节点，直接移入内部');
+        await BookmarkUtils.move(nodeToDrag.id, {
+          parentId: targetNode.id,
+          index: 0
+        });
+        console.log('>> 移动完成（到根节点内部）');
+      } else if (!parent) {
         console.log('findParent 返回 null，尝试从根节点查找');
         const tree = await BookmarkUtils.getTree();
         console.log('书签树:', tree);
@@ -1910,9 +1918,17 @@ async function renderShortcutsPanel() {
 
     const icon = document.createElement('div');
     icon.className = 'shortcut-icon';
-    const faviconElement = FaviconService.createIconElement(shortcut.url, false, false);
+    const fallbackText = shortcut.title ? shortcut.title.slice(0, 2).toUpperCase() : '🔗';
+    const faviconElement = FaviconService.createIconElement(shortcut.url, false, false, fallbackText);
     faviconElement.style.width = '100%';
     faviconElement.style.height = '100%';
+    // 让内部的 img 按设置的缩放比例显示
+    const innerImg = faviconElement.querySelector('img');
+    if (innerImg) {
+      innerImg.style.width = `${shortcutIconScale}%`;
+      innerImg.style.height = `${shortcutIconScale}%`;
+      innerImg.style.objectFit = 'contain';
+    }
     icon.appendChild(faviconElement);
 
     const title = document.createElement('div');
@@ -2388,6 +2404,10 @@ async function loadLayoutSettings() {
     document.documentElement.style.setProperty('--bookmark-height', `${settings.bookmarkHeight}px`);
     document.documentElement.style.setProperty('--tree-indent', `${settings.treeIndent}px`);
     document.documentElement.style.setProperty('--bookmark-indent', `${settings.bookmarkIndent}px`);
+
+    // 应用 favicon 大小
+    FaviconService.setIconSize(settings.faviconSize || 16);
+    shortcutIconScale = settings.shortcutIconScale || 70;
   } catch (error) {
     console.error('加载布局设置失败:', error);
   }
@@ -2447,7 +2467,14 @@ function setupEventListeners() {
       await loadFrequentlyUsedConfig();
       await refreshFrequentlyUsed();
     }
-    
+
+    // 监听布局设置变化，实时更新侧边栏
+    if (namespace === 'local' && changes['layoutSettings']) {
+      console.log('检测到布局设置变化');
+      await loadLayoutSettings();
+      await renderShortcutsPanel();
+    }
+
     // 监听主题变化，同步更新开关状态
     if (namespace === 'local' && changes['bookmark_manager_theme']) {
       const newTheme = changes['bookmark_manager_theme'].newValue;

@@ -2,6 +2,8 @@
  * Firefox Bookmark Manager - 公共工具函数
  */
 
+let TagGroups;
+
 // ============================================
 // 主题管理
 // ============================================
@@ -408,6 +410,21 @@ const Utils = {
         setTimeout(() => inThrottle = false, limit);
       }
     };
+  },
+
+  /**
+   * HTML 转义
+   * @param {string} str - 原始字符串
+   * @returns {string}
+   */
+  escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   },
   
   /**
@@ -907,7 +924,7 @@ if (typeof module !== 'undefined' && module.exports) {
 /**
  * 标签分组管理
  */
-const TagGroups = {
+TagGroups = {
   STORAGE_KEY: 'tagGroups',
   
   /**

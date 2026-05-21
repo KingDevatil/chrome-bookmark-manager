@@ -452,8 +452,8 @@ class SyncManager {
   }
 
   setupAlarms() {
-    chrome.storage.local.get('settings', (result) => {
-      const settings = result.settings || {};
+    chrome.storage.local.get('backupSettings', (result) => {
+      const settings = result.backupSettings || {};
       if (settings.autoBackup && settings.backupInterval) {
         chrome.alarms.create('backup', {
           periodInMinutes: settings.backupInterval
@@ -729,12 +729,15 @@ const syncManager = new SyncManager();
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     log('Bookmark Manager 已安装');
-    
+
     chrome.storage.local.set({
       theme: 'light',
-      autoBackup: false,
-      backupInterval: 60,
-      backupOnStartup: false
+      backupSettings: {
+        autoBackup: false,
+        backupInterval: 60,
+        backupOnStartup: false,
+        autoCleanup: false
+      }
     });
   }
 });
@@ -748,8 +751,9 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // 监听启动事件
 chrome.runtime.onStartup.addListener(async () => {
-  const settings = await syncManager.loadConfig();
-  if (settings && settings.autoBackupOnStartup) {
+  const result = await chrome.storage.local.get('backupSettings');
+  const backupSettings = result.backupSettings || {};
+  if (backupSettings.backupOnStartup) {
     syncManager.backupBookmarks();
   }
 });
@@ -761,7 +765,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.action) {
     case 'backup':
       syncManager.backupBookmarks().then(async (result) => {
-        if (result.success) {
+        if (result && result.success) {
           log('Backup successful, checking autoCleanup setting...');
           const settings = await Storage.get('backupSettings');
           log('Backup settings:', settings);
@@ -890,3 +894,73 @@ chrome.bookmarks.onMoved.addListener((id, moveInfo) => {
   // 书签移动文件夹时，标签保持不变
   log('Bookmark moved, tags preserved:', id);
 });
+
+// ============================================
+// Favicon 预缓存：后台监听标签页图标更新并持久化
+// 这样侧边栏无需直接查询标签页，避免 side panel 异常
+// ============================================
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.favIconUrl && tab.url) {
+    try {
+      const urlObj = new URL(tab.url);
+      const protocol = urlObj.protocol;
+      if (protocol === 'chrome-extension:' ||
+          protocol === 'chrome:' ||
+          protocol === 'about:' ||
+          protocol === 'edge:' ||
+          protocol === 'file:' ||
+          protocol === 'javascript:' ||
+          protocol === 'data:') {
+        return;
+      }
+
+      const origin = urlObj.origin;
+      const iconUrl = changeInfo.favIconUrl;
+
+      // 如果已经是 data URL，直接缓存
+      if (iconUrl.startsWith('data:')) {
+        cacheFavicon(origin, iconUrl);
+        return;
+      }
+
+      // fetch 获取 blob 转 base64 后缓存
+      fetch(iconUrl)
+        .then(r => r.blob())
+        .then(blob => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }))
+        .then(dataUrl => cacheFavicon(origin, dataUrl))
+        .catch(() => {});
+    } catch (e) {}
+  }
+});
+
+async function cacheFavicon(origin, dataUrl) {
+  try {
+    chrome.storage.local.get('favicon_cache_v2', (result) => {
+      const cache = result['favicon_cache_v2'] || {};
+      cache[origin] = { dataUrl, ts: Date.now() };
+
+      // LRU 淘汰：最多保留 200 条
+      const keys = Object.keys(cache);
+      if (keys.length > 200) {
+        keys.sort((a, b) => cache[a].ts - cache[b].ts);
+        for (let i = 0; i < keys.length - 200; i++) {
+          delete cache[keys[i]];
+        }
+      }
+
+      chrome.storage.local.set({ 'favicon_cache_v2': cache }, () => {
+        if (chrome.runtime.lastError) {
+          log('Favicon cache save failed:', chrome.runtime.lastError);
+        }
+      });
+    });
+  } catch (e) {
+    log('Background favicon cache error:', e);
+  }
+}

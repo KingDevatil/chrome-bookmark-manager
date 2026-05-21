@@ -2,6 +2,8 @@
  * Chrome Bookmark Manager - 公共工具函数
  */
 
+let TagGroups;
+
 // ============================================
 // 主题管理
 // ============================================
@@ -512,6 +514,21 @@ const Utils = {
       }
     };
   },
+
+  /**
+   * HTML 转义
+   * @param {string} str - 原始字符串
+   * @returns {string}
+   */
+  escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
   
   /**
    * 格式化日期
@@ -962,20 +979,14 @@ const BookmarkTags = {
     const orphaned = {};
     
     for (const [bookmarkId, tags] of Object.entries(allTags)) {
-      try {
-        const bookmarks = await new Promise((resolve) => {
-          chrome.bookmarks.get(bookmarkId, (results) => {
-            resolve(results);
-          });
+      const bookmarks = await new Promise((resolve) => {
+        chrome.bookmarks.get(bookmarkId, (results) => {
+          resolve(results);
         });
-        
-        if (!bookmarks || bookmarks.length === 0) {
-          orphaned[bookmarkId] = tags;
-        }
-      } catch (error) {
-        if (error.message && error.message.includes('No bookmark with id')) {
-          orphaned[bookmarkId] = tags;
-        }
+      });
+      
+      if (!bookmarks || bookmarks.length === 0) {
+        orphaned[bookmarkId] = tags;
       }
     }
     
@@ -1018,7 +1029,7 @@ if (typeof module !== 'undefined' && module.exports) {
 /**
  * 标签分组管理
  */
-const TagGroups = {
+TagGroups = {
   STORAGE_KEY: 'tagGroups',
   
   /**
