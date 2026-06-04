@@ -162,12 +162,17 @@ function createTreeNode(node, level) {
   if (isPinned) {
     content.classList.add('pinned-item');
   }
-  // 计算缩进：基础16px + 层级 * 缩进宽度
+  // 计算缩进：基础16px + 层级 * 缩进宽度 + 书签额外缩进
   const baseIndent = 16;
   const rootStyle = document.documentElement.style;
   const indentValue = rootStyle.getPropertyValue('--tree-indent') || '20px';
-  const indentWidth = parseInt(indentValue) || 20;
-  content.style.paddingLeft = `${baseIndent + level * indentWidth}px`;
+  const parsedIndent = parseInt(indentValue);
+  const indentWidth = isNaN(parsedIndent) ? 20 : Math.max(0, parsedIndent);
+  const bookmarkIndentVal = rootStyle.getPropertyValue('--bookmark-indent') || '5px';
+  const parsedBookmark = parseInt(bookmarkIndentVal);
+  const bookmarkWidth = isNaN(parsedBookmark) ? 5 : Math.max(0, parsedBookmark);
+  const extraIndent = isFolder ? 0 : bookmarkWidth;
+  content.style.paddingLeft = `${baseIndent + level * indentWidth + extraIndent}px`;
   content.style.height = `var(--bookmark-height, 32px)`;
 
   const toggle = document.createElement('span');
@@ -189,7 +194,11 @@ function createTreeNode(node, level) {
   title.className = 'tree-title';
   // 置顶链接显示📌图标
   if (isPinned && !isFolder) {
-    title.innerHTML = `<span class="pinned-icon">📌</span>${node.title || I18n.t('common.noTitle')}`;
+    const pinIcon = document.createElement('span');
+    pinIcon.className = 'pinned-icon';
+    pinIcon.textContent = '📌';
+    title.appendChild(pinIcon);
+    title.appendChild(document.createTextNode(node.title || I18n.t('common.noTitle')));
   } else {
     title.textContent = node.title || (isFolder ? I18n.t('common.newFolder') : I18n.t('common.noTitle'));
   }
@@ -505,7 +514,9 @@ async function showFrequentlyUsedLinkContextMenu(e, item) {
   });
   
   menu.appendChild(blockItem);
-  
+
+  // 追加到 DOM 前再次移除残留菜单
+  removeContextMenu();
   document.body.appendChild(menu);
   
   const closeMenu = (event) => {
@@ -685,7 +696,8 @@ function createFolderTreeNode(node, level, selectedFolderId = null) {
     content.classList.add('selected');
     
     // 设置选中的文件夹 ID
-    const folderInput = document.getElementById('add-bookmark-folder') || 
+    const folderInput = document.getElementById('add-bookmark-folder') ||
+                        document.getElementById('add-folder-parentId') ||
                         document.getElementById('edit-folder-parentId') ||
                         document.getElementById('new-folder-parentId');
     if (folderInput) {
@@ -1668,6 +1680,15 @@ async function renderSearchResults() {
       content.appendChild(title);
 
       content.addEventListener('click', () => openBookmark(node.url));
+
+      // 搜索结果也支持右键菜单
+      const contentIsFolder = !node.url;
+      content.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showContextMenu(e, node, contentIsFolder);
+      });
+
       li.appendChild(content);
       container.appendChild(li);
     });
@@ -1865,11 +1886,18 @@ async function showHistoryContextMenu(e, item) {
 
   menu.appendChild(addToBookmarkItem);
 
+  removeContextMenu();
   document.body.appendChild(menu);
 
+  const closeMenu = (event) => {
+    if (!menu.contains(event.target)) {
+      removeContextMenu();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
   setTimeout(() => {
-    document.addEventListener('click', removeContextMenu);
-  }, 0);
+    document.addEventListener('click', closeMenu);
+  }, 100);
 }
 
 function removeContextMenu() {
@@ -2472,6 +2500,7 @@ function setupEventListeners() {
     if (namespace === 'local' && changes['layoutSettings']) {
       console.log('检测到布局设置变化');
       await loadLayoutSettings();
+      renderBookmarkTree();
       await renderShortcutsPanel();
     }
 

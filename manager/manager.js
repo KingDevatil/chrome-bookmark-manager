@@ -866,7 +866,12 @@ async function renderTagSelector(bookmarkId, currentTags) {
       
       const header = document.createElement('div');
       header.className = 'tag-selector-group-header';
-      header.innerHTML = `<span>📁</span><span>${group.name}</span>`;
+      const headerIcon = document.createElement('span');
+      headerIcon.textContent = '📁';
+      header.appendChild(headerIcon);
+      const headerName = document.createElement('span');
+      headerName.textContent = group.name;
+      header.appendChild(headerName);
       
       const content = document.createElement('div');
       content.className = 'tag-selector-group-content';
@@ -886,10 +891,15 @@ async function renderTagSelector(bookmarkId, currentTags) {
   if (ungroupedTags.length > 0) {
     const ungroupedEl = document.createElement('div');
     ungroupedEl.className = 'tag-selector-group';
-    
+
     const header = document.createElement('div');
     header.className = 'tag-selector-group-header';
-    header.innerHTML = `<span>📋</span><span>未分组</span>`;
+    const uHeaderIcon = document.createElement('span');
+    uHeaderIcon.textContent = '📋';
+    header.appendChild(uHeaderIcon);
+    const uHeaderName = document.createElement('span');
+    uHeaderName.textContent = '未分组';
+    header.appendChild(uHeaderName);
     
     const content = document.createElement('div');
     content.className = 'tag-selector-group-content';
@@ -913,11 +923,7 @@ async function renderTagSelector(bookmarkId, currentTags) {
 function createTagSelectorTag(tag, bookmarkId, isSelected) {
   const tagEl = document.createElement('span');
   tagEl.className = `tag-selector-tag ${isSelected ? 'selected' : ''}`;
-  tagEl.textContent = tag;
-  
-  if (isSelected) {
-    tagEl.innerHTML = `✓ ${tag}`;
-  }
+  tagEl.textContent = isSelected ? '✓ ' + tag : tag;
   
   tagEl.addEventListener('click', async () => {
     if (isSelected) {
@@ -948,20 +954,24 @@ function renderDetailTags(bookmarkId, tags) {
   tags.forEach(tag => {
     const tagEl = document.createElement('span');
     tagEl.className = 'detail-tag';
-    tagEl.innerHTML = `
-      <span>${tag}</span>
-      <span class="detail-tag-remove" data-tag="${tag}">×</span>
-    `;
+
+    const tagText = document.createElement('span');
+    tagText.textContent = tag;
+    tagEl.appendChild(tagText);
+
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'detail-tag-remove';
+    removeBtn.textContent = '×';
+    removeBtn.dataset.tag = tag;
+    removeBtn.addEventListener('click', async () => {
+      await removeTagFromBookmark(bookmarkId, tag);
+    });
+    tagEl.appendChild(removeBtn);
+
     container.appendChild(tagEl);
   });
 
-  // 绑定删除事件
-  container.querySelectorAll('.detail-tag-remove').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const tagToRemove = btn.dataset.tag;
-      await removeTagFromBookmark(bookmarkId, tagToRemove);
-    });
-  });
+  // 删除事件绑定（已移到上面内联）
 }
 
 async function addTagToBookmark(bookmarkId, tagName) {
@@ -1402,17 +1412,18 @@ async function handleDrop(e) {
 async function moveBookmark(fromIndex, toIndex) {
   if (fromIndex === toIndex) return;
 
-  const bookmark = state.bookmarks[fromIndex];
+  // 显示索引 = 文件夹数量 + 书签在数组中的索引
+  const bookmarkIndex = fromIndex - state.folders.length;
+  const bookmark = state.bookmarks[bookmarkIndex];
   if (!bookmark) return;
 
   try {
-    // 使用 Chrome bookmarks API 移动书签
+    // Chrome API 的 index 是兄弟节点中的合并位置（含文件夹）
     await BookmarkUtils.move(bookmark.id, {
       parentId: state.currentFolderId,
       index: toIndex
     });
 
-    // 重新加载书签列表
     await loadBookmarks(state.currentFolderId);
   } catch (error) {
     console.error('移动书签失败:', error);
@@ -1470,19 +1481,29 @@ async function renderBatchTagSelector() {
     groupsData.groups.forEach(group => {
       const groupEl = document.createElement('div');
       groupEl.className = 'batch-tag-group';
-      
+
       const header = document.createElement('div');
       header.className = 'batch-tag-group-header';
-      header.innerHTML = `<span>📁</span><span>${group.name}</span><span style="margin-left:auto;font-weight:normal">(${group.tags.length})</span>`;
-      
+      const headerIcon = document.createElement('span');
+      headerIcon.textContent = '📁';
+      header.appendChild(headerIcon);
+      const headerName = document.createElement('span');
+      headerName.textContent = group.name;
+      header.appendChild(headerName);
+      const headerCount = document.createElement('span');
+      headerCount.textContent = `(${group.tags.length})`;
+      headerCount.style.marginLeft = 'auto';
+      headerCount.style.fontWeight = 'normal';
+      header.appendChild(headerCount);
+
       const content = document.createElement('div');
       content.className = 'batch-tag-group-content';
-      
+
       group.tags.forEach(tag => {
         const tagEl = createBatchTagItem(tag);
         content.appendChild(tagEl);
       });
-      
+
       groupEl.appendChild(header);
       groupEl.appendChild(content);
       container.appendChild(groupEl);
@@ -1493,10 +1514,20 @@ async function renderBatchTagSelector() {
   if (ungroupedTags.length > 0) {
     const ungroupedEl = document.createElement('div');
     ungroupedEl.className = 'batch-tag-group';
-    
+
     const header = document.createElement('div');
     header.className = 'batch-tag-group-header';
-    header.innerHTML = `<span>📋</span><span>未分组</span><span style="margin-left:auto;font-weight:normal">(${ungroupedTags.length})</span>`;
+    const headerIcon = document.createElement('span');
+    headerIcon.textContent = '📋';
+    header.appendChild(headerIcon);
+    const headerName = document.createElement('span');
+    headerName.textContent = '未分组';
+    header.appendChild(headerName);
+    const headerCount = document.createElement('span');
+    headerCount.textContent = `(${ungroupedTags.length})`;
+    headerCount.style.marginLeft = 'auto';
+    headerCount.style.fontWeight = 'normal';
+    header.appendChild(headerCount);
     
     const content = document.createElement('div');
     content.className = 'batch-tag-group-content';
