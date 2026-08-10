@@ -4,7 +4,7 @@
 
 **扩展名称 / Extension Name**: Chrome Bookmark Manager
 
-**版本号 / Version**: 1.1.0
+**版本号 / Version**: 1.4.5
 
 ---
 

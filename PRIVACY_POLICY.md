@@ -2,9 +2,9 @@
 
 **Chrome Bookmark Manager**
 
-**Last Updated / 最后更新**: 2026-03-06 (v1.1.0 - Added Bookmark Tags Management)
+**Last Updated / 最后更新**: 2026-08-10 (v1.4.5 - Search Performance Improvements)
 
-**Version / 版本**: 1.1.0
+**Version / 版本**: 1.4.5
 
 ---
 

@@ -3,6 +3,8 @@
  */
 
 let bookmarkTree = [];
+let searchableBookmarks = [];
+let bookmarkTags = {};
 let expandedFolders = new Set(['1', '2']);
 let currentSearchQuery = '';
 let isMenuOpen = false;
@@ -44,14 +46,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadBookmarkTree() {
   try {
-    const tree = await BookmarkUtils.getTree();
+    const [tree, tags] = await Promise.all([
+      BookmarkUtils.getTree(),
+      BookmarkTags.getAll().catch(error => {
+        console.warn('加载书签标签失败:', error);
+        return {};
+      })
+    ]);
     bookmarkTree = tree;
+    bookmarkTags = tags;
+    searchableBookmarks = flattenBookmarks(tree);
     await loadFrequentlyUsedData();
     renderBookmarkTree();
   } catch (error) {
     console.error('加载书签失败:', error);
     showEmptyState('加载失败');
   }
+}
+
+function flattenBookmarks(nodes) {
+  const bookmarks = [];
+
+  function visit(items) {
+    for (const node of items || []) {
+      if (node.url) {
+        bookmarks.push(node);
+      }
+      if (node.children) {
+        visit(node.children);
+      }
+    }
+  }
+
+  visit(nodes);
+  return bookmarks;
 }
 
 async function loadFrequentlyUsedConfig() {
@@ -1620,69 +1648,39 @@ async function findParent(nodeId) {
   return null;
 }
 
-async function renderSearchResults() {
+function renderSearchResults() {
   const container = document.getElementById('bookmark-tree');
   const emptyState = document.getElementById('empty-state');
+  const query = currentSearchQuery.toLowerCase();
+  const results = [];
+  const seenIds = new Set();
 
-  try {
-    // 1. 使用 Chrome API 搜索标题和 URL
-    const chromeResults = await BookmarkUtils.search(currentSearchQuery);
-    
-    // 2. 搜索标签（完整匹配）
-    const tagBookmarkIds = await BookmarkTags.searchTags(currentSearchQuery);
-    
-    // 3. 获取标签搜索结果的书签详情
-    const tagResults = [];
-    for (const id of tagBookmarkIds) {
-      try {
-        const bookmarks = await new Promise((resolve, reject) => {
-          chrome.bookmarks.get(id, (results) => {
-            if (chrome.runtime.lastError) {
-              reject(chrome.runtime.lastError);
-            } else {
-              resolve(results);
-            }
-          });
-        });
-        if (bookmarks && bookmarks.length > 0 && bookmarks[0].url) {
-          tagResults.push(bookmarks[0]);
-        }
-      } catch (error) {
-        // 书签可能已被删除
-      }
+  // 书签树和标签已在侧边栏启动/数据变更时加载，输入时只做内存过滤。
+  // 不再发起异步搜索，也就不会让旧请求覆盖用户刚输入的新关键词。
+  for (const bookmark of searchableBookmarks) {
+    const matchesText = (bookmark.title || '').toLowerCase().includes(query) ||
+      (bookmark.url || '').toLowerCase().includes(query);
+    const matchesTag = (bookmarkTags[bookmark.id] || [])
+      .some(tag => tag.toLowerCase() === query);
+
+    if ((matchesText || matchesTag) && !seenIds.has(bookmark.id)) {
+      seenIds.add(bookmark.id);
+      results.push(bookmark);
     }
-    
-    // 4. 合并结果并去重
-    const seenIds = new Set();
-    const allResults = [];
-    
-    // 先添加 Chrome API 结果
-    chromeResults.filter(n => n.url).forEach(bookmark => {
-      if (!seenIds.has(bookmark.id)) {
-        seenIds.add(bookmark.id);
-        allResults.push(bookmark);
-      }
-    });
-    
-    // 再添加标签搜索结果
-    tagResults.forEach(bookmark => {
-      if (!seenIds.has(bookmark.id)) {
-        seenIds.add(bookmark.id);
-        allResults.push(bookmark);
-      }
-    });
-    
-    container.innerHTML = '';
-    
-    if (allResults.length === 0) {
-      emptyState.querySelector('div:last-child').textContent = '未找到匹配的书签';
-      emptyState.style.display = 'flex';
-      return;
-    }
+  }
 
-    emptyState.style.display = 'none';
+  container.innerHTML = '';
 
-    allResults.forEach(node => {
+  if (results.length === 0) {
+    emptyState.querySelector('div:last-child').textContent = '未找到匹配的书签';
+    emptyState.style.display = 'flex';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  const fragment = document.createDocumentFragment();
+  results.forEach(node => {
       const li = document.createElement('li');
       li.className = 'tree-node';
 
@@ -1715,11 +1713,9 @@ async function renderSearchResults() {
       });
 
       li.appendChild(content);
-      container.appendChild(li);
+      fragment.appendChild(li);
     });
-  } catch (error) {
-    console.error('搜索失败:', error);
-  }
+  container.appendChild(fragment);
 }
 
 function showEmptyState(message) {
@@ -2467,10 +2463,10 @@ async function loadLayoutSettings() {
 
 function setupEventListeners() {
   const searchInput = document.getElementById('search-input');
-  searchInput.addEventListener('input', Utils.debounce(async (e) => {
+  searchInput.addEventListener('input', Utils.debounce((e) => {
     currentSearchQuery = e.target.value.trim();
     renderBookmarkTree();
-  }, 300));
+  }, 100));
 
   // 历史记录搜索框
   const historySearchInput = document.getElementById('history-search-input');
@@ -2511,6 +2507,13 @@ function setupEventListeners() {
   
   // 监听设置变化，重新加载常用配置
   chrome.storage.onChanged.addListener(async (changes, namespace) => {
+    if (namespace === 'local' && changes[BookmarkTags.STORAGE_KEY]) {
+      bookmarkTags = changes[BookmarkTags.STORAGE_KEY].newValue || {};
+      if (currentSearchQuery) {
+        renderSearchResults();
+      }
+    }
+
     if (namespace === 'local' && changes[FrequentlyUsedConfig.STORAGE_KEY]) {
       console.log('检测到常用目录配置变化');
       await loadFrequentlyUsedConfig();
