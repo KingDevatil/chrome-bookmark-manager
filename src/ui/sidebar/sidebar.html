@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>书签侧边栏</title>
+  <link rel="stylesheet" href="../shared/styles.css">
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+  <div id="toast-container"></div>
+  <div class="sidebar-container" id="sidebar-container">
+    <div class="sidebar-header">
+      <div class="header-row">
+        <div class="tab-switcher">
+          <button class="tab-btn active" id="tab-bookmarks" data-i18n="common.bookmarks">书签</button>
+          <button class="tab-btn" id="tab-history" data-i18n="common.history">历史</button>
+          <button class="tab-btn" id="tab-shortcuts" data-i18n="common.shortcuts">捷径</button>
+        </div>
+        <button class="menu-btn" id="menu-btn" data-i18n-title="common.menu" title="菜单">⋮</button>
+      </div>
+      <div class="search-box" id="search-box">
+        <input type="text" id="search-input" data-i18n-placeholder="common.searchPlaceholder" placeholder="搜索书签（标题、网址、标签）">
+      </div>
+      <div class="search-box" id="history-search-box" style="display: none;">
+        <input type="text" id="history-search-input" data-i18n-placeholder="common.searchHistoryPlaceholder" placeholder="搜索历史记录">
+      </div>
+    </div>
+
+    <div class="sidebar-content" id="bookmark-tree-container">
+      <!-- 书签列表面板 -->
+      <div class="panel bookmark-panel active" id="bookmark-panel">
+        <ul class="bookmark-tree" id="bookmark-tree"></ul>
+        <div class="empty-state" id="empty-state" style="display: none;">
+          <div class="empty-state-icon">📭</div>
+          <div data-i18n="common.noBookmark">暂无书签</div>
+        </div>
+      </div>
+
+      <!-- 历史记录面板 -->
+      <div class="panel history-panel" id="history-panel">
+        <ul class="history-list" id="history-list"></ul>
+        <div class="empty-state" id="history-empty-state" style="display: none;">
+          <div class="empty-state-icon">📭</div>
+          <div data-i18n="common.noHistory">暂无历史记录</div>
+        </div>
+      </div>
+
+      <!-- 捷径面板 -->
+      <div class="panel shortcuts-panel" id="shortcuts-panel">
+        <div class="shortcuts-content" id="shortcuts-content">
+          <div class="shortcuts-grid" id="shortcuts-grid"></div>
+          <div class="empty-state" id="shortcuts-empty-state" style="display: none;">
+            <div class="empty-state-icon">⚡</div>
+            <div data-i18n="common.noShortcuts">暂无捷径</div>
+          </div>
+        </div>
+        <div class="shortcuts-footer">
+          <button class="btn btn-primary" id="btn-add-shortcut">
+            <span>➕</span>
+            <span data-i18n="common.addShortcut">添加捷径</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 菜单面板 -->
+      <div class="panel menu-panel" id="menu-panel">
+        <div class="menu-section">
+          <div class="menu-section-title" data-i18n="common.appearance">外观</div>
+          <div class="theme-toggle-container">
+            <div class="theme-toggle-label">
+              <span class="menu-item-icon">🌙</span>
+              <span data-i18n="common.darkMode">深色模式</span>
+            </div>
+            <div class="theme-toggle-switch" id="theme-toggle" role="button" tabindex="0">
+              <span class="theme-toggle-knob"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title" data-i18n="menu.frequentlyUsed">常用目录</div>
+          <div class="theme-toggle-container">
+            <div class="theme-toggle-label">
+              <span class="menu-item-icon">⭐</span>
+              <span data-i18n="common.enableFreq">启用常用</span>
+            </div>
+            <div class="theme-toggle-switch" id="frequently-used-toggle" role="button" tabindex="0">
+              <span class="theme-toggle-knob"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-section">
+          <div class="menu-section-title" data-i18n="common.settings">设置</div>
+          <div class="menu-item" id="menu-settings">
+            <span class="menu-item-icon">⚙️</span>
+            <span class="menu-item-text" data-i18n="common.settings">设置</span>
+            <span class="menu-item-arrow">›</span>
+          </div>
+        </div>
+
+        <div class="about-section">
+          <div class="about-title">Chrome Bookmark Manager</div>
+          <div class="about-version"><span data-i18n="common.version">版本</span> 1.4.5</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer" id="sidebar-footer">
+      <div class="footer-row">
+        <button class="btn btn-secondary" id="btn-add-bookmark">
+          <span>⭐</span>
+          <span data-i18n="common.addBookmark">添加书签</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-new-folder">
+          <span>📁</span>
+          <span data-i18n="common.newFolder">新建文件夹</span>
+        </button>
+      </div>
+      <div class="footer-row">
+        <button class="btn btn-secondary" id="btn-open-manager">
+          <span>📂</span>
+          <span data-i18n="common.manager">管理器</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-backup">
+          <span>💾</span>
+          <span data-i18n="common.backupNow">立即备份</span>
+        </button>
+      </div>
+      <div class="backup-status" id="backup-status"></div>
+    </div>
+  </div>
+
+  <script src="../shared/platform.js"></script>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="../shared/dialog.js"></script>
+  <script src="../shared/favicon.js"></script>
+  <script src="../shared/frequentlyUsed.js"></script>
+  <script src="sidebar.js"></script>
+</body>
+</html>

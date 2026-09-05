@@ -24,3 +24,10 @@ Thumbs.db
 
 # 忽略 Firefox AMO 上传 UUID
 .amo-upload-uuid
+node_modules/
+dist/
+test-results/
+playwright-report/
+
+# Local historical archive; excluded from source and releases
+legacy/
