@@ -308,10 +308,16 @@ async function saveWebDAVConfig() {
     return;
   }
 
-  await Storage.set({ webdavConfig: config });
-  await ExtensionAPI.runtime.sendMessage({ action: 'init' });
-
-  showStatus('webdav-status', I18n.t('webdav.configSaved'), 'success');
+  try {
+    if (config.enabled) {
+      const url = new URL(config.url);
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error('请填写不含账号、查询参数或锚点的 HTTP(S) WebDAV 地址');
+    }
+    await Storage.set({ webdavConfig: config });
+    const response = await ExtensionAPI.runtime.sendMessage({ action: 'init' });
+    if (!response?.success) throw new Error(response?.error || '配置已保存，但后台未能应用，请刷新页面后重试');
+    showStatus('webdav-status', I18n.t('webdav.configSaved'), 'success');
+  } catch (error) { showStatus('webdav-status', error, 'error'); }
 }
 
 async function saveBackupSettings() {
@@ -322,14 +328,14 @@ async function saveBackupSettings() {
     autoCleanup: document.getElementById('auto-cleanup-enabled') ? document.getElementById('auto-cleanup-enabled').checked : false
   };
 
-  console.log('Saving backup settings:', settings);
+  try {
+  if (!Number.isFinite(settings.backupInterval) || settings.backupInterval < 1) throw new Error('备份间隔必须是至少 1 分钟的整数');
   await Storage.set({ backupSettings: settings });
-  console.log('Backup settings saved, checking...');
-  const check = await Storage.get('backupSettings');
-  console.log('Verification read:', check);
-  await ExtensionAPI.runtime.sendMessage({ action: 'init' });
+  const response = await ExtensionAPI.runtime.sendMessage({ action: 'init' });
+  if (!response?.success) throw new Error(response?.error || '设置已保存，但后台未能应用，请刷新页面后重试');
 
   showStatus('backup-settings-status', I18n.t('backup.settingsSaved'), 'success');
+  } catch (error) { showStatus('backup-settings-status', error, 'error'); }
 }
 
 async function backupNow() {
@@ -346,7 +352,7 @@ async function backupNow() {
     const response = await ExtensionAPI.runtime.sendMessage({ action: 'backup' });
 
     if (response.success) {
-      showStatus('backup-now-status', I18n.t('backup.backupSuccess') + ': ' + response.filename, 'success');
+      showStatus('backup-now-status', response.skipped ? '未执行备份，请检查 WebDAV 和备份设置' : response.warning || I18n.t('backup.backupSuccess') + ': ' + response.filename, response.warning ? 'error' : response.skipped ? 'info' : 'success');
     } else {
       showStatus('backup-now-status', I18n.t('backup.backupFailed') + ': ' + response.error, 'error');
     }
@@ -405,10 +411,14 @@ async function restoreLayoutFromWebDAV() {
 function showStatus(elementId, message, type) {
   const element = document.getElementById(elementId);
   if (!element) return;
+  message = globalThis.operationErrorMessage(message);
+  if (message.includes('已取消恢复')) { message = '已取消恢复，未修改数据'; type = 'info'; }
+  clearTimeout(element.statusTimer);
+  element.setAttribute('role', type === 'error' ? 'alert' : 'status');
   element.textContent = message;
   element.className = `status-message ${type} visible`;
 
-  setTimeout(() => {
+  if (type === 'success') element.statusTimer = setTimeout(() => {
     element.classList.remove('visible');
   }, 5000);
 }
@@ -450,19 +460,80 @@ async function handleImportAllConfig(event) {
     if (file.size > 20 * 1024 * 1024) throw new Error('文件不能超过 20 MB');
     await previewAndRestore({ data: JSON.parse(await file.text()), merge: true });
     showStatus('import-all-status', I18n.t('config.importSuccess'), 'success');
-  } catch(e) { showStatus('import-all-status', e.message, 'error'); }
+  } catch(e) { showStatus('import-all-status', e, 'error'); }
   finally { event.target.value = ''; }
 }
 
 // 递归合并书签 - 参考background.js的逻辑
 async function previewAndRestore(options) {
   const preview = await ExtensionAPI.runtime.sendMessage({ action: 'previewRestore', ...options });
-  if (!preview.success) throw new Error(preview.error);
+  if (!preview?.success) throw new Error(preview?.error || '后台未返回预览结果，请刷新页面后重新预览');
+  if (!preview.token || !Array.isArray(preview.diff?.entries)) throw new Error('预览数据不完整，请重新加载扩展和设置页面后重试');
   const mode = options.merge === false ? '覆盖所选根目录的内容' : '合并（保留本地内容）';
-  if (!await showConfirm(mode + '，备份包含 ' + preview.bookmarks + ' 个书签；将删除 ' + preview.deletes + ' 个节点。目录：' + preview.rootSummary.join('、') + '。' + (preview.warning || '') + '\n恢复前将保存本地快照。', { danger: options.merge === false })) throw new Error('已取消恢复');
+  if (!await showRestoreDiff(preview, mode, options.merge !== false)) throw new Error('已取消恢复');
   const response = await ExtensionAPI.runtime.sendMessage({ action: 'importData', token: preview.token, merge: options.merge !== false, confirmed: true });
-  if (!response.success) throw new Error(response.error);
+  if (!response?.success) throw new Error(response?.error || '未收到恢复结果，请先刷新页面查看恢复快照状态，避免重复操作');
   return response;
+}
+
+let closeRestoreDiff;
+function showRestoreDiff(preview, mode, merge) {
+  closeRestoreDiff?.();
+  if (typeof document.createElement('dialog').showModal !== 'function') return Promise.reject(new Error('当前浏览器不支持恢复预览窗口，请升级浏览器后重试；尚未修改数据'));
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const dialog = document.createElement('dialog');
+    dialog.className = 'restore-diff';
+    dialog.setAttribute('aria-label', '恢复差异预览');
+    const element = (tag, text, parent = dialog) => {
+      const node = document.createElement(tag); node.textContent = text; parent.appendChild(node); return node;
+    };
+    element('h2', '恢复差异预览');
+    element('p', mode + '。确认后才会保存快照并开始恢复。');
+    element('p', merge ? '按同目录、标题、网址及重复出现次序匹配。本地独有内容保留；改名或移动会表现为新增，不自动猜测对应关系。' : '下方展示内容差异。覆盖时所选目录的可写节点会先删除再重建，内容相同项也会产生新 ID；未包含的根目录不受影响。');
+    if (preview.warning) element('p', preview.warning);
+    const labels = { added: '新增', deleted: '删除', changed: '变更', matched: '匹配内容', retained: '本地保留', skipped: '受管跳过' };
+    const diff = preview.diff || { entries: [], counts: {} };
+    element('p', Object.entries(labels).map(([key, label]) => `${label} ${diff.counts[key] || 0}`).join(' · '));
+    const controls = element('div', ''); controls.className = 'restore-diff-controls';
+    const filter = element('select', '', controls); filter.setAttribute('aria-label', '差异类型');
+    for (const [value, label] of [['differences', '仅看差异'], ['all', '全部'], ...Object.entries(labels)]) {
+      const option = element('option', label, filter); option.value = value;
+    }
+    const search = element('input', '', controls); search.placeholder = '搜索目录、标题、网址或标签'; search.setAttribute('aria-label', search.placeholder);
+    const list = element('div', ''); list.className = 'restore-diff-list';
+    const pager = element('div', ''); pager.className = 'restore-diff-controls';
+    const prev = element('button', '上一页', pager); const count = element('span', '', pager); const next = element('button', '下一页', pager);
+    const rows = diff.entries.map(entry => ({ entry, text: JSON.stringify(entry).toLowerCase() }));
+    let page = 0;
+    const render = () => {
+      const query = search.value.toLowerCase();
+      const selected = rows.filter(({ entry, text }) => (filter.value === 'all' || (filter.value === 'differences' ? ['added', 'deleted', 'changed'].includes(entry.status) : entry.status === filter.value)) && text.includes(query));
+      const pages = Math.max(1, Math.ceil(selected.length / 50)); page = Math.min(page, pages - 1);
+      list.replaceChildren();
+      if (!selected.length) element('p', '没有符合条件的差异。', list);
+      for (const { entry } of selected.slice(page * 50, (page + 1) * 50)) {
+        const row = element('details', '', list);
+        element('summary', `${labels[entry.status]} · ${entry.kind} · ${entry.path}`, row);
+        element('p', '当前本地', row); element('pre', entry.before === null ? '无' : JSON.stringify(entry.before, null, 2), row);
+        element('p', '恢复后', row); element('pre', entry.after === null ? '无' : JSON.stringify(entry.after, null, 2), row);
+      }
+      count.textContent = `${selected.length} 项 · 第 ${page + 1}/${pages} 页`; prev.disabled = page === 0; next.disabled = page + 1 >= pages;
+    };
+    filter.onchange = search.oninput = () => { page = 0; render(); };
+    prev.onclick = () => { page--; render(); }; next.onclick = () => { page++; render(); };
+    const actions = element('div', ''); actions.className = 'restore-diff-controls';
+    const cancel = element('button', '取消', actions); const confirm = element('button', merge ? '确认合并恢复' : '确认覆盖恢复', actions);
+    let settled = false;
+    const finish = value => {
+      if (settled) return; settled = true; closeRestoreDiff = null; dialog.remove(); previousFocus?.focus(); resolve(value);
+    };
+    closeRestoreDiff = () => finish(false);
+    cancel.onclick = () => finish(false); confirm.onclick = () => finish(true);
+    dialog.addEventListener('cancel', event => { event.preventDefault(); finish(false); });
+    dialog.addEventListener('close', () => finish(false));
+    document.body.appendChild(dialog); render(); dialog.showModal(); cancel.focus();
+  });
 }
 
 // 导出布局
@@ -520,7 +591,7 @@ async function handleImportLayout(event) {
 async function handleImportTagsFile(event) {
   const file = event.target.files[0]; if (!file) return;
   try { if(file.size > 20*1024*1024) throw new Error('文件过大'); await previewAndRestore({data:JSON.parse(await file.text()),merge:true}); showStatus('import-tags-status','导入完成','success'); }
-  catch(e) { showStatus('import-tags-status',e.message,'error'); }
+  catch(e) { showStatus('import-tags-status',e,'error'); }
   finally { event.target.value=''; }
 }
 

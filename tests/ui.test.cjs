@@ -1,6 +1,42 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {JSDOM,VirtualConsole}=require('jsdom');const path=require('node:path');
 const {fakeAPI}=require('./helpers.cjs');const {mutate}=require('../src/services/domain.cjs');const {SerialQueue,serialize}=require('../src/services/backup.cjs');
+test('settings error statuses persist and cancellation is neutral',async()=>{
+ const {dom}=await load('manager/settings.html');try{const w=dom.window;const element=w.document.getElementById('import-all-status');
+ w.showStatus('import-all-status','完成','success');const old=element.statusTimer;
+ w.showStatus('import-all-status',new w.SyntaxError('bad json'),'error');assert.match(element.textContent,/JSON/);assert.equal(element.getAttribute('role'),'alert');
+ w.showStatus('import-all-status','恢复失败：已取消恢复','error');assert.equal(element.textContent,'已取消恢复，未修改数据');assert(element.classList.contains('info'));assert(old);
+ await assert.rejects(w.showRestoreDiff({diff:{entries:[],counts:{}}},'覆盖',false),/升级浏览器/);assert.equal(w.document.querySelector('.restore-diff'),null);
+ }finally{dom.window.close()}
+});
+test('restore diff dialog paginates, renders literal text, filters and cancels',async()=>{
+ const {dom}=await load('manager/settings.html');try{const w=dom.window;
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true};
+ const entries=Array.from({length:55},(_,i)=>({status:'added',kind:'书签',path:`Toolbar / <b>${i}</b>`,before:null,after:{title:`<b>${i}</b>`,url:'https://new.test'}}));
+ const result=w.showRestoreDiff({diff:{entries,counts:{added:55}}},'合并',true);
+ const dialog=w.document.querySelector('.restore-diff');assert.equal(dialog.querySelectorAll('details').length,50);assert.equal(dialog.querySelector('b'),null);
+ Array.from(dialog.querySelectorAll('button')).find(b=>b.textContent==='下一页').click();assert.equal(dialog.querySelectorAll('details').length,5);
+ const search=dialog.querySelector('input');search.value='<b>54</b>';search.dispatchEvent(new w.Event('input'));assert.equal(dialog.querySelectorAll('details').length,1);
+ Array.from(dialog.querySelectorAll('button')).find(b=>b.textContent==='取消').click();assert.equal(await result,false);assert.equal(w.document.querySelector('.restore-diff'),null);
+ }finally{dom.window.close()}
+});
+test('concurrent shortcut refreshes render each stored shortcut once',async()=>{
+ const {dom,f}=await load('sidebar/sidebar.html');try{const w=dom.window;
+ await w.eval('ShortcutUtils.add("Added", "https://added.test")');
+ await Promise.all([w.renderShortcutsPanel(),w.renderShortcutsPanel()]);
+ const ids=Array.from(w.document.querySelectorAll('#shortcuts-grid .shortcut-item'),el=>el.dataset.id);
+ assert.equal(f.data.shortcuts.length,2);assert.equal(ids.length,2);assert.equal(new Set(ids).size,2);
+ }finally{dom.window.close()}
+});
+test('late shortcut refresh cannot resurrect removed items or overwrite empty state',async()=>{
+ const {dom}=await load('sidebar/sidebar.html');try{const w=dom.window;const pending=[];
+ w.readShortcuts=()=>new Promise(resolve=>pending.push(resolve));w.eval('ShortcutUtils.getAll = () => readShortcuts()');
+ const old=w.renderShortcutsPanel();const latest=w.renderShortcutsPanel();
+ pending[1]([]);await latest;pending[0]([{id:'removed',title:'Removed',url:'https://removed.test'}]);await old;
+ assert.equal(w.document.querySelectorAll('#shortcuts-grid .shortcut-item').length,0);
+ assert.equal(w.document.getElementById('shortcuts-empty-state').style.display,'flex');
+ }finally{dom.window.close()}
+});
 async function load(route, options) {
   const f=fakeAPI(options);const errors=[];const queue=new SerialQueue();
   const event=()=>({addListener(){},removeListener(){}});

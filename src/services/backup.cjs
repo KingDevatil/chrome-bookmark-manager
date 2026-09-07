@@ -88,6 +88,11 @@ class SerialQueue {
   constructor() { this.tail = Promise.resolve(); }
   run(fn) { const next = this.tail.then(fn); this.tail = next.catch(() => {}); return next; }
 }
+// Extension storage may reorder object keys; array order and values must stay intact.
+function canonicalJSON(value) {
+  return JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item)
+    ? Object.fromEntries(Object.keys(item).sort().map(key => [key, item[key]])) : item);
+}
 function mergeShortcuts(local, incoming, merge) {
   const result = merge ? [...local] : [];
   for (const item of incoming) if (!result.some(x => x.url === item.url)) result.push({ ...item, id: crypto.randomUUID(), order: result.length });
@@ -113,7 +118,7 @@ async function restore(api, input, merge = true, options = {}) {
     const snapshot = serialize(current, data);
     await api.storage.local.set({ restore_snapshot: snapshot });
     const persisted = await api.storage.local.get('restore_snapshot');
-    if (JSON.stringify(persisted.restore_snapshot) !== JSON.stringify(snapshot)) throw new Error('Recovery snapshot verification failed');
+    if (canonicalJSON(persisted.restore_snapshot) !== canonicalJSON(snapshot)) throw new Error('恢复快照保存后校验失败，尚未修改书签，请重试');
   }
   await api.storage.local.set({ restore_job: job });
   const tags = { ...(data.bookmark_tags || {}) };

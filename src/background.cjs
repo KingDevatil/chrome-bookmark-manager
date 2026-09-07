@@ -3,6 +3,9 @@ const { normalize, serialize, restore, SerialQueue, role } = require('./services
 const { WebDAVClient } = require('./services/webdav.cjs');
 const { mutate } = require('./services/domain.cjs');
 const { createIconCache } = require('./services/favicon.cjs');
+const { restoreDiff } = require('./services/restore-diff.cjs');
+const { errorMessage } = require('./services/errors.cjs');
+const previewKeys = ['bookmark_tags', 'tagGroups', 'shortcuts', 'layoutSettings'];
 const api = createAPI(globalThis.browser || globalThis.chrome);
 const saveIcon = createIconCache(api);
 const queue = new SerialQueue();
@@ -52,6 +55,8 @@ async function dispatch(message) {
         let bookmarks = 0; const visit = nodes => nodes.forEach(n => { if(n.type === 'bookmark') bookmarks++; else visit(n.children); });
         normalized.sections.bookmarks?.roots.forEach(r => visit(r.children));
         const tree = await api.bookmarks.getTree();
+        const metadata = await api.storage.local.get(previewKeys);
+        const diff = restoreDiff(normalized, tree, metadata, message.merge !== false);
         let deletes = 0;
         const count = nodes => nodes.reduce((sum, n) => sum + 1 + count(n.children || []), 0);
         const rootSummary = (normalized.sections.bookmarks?.roots || []).map(root => {
@@ -61,8 +66,8 @@ async function dispatch(message) {
         });
         const token = crypto.randomUUID();
         while (previews.size >= 4) previews.delete(previews.keys().next().value);
-        previews.set(token, { backup: normalized, merge: message.merge !== false, tree: JSON.stringify(tree), time: Date.now() });
-        return { success: true, token, bookmarks, deletes, rootSummary, warning: normalized.warning };
+        previews.set(token, { backup: normalized, metadata: JSON.stringify(metadata), merge: message.merge !== false, tree: JSON.stringify(tree), time: Date.now() });
+        return { success: true, token, diff, bookmarks, deletes, rootSummary, warning: normalized.warning };
       }
       case 'importData':
       case 'restore':
@@ -71,6 +76,7 @@ async function dispatch(message) {
         if (!preview || Date.now() - preview.time > 600000 || !message.confirmed) throw new Error('恢复需要先预览并确认；预览过期或后台重启后请重新预览');
         if (preview.merge !== (message.merge !== false)) throw new Error('恢复模式已改变，请重新预览');
         if (JSON.stringify(await api.bookmarks.getTree()) !== preview.tree) throw new Error('预览后书签发生变化，请重新预览');
+        if (JSON.stringify(await api.storage.local.get(previewKeys)) !== preview.metadata) throw new Error('预览后标签、捷径或布局发生变化，请重新预览');
         previews.delete(message.token);
         const data = preview.backup;
         const summary = await restore(api, data, message.merge !== false);
@@ -106,7 +112,7 @@ async function dispatch(message) {
 api.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.action === 'refreshBookmarks') return false;
   if (sender.id !== api.runtime.id) return false;
-  dispatch(message).then(respond, e => respond({ success: false, error: e.message }));
+  dispatch(message).then(respond, e => respond({ success: false, error: errorMessage(e) }));
   return true;
 });
 api.runtime.onInstalled.addListener(() => configure().catch(console.error));

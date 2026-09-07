@@ -4,6 +4,23 @@ const {normalize,serialize,restore,SerialQueue,mergeShortcuts}=require('../src/s
 const {fakeAPI}=require('./helpers.cjs');
 const {mutate}=require('../src/services/domain.cjs');
 function sample(){return {schemaVersion:2,kind:'bookmark-manager-backup',sections:{bookmarks:{roots:[{role:'toolbar',children:[{type:'bookmark',title:'A',url:'https://same.test',tags:['A']},{type:'bookmark',title:'B',url:'https://same.test',tags:['B']}]}]},shortcuts:[{title:'Remote',url:'https://remote.test'}]}}}
+test('snapshot verification accepts storage object key reordering',async()=>{
+ const f=fakeAPI();const get=f.api.storage.local.get;
+ const reorder=value=>Array.isArray(value)?value.map(reorder):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,reorder(value[key])])):value;
+ f.api.storage.local.get=async key=>reorder(await get(key));
+ const result=await restore(f.api,sample(),false);
+ assert.equal(result.created,2);assert.equal(f.data.restore_job.status,'complete');
+});
+for(const corruption of ['missing','value','array-order']) test('snapshot verification blocks '+corruption+' before deleting bookmarks',async()=>{
+ const f=fakeAPI();const get=f.api.storage.local.get;
+ f.api.storage.local.get=async key=>{const result=await get(key);if(key==='restore_snapshot'){
+  if(corruption==='missing')delete result.restore_snapshot;
+  else if(corruption==='value')result.restore_snapshot.sections.bookmarks.roots[0].children[0].title='Corrupt';
+  else result.restore_snapshot.sections.bookmarks.roots.reverse();
+ }return result;};
+ await assert.rejects(restore(f.api,sample(),false),/快照.*校验失败/);
+ assert.equal(f.creates,0);assert.equal(f.tree[0].children[0].children[0].id,'10');assert.equal(f.data.restore_job,undefined);
+});
 for(const data of [{},null,{bookmarks:[]},{bookmarks:[{}]},{schemaVersion:99},{version:'9',bookmarks:[]}]) test('Invalid input has zero writes: '+JSON.stringify(data),async()=>{const f=fakeAPI();await assert.rejects(restore(f.api,data,false));assert.equal(f.writes,0);assert.equal(f.tree[0].children[0].children.length,1)});
 test('duplicate URL labels survive serialization and cross-ID restore',async()=>{const f=fakeAPI();await restore(f.api,sample(),false);const children=f.tree[0].children[0].children;assert.deepEqual(f.data.bookmark_tags[children[0].id],['A']);assert.deepEqual(f.data.bookmark_tags[children[1].id],['B']);const b=serialize(f.tree,f.data);assert.deepEqual(b.sections.bookmarks.roots[0].children.map(n=>n.tags),[['A'],['B']]);});
 test('merge preserves local shortcuts and is idempotent',async()=>{const f=fakeAPI();await restore(f.api,sample(),true);await restore(f.api,sample(),true);assert.equal(f.tree[0].children[0].children.length,3);assert.equal(f.data.shortcuts.length,2);assert.equal(f.data.shortcuts[0].id,'local');});

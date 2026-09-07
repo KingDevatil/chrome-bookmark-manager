@@ -1,4 +1,5 @@
 const { createAPI } = require('./api.cjs');
+globalThis.operationErrorMessage = require('../services/errors.cjs').errorMessage;
 globalThis.ExtensionAPI = createAPI(globalThis.browser || globalThis.chrome);
 globalThis.PlatformRoots = { toolbar: '1', other: '2', root: '0' };
 globalThis.platformReady = ExtensionAPI.bookmarks.getTree().then(tree => {

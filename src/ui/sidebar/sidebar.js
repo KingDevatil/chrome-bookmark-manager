@@ -1818,13 +1818,18 @@ async function showHistoryContextMenu(e, item) {
   }, 100);
 }
 
+let shortcutsRenderVersion = 0;
+
 async function renderShortcutsPanel() {
+  const version = ++shortcutsRenderVersion;
   const shortcutsGrid = document.getElementById('shortcuts-grid');
   const emptyState = document.getElementById('shortcuts-empty-state');
 
-  shortcutsGrid.innerHTML = '';
-
   const shortcuts = await ShortcutUtils.getAll();
+  // Storage notifications and local actions can refresh concurrently.
+  // Only the latest read may replace the displayed list and empty state.
+  if (version !== shortcutsRenderVersion) return;
+  shortcutsGrid.replaceChildren();
   shortcuts.sort((a, b) => (a.order || 0) - (b.order || 0));
 
   if (shortcuts.length === 0) {

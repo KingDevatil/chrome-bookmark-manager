@@ -32,6 +32,11 @@ test('restore mode cannot change after preview',async()=>{
  const b=await boot();const data=(await b.send({action:'exportData'})).data;const p=await b.send({action:'previewRestore',data,merge:true});const before=JSON.stringify(b.f.tree);
  const r=await b.send({action:'importData',token:p.token,merge:false,confirmed:true});assert.equal(r.success,false);assert.match(r.error,/模式/);assert.equal(JSON.stringify(b.f.tree),before);
 });
+test('preview exposes differences and rejects changed metadata before restore',async()=>{
+ const b=await boot();const data=(await b.send({action:'exportData'})).data;const p=await b.send({action:'previewRestore',data,merge:true});
+ assert(p.diff.entries.some(e=>e.status==='matched'));await b.f.api.storage.local.set({bookmark_tags:{10:['changed']}});
+ const result=await b.send({action:'importData',token:p.token,merge:true,confirmed:true});assert.equal(result.success,false);assert.match(result.error,/重新预览/);
+});
 test('layout import validates before writing and preserves omitted fields',async()=>{
  const b=await boot();await b.f.api.storage.local.set({layoutSettings:{treeIndent:10}});const before=b.f.writes;
  for(const layoutSettings of [null,[],false,'bad',{bookmarkHeight:999}])assert.equal((await b.send({action:'importLayout',data:{layoutSettings}})).success,false);
