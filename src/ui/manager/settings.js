@@ -466,14 +466,29 @@ async function handleImportAllConfig(event) {
 
 // 递归合并书签 - 参考background.js的逻辑
 async function previewAndRestore(options) {
+  const loadPreview = async () => {
   const preview = await ExtensionAPI.runtime.sendMessage({ action: 'previewRestore', ...options });
   if (!preview?.success) throw new Error(preview?.error || '后台未返回预览结果，请刷新页面后重新预览');
   if (!preview.token || !Array.isArray(preview.diff?.entries)) throw new Error('预览数据不完整，请重新加载扩展和设置页面后重试');
+  return preview;
+  };
+  let preview = await loadPreview();
   const mode = options.merge === false ? '覆盖所选根目录的内容' : '合并（保留本地内容）';
   if (!await showRestoreDiff(preview, mode, options.merge !== false)) throw new Error('已取消恢复');
+  for (let attempt = 0; attempt < 3; attempt++) {
   const response = await ExtensionAPI.runtime.sendMessage({ action: 'importData', token: preview.token, merge: options.merge !== false, confirmed: true });
+  if (['PREVIEW_MISSING', 'PREVIEW_CHANGED'].includes(response?.code)) {
+    const renewed = await loadPreview();
+    if (!preview.confirmationKey || renewed.confirmationKey !== preview.confirmationKey) {
+      if (!await showRestoreDiff(renewed, '备份或本地数据已变化，请重新确认。' + mode, options.merge !== false)) throw new Error('已取消恢复');
+    }
+    preview = renewed;
+    continue;
+  }
   if (!response?.success) throw new Error(response?.error || '未收到恢复结果，请先刷新页面查看恢复快照状态，避免重复操作');
   return response;
+  }
+  throw new Error('数据持续变化或预览凭证无法保留，已停止重试，请关闭其他编辑页面后重新恢复');
 }
 
 let closeRestoreDiff;

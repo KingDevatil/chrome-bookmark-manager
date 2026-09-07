@@ -1,8 +1,8 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const vm=require('node:vm');
 const {buildSync}=require('esbuild');const {fakeAPI}=require('./helpers.cjs');
 const code=buildSync({entryPoints:['src/background.cjs'],bundle:true,write:false,platform:'browser'}).outputFiles[0].text;
-async function boot(browser=false, initialize=true, responseFactory=()=>new Response('')) {
- const f=fakeAPI();const event=()=>{const listeners=[];return{addListener:fn=>listeners.push(fn),removeListener:fn=>{const i=listeners.indexOf(fn);if(i>=0)listeners.splice(i,1)},emit:(...args)=>listeners.forEach(fn=>fn(...args)),listeners}};
+async function boot(browser=false, initialize=true, responseFactory=()=>new Response(''), shared) {
+ const f=shared || fakeAPI();const event=()=>{const listeners=[];return{addListener:fn=>listeners.push(fn),removeListener:fn=>{const i=listeners.indexOf(fn);if(i>=0)listeners.splice(i,1)},emit:(...args)=>listeners.forEach(fn=>fn(...args)),listeners}};
  const alarms=new Map();const requests=[];
  const native={...f.api,alarms:{create:async(name,v)=>alarms.set(name,v),clear:async name=>alarms.delete(name),onAlarm:event()},tabs:{onUpdated:event()},action:{onClicked:event()},runtime:{id:'test',onMessage:event(),onInstalled:event(),onStartup:event(),sendMessage:async()=>{} }};
  native.storage.onChanged=event();for(const key of ['onRemoved','onCreated','onMoved','onChanged','onChildrenReordered'])native.bookmarks[key]=event();
@@ -12,6 +12,22 @@ async function boot(browser=false, initialize=true, responseFactory=()=>new Resp
  if (initialize) await send({action:'init'});
  return{f,native,send,alarms,requests};
 }
+for(const session of [false,true])test('preview survives worker restart and ten minutes with '+(session?'session':'local fallback'),async()=>{
+ const f=fakeAPI();const storage=session?fakeAPI():f;if(session)f.api.storage.session=storage.api.storage.local;
+ const b=await boot(false,true,undefined,f);const data=(await b.send({action:'exportData'})).data;
+ const p=await b.send({action:'previewRestore',data,merge:false});assert(p.confirmationKey);
+ storage.data.restore_previews_v1[p.token].time-=11*60*1000;
+ const restarted=await boot(false,true,undefined,f);
+ const result=await restarted.send({action:'importData',token:p.token,merge:false,confirmed:true});assert.equal(result.success,true,result.error);
+ const creates=f.creates;const repeated=await restarted.send({action:'importData',token:p.token,merge:false,confirmed:true});assert.equal(repeated.success,false);assert.match(repeated.error,/已提交/);assert.equal(f.creates,creates);
+ if(session)assert.equal(f.data.restore_previews_v1,undefined);
+});
+test('expired cache is pruned and renewed fingerprint ignores object key order',async()=>{
+ const b=await boot();const data=(await b.send({action:'exportData'})).data;
+ const p=await b.send({action:'previewRestore',data,merge:true});b.f.data.restore_previews_v1[p.token].time-=25*60*60*1000;
+ const result=await b.send({action:'importData',token:p.token,merge:true,confirmed:true});assert.equal(result.code,'PREVIEW_MISSING');assert.equal(b.f.data.restore_previews_v1[p.token],undefined);assert.equal(b.f.creates,0);
+ const next=await b.send({action:'previewRestore',data:{sections:data.sections,kind:data.kind,schemaVersion:data.schemaVersion},merge:true});assert.equal(next.confirmationKey,p.confirmationKey);
+});
 for(const firefox of [false,true])test((firefox?'Firefox Promise':'Chrome')+' storage and alarm disable',async()=>{
  const b=await boot(firefox);await b.f.api.storage.local.set({webdavConfig:{enabled:true,url:'https://dav.test'},backupSettings:{autoBackup:true,backupInterval:60}});assert.equal((await b.send({action:'init'})).success,true);assert(b.alarms.has('backup'));
  await b.f.api.storage.local.set({backupSettings:{autoBackup:false,backupInterval:60}});await b.send({action:'init'});assert.equal(b.alarms.size,0);

@@ -1,6 +1,24 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');
 const {JSDOM,VirtualConsole}=require('jsdom');const path=require('node:path');
 const {fakeAPI}=require('./helpers.cjs');const {mutate}=require('../src/services/domain.cjs');const {SerialQueue,serialize}=require('../src/services/backup.cjs');
+for(const changed of [false,true])test('lost preview renews and '+(changed?'changed data requires confirmation':'identical data keeps confirmation'),async()=>{
+ const {dom}=await load('manager/settings.html');try{const w=dom.window;let previews=0,imports=0,dialogs=0;
+ w.ExtensionAPI.runtime.sendMessage=async message=>{
+  if(message.action==='previewRestore')return {success:true,token:String(++previews),confirmationKey:changed&&previews>1?'new':'same',diff:{entries:[]}};
+  imports++;return imports===1?{success:false,code:'PREVIEW_MISSING'}:{success:true};
+ };
+ w.showRestoreDiff=async()=>{dialogs++;return !changed||dialogs===1};
+ if(changed)await assert.rejects(w.previewAndRestore({data:{},merge:false}),/已取消/);
+ else assert.equal((await w.previewAndRestore({data:{},merge:false})).success,true);
+ assert.equal(previews,2);assert.equal(dialogs,changed?2:1);assert.equal(imports,changed?1:2);
+ }finally{dom.window.close()}
+});
+test('unknown restore outcome is not retried',async()=>{
+ const {dom}=await load('manager/settings.html');try{const w=dom.window;let imports=0;
+ w.ExtensionAPI.runtime.sendMessage=async message=>{if(message.action==='previewRestore')return {success:true,token:'a',confirmationKey:'same',diff:{entries:[]}};imports++;throw Error('connection lost');};
+ w.showRestoreDiff=async()=>true;await assert.rejects(w.previewAndRestore({data:{},merge:false}),/connection lost/);assert.equal(imports,1);
+ }finally{dom.window.close()}
+});
 test('settings error statuses persist and cancellation is neutral',async()=>{
  const {dom}=await load('manager/settings.html');try{const w=dom.window;const element=w.document.getElementById('import-all-status');
  w.showStatus('import-all-status','完成','success');const old=element.statusTimer;
@@ -40,7 +58,7 @@ test('late shortcut refresh cannot resurrect removed items or overwrite empty st
 async function load(route, options) {
   const f=fakeAPI(options);const errors=[];const queue=new SerialQueue();
   const event=()=>({addListener(){},removeListener(){}});
-  const native={...f.api,history:{search:async()=>[],getVisits:async()=>[],onVisited:event(),onVisitRemoved:event()},tabs:{query:async()=>[{title:'Current',url:'https://current.test'}],create:async()=>{}},runtime:{id:'test',getURL:x=>x,onMessage:event(),sendMessage:async m=>{
+  const native={...f.api,history:{search:async()=>[],getVisits:async()=>[],onVisited:event(),onVisitRemoved:event()},tabs:{query:async()=>[{title:'Current',url:'https://current.test'}],create:async()=>{}},runtime:{id:'test',getManifest:()=>require('../manifests/chrome.json'),getURL:x=>x,onMessage:event(),sendMessage:async m=>{
     if(m.action==='domain')try{return{success:true,data:await queue.run(()=>mutate(native,m))}}catch(e){return{success:false,error:e.message}}
     if(m.action==='exportData')return{success:true,data:serialize(f.tree,f.data)};
     if(m.action==='listBackups')return [];

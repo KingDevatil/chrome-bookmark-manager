@@ -5,12 +5,13 @@ const { mutate } = require('./services/domain.cjs');
 const { createIconCache } = require('./services/favicon.cjs');
 const { restoreDiff } = require('./services/restore-diff.cjs');
 const { errorMessage } = require('./services/errors.cjs');
+const { previewStore, fingerprint } = require('./services/preview-store.cjs');
 const previewKeys = ['bookmark_tags', 'tagGroups', 'shortcuts', 'layoutSettings'];
 const api = createAPI(globalThis.browser || globalThis.chrome);
 const saveIcon = createIconCache(api);
 const queue = new SerialQueue();
 let client, backupFlight;
-const previews = new Map();
+const previews = previewStore(api);
 async function configure() {
   const { webdavConfig: config, backupSettings: settings = {} } = await api.storage.local.get(['webdavConfig', 'backupSettings']);
   client?.cancel();
@@ -65,19 +66,22 @@ async function dispatch(message) {
           return target ? target.title : `Imported (${root.role}) ${root.title || ''}`;
         });
         const token = crypto.randomUUID();
-        while (previews.size >= 4) previews.delete(previews.keys().next().value);
-        previews.set(token, { backup: normalized, metadata: JSON.stringify(metadata), merge: message.merge !== false, tree: JSON.stringify(tree), time: Date.now() });
-        return { success: true, token, diff, bookmarks, deletes, rootSummary, warning: normalized.warning };
+        const treeHash = await fingerprint(tree), metadataHash = await fingerprint(metadata);
+        const confirmationKey = await fingerprint({ sections: normalized.sections, warning: normalized.warning, treeHash, metadataHash, merge: message.merge !== false });
+        await previews.put(token, { backup: normalized, metadata: metadataHash, merge: message.merge !== false, tree: treeHash, time: Date.now() });
+        return { success: true, token, confirmationKey, diff, bookmarks, deletes, rootSummary, warning: normalized.warning };
       }
       case 'importData':
       case 'restore':
       case 'restoreBackup': {
-        const preview = previews.get(message.token);
-        if (!preview || Date.now() - preview.time > 600000 || !message.confirmed) throw new Error('恢复需要先预览并确认；预览过期或后台重启后请重新预览');
+        if (!message.confirmed) throw new Error('恢复需要先预览并确认');
+        const preview = await previews.get(message.token);
+        if (!preview) return { success: false, code: 'PREVIEW_MISSING', error: '预览凭证已清理或浏览器已重启，需要重新比对' };
+        if (preview.consumed) throw new Error('此恢复已提交，请先查看恢复结果或快照状态，不要重复提交');
         if (preview.merge !== (message.merge !== false)) throw new Error('恢复模式已改变，请重新预览');
-        if (JSON.stringify(await api.bookmarks.getTree()) !== preview.tree) throw new Error('预览后书签发生变化，请重新预览');
-        if (JSON.stringify(await api.storage.local.get(previewKeys)) !== preview.metadata) throw new Error('预览后标签、捷径或布局发生变化，请重新预览');
-        previews.delete(message.token);
+        if (await fingerprint(await api.bookmarks.getTree()) !== preview.tree) return { success: false, code: 'PREVIEW_CHANGED', error: '预览后书签发生变化，请重新预览' };
+        if (await fingerprint(await api.storage.local.get(previewKeys)) !== preview.metadata) return { success: false, code: 'PREVIEW_CHANGED', error: '预览后标签、捷径或布局发生变化，请重新预览' };
+        await previews.put(message.token, { consumed: true, time: Date.now() });
         const data = preview.backup;
         const summary = await restore(api, data, message.merge !== false);
         await api.runtime.sendMessage({ action: 'refreshBookmarks' }).catch(() => {});

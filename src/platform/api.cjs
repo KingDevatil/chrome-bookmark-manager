@@ -1,6 +1,6 @@
 /* One Promise-based boundary. Legacy callback UI callers are supported during migration. */
 function createAPI(native) {
-  const asyncNamespaces = new Set(['bookmarks', 'storage.local', 'history', 'tabs', 'alarms', 'runtime', 'sidePanel', 'sidebarAction']);
+  const asyncNamespaces = new Set(['bookmarks', 'storage.local', 'storage.session', 'history', 'tabs', 'alarms', 'runtime', 'sidePanel', 'sidebarAction']);
   const syncMethods = new Set(['getURL', 'getManifest', 'connect']);
   let callbackError;
   const cache = new Map();

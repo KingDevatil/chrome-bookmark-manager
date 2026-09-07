@@ -18,6 +18,9 @@ let historySearchQuery = '';
 let shortcutIconScale = 70;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const manifest = ExtensionAPI.runtime.getManifest();
+  document.querySelector('.about-title').textContent = manifest.name;
+  document.getElementById('extension-version').textContent = manifest.version;
   await platformReady;
   expandedFolders = new Set([PlatformRoots.toolbar, PlatformRoots.other]);
   await ThemeManager.init();
